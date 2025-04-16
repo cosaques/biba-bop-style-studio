@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
-import { UserProfile, Outfit } from "@/types";
+import { UserProfile, Outfit, outfitImages } from "@/types";
 import { ArrowLeft } from "lucide-react";
 
 // Données de démonstration
@@ -53,7 +53,8 @@ const mockOutfits: Outfit[] = [
     consultantId: "consultant1",
     date: "2025-04-12",
     clothingItems: ["item1", "item2", "item3"],
-    comments: "Parfait pour une réunion importante."
+    comments: "Parfait pour une réunion importante.",
+    image: outfitImages[0]
   },
   {
     id: "outfit2",
@@ -62,7 +63,8 @@ const mockOutfits: Outfit[] = [
     consultantId: "consultant1",
     date: "2025-04-14",
     clothingItems: ["item4", "item5"],
-    comments: "Style décontracté mais élégant."
+    comments: "Style décontracté mais élégant.",
+    image: outfitImages[5]
   },
   {
     id: "outfit3",
@@ -71,7 +73,8 @@ const mockOutfits: Outfit[] = [
     consultantId: "consultant1",
     date: "2025-04-16",
     clothingItems: ["item6", "item7", "item8"],
-    comments: "Élégant et professionnel."
+    comments: "Élégant et professionnel.",
+    image: outfitImages[1]
   }
 ];
 
@@ -227,8 +230,12 @@ const ClientDetail = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="aspect-video bg-muted rounded-md flex items-center justify-center mb-2">
-                        <span className="text-muted-foreground">Aperçu de la tenue</span>
+                      <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-2 overflow-hidden">
+                        <img 
+                          src={outfit.image} 
+                          alt={outfit.name} 
+                          className="w-full h-auto object-contain"
+                        />
                       </div>
                       {outfit.comments && (
                         <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">

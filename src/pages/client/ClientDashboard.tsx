@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientSidebar } from "@/components/client/ClientSidebar";
 import { ClientHeader } from "@/components/client/ClientHeader";
-import { UserProfile, Outfit } from "@/types";
+import { UserProfile, Outfit, outfitImages } from "@/types";
 
 // Données fictives pour la démo
 const mockProfile: UserProfile = {
@@ -27,7 +27,8 @@ const mockOutfits: Outfit[] = [
     consultantId: "consultant1",
     date: "2025-04-12",
     clothingItems: ["item1", "item2", "item3"],
-    comments: "Parfait pour une réunion importante."
+    comments: "Parfait pour une réunion importante.",
+    image: outfitImages[0]
   },
   {
     id: "outfit2",
@@ -36,7 +37,8 @@ const mockOutfits: Outfit[] = [
     consultantId: "consultant1",
     date: "2025-04-14",
     clothingItems: ["item4", "item5"],
-    comments: "Style décontracté mais élégant."
+    comments: "Style décontracté mais élégant.",
+    image: outfitImages[5]
   }
 ];
 
@@ -132,12 +134,16 @@ const ClientDashboard = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="aspect-square bg-muted rounded-md flex items-center justify-center mb-4">
-                        <span className="text-muted-foreground">Aperçu de la tenue</span>
+                      <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-4 overflow-hidden">
+                        <img 
+                          src={outfit.image} 
+                          alt={outfit.name} 
+                          className="w-full h-auto object-contain"
+                        />
                       </div>
                       {outfit.comments && (
                         <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">
-                          <p className="text-sm font-medium mb-1">Commentaires du consultant:</p>
+                          <p className="text-sm font-medium mb-1">Commentaires du conseiller en image:</p>
                           <p className="text-sm">{outfit.comments}</p>
                         </div>
                       )}

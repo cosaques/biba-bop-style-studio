@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { UserProfile } from "@/types";
+import { UserProfile, outfitImages } from "@/types";
 
 // Données fictives pour la démo
 const mockClients: UserProfile[] = [
@@ -54,6 +54,31 @@ const ConsultantDashboard = () => {
     client.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     client.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Exemple de tenues récentes à afficher
+  const recentOutfits = [
+    {
+      name: "Tenue Professionnelle",
+      client: "Sophie Martin",
+      clientId: "client1",
+      date: new Date().toLocaleDateString("fr-FR"),
+      image: outfitImages[0]
+    },
+    {
+      name: "Sortie Weekend",
+      client: "Amélie Petit",
+      clientId: "client3",
+      date: new Date(Date.now() - 86400000).toLocaleDateString("fr-FR"), // -1 jour
+      image: outfitImages[6]
+    },
+    {
+      name: "Style décontracté",
+      client: "Thomas Dubois",
+      clientId: "client2",
+      date: new Date(Date.now() - 172800000).toLocaleDateString("fr-FR"), // -2 jours
+      image: outfitImages[9]
+    }
+  ];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -153,21 +178,28 @@ const ConsultantDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 3 }).map((_, index) => (
+                    {recentOutfits.map((outfit, index) => (
                       <Card key={index}>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Tenue Professionnelle</CardTitle>
+                          <CardTitle className="text-lg">{outfit.name}</CardTitle>
                           <CardDescription>
-                            Pour Client {index + 1} • Créée le {new Date().toLocaleDateString("fr-FR")}
+                            Pour {outfit.client} • Créée le {outfit.date}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center mb-2">
-                            <span className="text-muted-foreground">Aperçu de la tenue</span>
+                          <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-2 overflow-hidden">
+                            <img 
+                              src={outfit.image}
+                              alt={outfit.name}
+                              className="w-full h-auto object-contain"
+                            />
                           </div>
                         </CardContent>
-                        <CardFooter className="flex justify-end">
+                        <CardFooter className="flex justify-end gap-2">
                           <Button variant="outline">Modifier</Button>
+                          <Button variant="outline" asChild>
+                            <Link to={`/consultant/client/${outfit.clientId}`}>Voir client</Link>
+                          </Button>
                         </CardFooter>
                       </Card>
                     ))}
