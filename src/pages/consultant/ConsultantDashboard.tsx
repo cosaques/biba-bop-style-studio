@@ -1,11 +1,13 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { UserProfile } from "@/types";
 
 // Données fictives pour la démo
@@ -17,7 +19,9 @@ const mockClients: UserProfile[] = [
     height: 168,
     weight: 62,
     bustSize: 90,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette1"
+    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette1",
+    name: "Sophie Martin",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"
   },
   {
     id: "client2",
@@ -25,7 +29,9 @@ const mockClients: UserProfile[] = [
     age: 42,
     height: 182,
     weight: 78,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette2"
+    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette2",
+    name: "Thomas Dubois",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=150&h=150&auto=format&fit=crop"
   },
   {
     id: "client3",
@@ -34,7 +40,9 @@ const mockClients: UserProfile[] = [
     height: 165,
     weight: 58,
     bustSize: 85,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette3"
+    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette3",
+    name: "Amélie Petit",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&h=150&auto=format&fit=crop"
   }
 ];
 
@@ -43,6 +51,7 @@ const ConsultantDashboard = () => {
   const [activeTab, setActiveTab] = useState("clients");
 
   const filteredClients = mockClients.filter((client) =>
+    client.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     client.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -55,7 +64,7 @@ const ConsultantDashboard = () => {
         
         <main className="p-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-bibabop-navy">Tableau de bord du consultant</h1>
+            <h1 className="text-3xl font-bold text-bibabop-navy">Tableau de bord du conseiller en image</h1>
             <p className="subtitle">Gérez vos clients et créez des tenues professionnelles</p>
           </div>
           
@@ -102,21 +111,30 @@ const ConsultantDashboard = () => {
                     {filteredClients.map((client) => (
                       <Card key={client.id} className="card-hover">
                         <CardHeader className="pb-2">
-                          <CardTitle>Client {client.id.replace("client", "")}</CardTitle>
+                          <CardTitle className="flex items-center">
+                            <Avatar className="h-12 w-12 mr-3">
+                              <AvatarImage src={client.avatar} alt={client.name || `Client ${client.id}`} />
+                              <AvatarFallback>{client.name?.charAt(0) || client.id.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {client.name || `Client ${client.id.replace("client", "")}`}
+                          </CardTitle>
                           <CardDescription>
                             {client.gender === "femme" ? "Femme" : "Homme"}, {client.age} ans
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex justify-center py-3">
-                          <img
-                            src={client.silhouette}
-                            alt={`Silhouette client ${client.id}`}
-                            className="h-40 object-contain"
-                          />
+                        <CardContent className="pt-0">
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            <p>Taille: {client.height} cm</p>
+                            <p>Poids: {client.weight} kg</p>
+                          </div>
                         </CardContent>
                         <CardFooter className="flex justify-between">
-                          <Button variant="outline">Détails</Button>
-                          <Button className="btn-primary">Créer une tenue</Button>
+                          <Button variant="outline" asChild>
+                            <Link to={`/consultant/client/${client.id}`}>Détails</Link>
+                          </Button>
+                          <Button className="btn-primary" asChild>
+                            <Link to={`/consultant/outfit-creator?clientId=${client.id}`}>Créer une tenue</Link>
+                          </Button>
                         </CardFooter>
                       </Card>
                     ))}
@@ -201,9 +219,12 @@ const ConsultantDashboard = () => {
                     <div className="space-y-4">
                       {Array.from({ length: 3 }).map((_, index) => (
                         <div key={index} className="flex items-center p-4 bg-bibabop-lightgrey rounded-md">
-                          <div className="w-10 h-10 rounded-full bg-bibabop-navy flex-shrink-0"></div>
-                          <div className="ml-4">
-                            <p className="font-medium">Client {index + 1} a donné un retour</p>
+                          <Avatar className="w-10 h-10 mr-4">
+                            <AvatarImage src={mockClients[index % mockClients.length].avatar} alt="Avatar client" />
+                            <AvatarFallback>{mockClients[index % mockClients.length].name?.charAt(0) || "C"}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{mockClients[index % mockClients.length].name || `Client ${index + 1}`} a donné un retour</p>
                             <p className="text-sm text-muted-foreground">Il y a {index + 1} jour{index > 0 ? 's' : ''}</p>
                           </div>
                         </div>

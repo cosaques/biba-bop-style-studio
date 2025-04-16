@@ -1,4 +1,3 @@
-
 export type Gender = "homme" | "femme" | "autre";
 
 export interface UserProfile {
@@ -8,7 +7,9 @@ export interface UserProfile {
   height: number; // en cm
   weight: number; // en kg
   bustSize?: number; // pour les femmes
-  silhouette?: string; // URL de l'image de silhouette générée
+  silhouette: string;
+  name?: string;
+  avatar?: string;
 }
 
 export interface ClothingItem {

@@ -11,6 +11,7 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import Onboarding from "./pages/client/Onboarding";
 import WardrobeManager from "./pages/client/WardrobeManager";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
+import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
 
@@ -32,8 +33,9 @@ const App = () => (
           <Route path="/client/onboarding" element={<Onboarding />} />
           <Route path="/client/wardrobe" element={<WardrobeManager />} />
           
-          {/* Routes Consultant */}
+          {/* Routes Conseiller en Image */}
           <Route path="/consultant/dashboard" element={<ConsultantDashboard />} />
+          <Route path="/consultant/client/:clientId" element={<ClientDetail />} />
           <Route path="/consultant/outfit-creator" element={<OutfitCreator />} />
           
           {/* Route 404 */}

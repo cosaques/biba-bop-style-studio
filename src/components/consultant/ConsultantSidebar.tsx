@@ -17,8 +17,7 @@ export function ConsultantSidebar() {
   return (
     <div className="hidden md:flex w-64 flex-col border-r bg-bibabop-pink text-white">
       <div className="p-6">
-        <h2 className="text-2xl font-serif font-bold">Biba-Bop</h2>
-        <p className="text-sm text-white/70">Tableau de Bord Consultant</p>
+        <p className="text-sm text-white/70">Tableau de Bord Conseiller en Image</p>
       </div>
       
       <nav className="flex-1 px-4 space-y-2">
