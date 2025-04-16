@@ -4,51 +4,51 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 40 30% 96%;
+    --foreground: 220 40% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 40% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 40% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 219 45% 20%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 43 70% 52%;
+    --secondary-foreground: 220 40% 14%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 43 70% 52%;
+    --accent-foreground: 220 40% 14%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 219 45% 20%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 219 45% 20%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 40 30% 96%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 43 70% 52%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 220 15% 25%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 40 30% 96%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 220 15% 25%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 43 70% 52%;
   }
 
   .dark {
@@ -96,6 +96,38 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
+
+  h1, h2, h3, h4 {
+    @apply font-serif font-medium;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  .subtitle {
+    @apply text-lg text-muted-foreground;
+  }
+}
+
+.btn-primary {
+  @apply bg-bibabop-navy text-white hover:bg-opacity-90 transition-all;
+}
+
+.btn-secondary {
+  @apply bg-bibabop-gold text-bibabop-charcoal hover:bg-opacity-90 transition-all;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg;
 }
