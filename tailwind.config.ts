@@ -64,11 +64,12 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				bibabop: {
-					navy: '#1A2A4A',
-					gold: '#D4AF37',
-					cream: '#F8F5E6',
-					charcoal: '#333333',
-					lightgrey: '#F1F1F1'
+					pink: '#E15B78', // Couleur principale du logo
+					darkpink: '#C94765', // Version plus foncée pour les hover
+					lightpink: '#F8E6EA', // Version très claire pour les backgrounds
+					white: '#FFFFFF',
+					lightgrey: '#F1F1F1',
+					charcoal: '#333333'
 				}
 			},
 			fontFamily: {
