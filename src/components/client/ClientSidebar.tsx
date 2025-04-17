@@ -27,35 +27,21 @@ export function ClientSidebar() {
           </Button>
         </Link>
 
-        <Link to="/client/profile">
+        <Link to="/client/dashboard">
           <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
             <User className="mr-2 h-5 w-5" />
             Mon Profil
           </Button>
         </Link>
 
-        <Link to="/client/wardrobe">
-          <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
-            <ShoppingBag className="mr-2 h-5 w-5" />
-            Ma Garde-robe
-          </Button>
-        </Link>
-
-        <Link to="/client/outfits">
-          <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
-            <Heart className="mr-2 h-5 w-5" />
-            Mes Tenues
-          </Button>
-        </Link>
-
-        <Link to="/client/appointments">
+        <Link to="/client/dashboard">
           <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
             <Calendar className="mr-2 h-5 w-5" />
             Rendez-vous
           </Button>
         </Link>
 
-        <Link to="/client/messages">
+        <Link to="/client/dashboard">
           <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
             <MessageSquare className="mr-2 h-5 w-5" />
             Messages
@@ -64,14 +50,14 @@ export function ClientSidebar() {
       </nav>
 
       <div className="p-4 mt-auto border-t border-white border-opacity-30 space-y-2">
-        <Link to="/client/settings">
+        <Link to="/client/dashboard">
           <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
             <Settings className="mr-2 h-5 w-5" />
             Paramètres
           </Button>
         </Link>
 
-        <Link to="/logout">
+        <Link to="/">
           <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
             <LogOut className="mr-2 h-5 w-5" />
             Déconnexion
