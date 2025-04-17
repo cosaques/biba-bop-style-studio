@@ -90,7 +90,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply text-foreground font-sans;
+    background-color: hsl(340deg 58.59% 84.41%)
   }
 
   h1, h2, h3, h4 {

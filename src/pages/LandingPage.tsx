@@ -198,12 +198,12 @@ const LandingPage = () => {
           </p>
           <div className="flex flex-col md:flex-row justify-center gap-4">
             <Link to="/register/client">
-              <Button size="lg" className="bg-white text-bibabop-navy hover:bg-bibabop-cream text-lg px-8">
+              <Button className="btn-primary">
                 Inscrivez-vous gratuitement
               </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 text-lg px-8">
+              <Button className="btn-secondary">
                 Contactez-nous
               </Button>
             </Link>
