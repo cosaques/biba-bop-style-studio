@@ -70,10 +70,16 @@ const LandingPage = () => {
                 <CardTitle className="text-xl">Silhouette IA Personnalisée</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-40 bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center">
-                  <span>Aperçu silhouette</span>
+                <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                  <img
+                    src="functions/1.png"
+                    alt="Aperçu silhouette"
+                    className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
+                  />
                 </div>
-                <p>Créez une silhouette numérique basée sur votre morphologie pour des suggestions de style parfaitement adaptées.</p>
+                <p>
+                  Créez une silhouette numérique basée sur votre morphologie pour des suggestions de style parfaitement adaptées.
+                </p>
               </CardContent>
             </Card>
 
@@ -82,8 +88,12 @@ const LandingPage = () => {
                 <CardTitle className="text-xl">Garde-robe Numérique</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-40 bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center">
-                  <span>Aperçu garde-robe</span>
+                <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                  <img
+                    src="functions/2.png"
+                    alt="Aperçu silhouette"
+                    className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
+                  />
                 </div>
                 <p>Téléchargez et organisez vos vêtements pour créer des tenues et maximiser votre garde-robe existante.</p>
               </CardContent>
@@ -94,8 +104,12 @@ const LandingPage = () => {
                 <CardTitle className="text-xl">Création de Tenues</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-40 bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center">
-                  <span>Aperçu tenue</span>
+                <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                  <img
+                    src="functions/3.png"
+                    alt="Aperçu silhouette"
+                    className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
+                  />
                 </div>
                 <p>Les conseillers peuvent créer des tenues personnalisées en faisant glisser les vêtements sur votre silhouette.</p>
               </CardContent>
@@ -140,8 +154,12 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-lg">
-              <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center text-white">
-                <span className="text-xl">Interface Client</span>
+              <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center overflow-hidden">
+                <img
+                  src="functions/clients.png"
+                  alt="Interface Client"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -154,7 +172,11 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1 bg-bibabop-lightgrey p-6 rounded-lg shadow-lg">
               <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center text-white">
-                <span className="text-xl">Interface Conseiller</span>
+                <img
+                  src="functions/consultants.png"
+                  alt="Interface Consultant"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
             <div className="order-1 md:order-2">
