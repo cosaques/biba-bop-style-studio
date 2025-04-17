@@ -7,7 +7,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-bibabop-cream">
       {/* Header */}
-      <header className="bg-bibabop-navy text-white py-6">
+      <header className="bg-bibabop-navy text-[#e15b78] py-6">
         <div className="container mx-auto flex justify-between items-center px-4">
           <div className="flex items-center">
             <img src="logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
@@ -19,7 +19,7 @@ const LandingPage = () => {
           </nav>
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button variant="ghost" className="text-white hover:text-bibabop-gold">Connexion</Button>
+              <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Connexion</Button>
             </Link>
             <Link to="/register/client">
               <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Inscription</Button>
