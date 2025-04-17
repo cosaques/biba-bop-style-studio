@@ -28,7 +28,7 @@ const mockOutfits: Outfit[] = [
     date: "2025-04-12",
     clothingItems: ["item1", "item2", "item3"],
     comments: "Parfait pour une réunion importante.",
-    image: outfitImages[0]
+    image: outfitImages[4]
   },
   {
     id: "outfit2",
@@ -48,23 +48,23 @@ const ClientDashboard = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <ClientSidebar />
-      
+
       <div className="flex-1">
         <ClientHeader />
-        
+
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">Bienvenue sur votre espace</h1>
             <p className="subtitle">Explorez vos tenues et gérez votre garde-robe personnelle</p>
           </div>
-          
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 mb-6">
               <TabsTrigger value="silhouette">Ma Silhouette</TabsTrigger>
               <TabsTrigger value="outfits">Mes Tenues</TabsTrigger>
               <TabsTrigger value="wardrobe">Ma Garde-robe</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="silhouette" className="animate-fade-in">
               <div className="grid md:grid-cols-2 gap-6">
                 <Card>
@@ -75,14 +75,14 @@ const ClientDashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <img 
-                      src={mockProfile.silhouette} 
-                      alt="Silhouette personnalisée" 
+                    <img
+                      src={mockProfile.silhouette}
+                      alt="Silhouette personnalisée"
                       className="max-h-96 object-contain"
                     />
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Mes Informations</CardTitle>
@@ -122,7 +122,7 @@ const ClientDashboard = () => {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="outfits" className="animate-fade-in">
               <div className="grid md:grid-cols-2 gap-6">
                 {mockOutfits.map((outfit) => (
@@ -135,10 +135,10 @@ const ClientDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-4 overflow-hidden">
-                        <img 
-                          src={outfit.image} 
-                          alt={outfit.name} 
-                          className="w-full h-auto object-contain"
+                        <img
+                          src={outfit.image}
+                          alt={outfit.name}
+                          className="w-full h-auto object-contain max-h-[200px]"
                         />
                       </div>
                       {outfit.comments && (
@@ -157,7 +157,7 @@ const ClientDashboard = () => {
                 ))}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="wardrobe" className="animate-fade-in">
               <Card>
                 <CardHeader>
@@ -174,7 +174,7 @@ const ClientDashboard = () => {
                       </div>
                       <span className="text-sm font-medium">Ajouter</span>
                     </div>
-                    
+
                     {/* Placeholder pour les vêtements */}
                     {Array.from({ length: 5 }).map((_, index) => (
                       <div key={index} className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center">

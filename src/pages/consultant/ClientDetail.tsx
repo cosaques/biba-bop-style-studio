@@ -54,7 +54,7 @@ const mockOutfits: Outfit[] = [
     date: "2025-04-12",
     clothingItems: ["item1", "item2", "item3"],
     comments: "Parfait pour une réunion importante.",
-    image: outfitImages[0]
+    image: outfitImages[3]
   },
   {
     id: "outfit2",
@@ -81,13 +81,13 @@ const mockOutfits: Outfit[] = [
 const ClientDetail = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [activeTab, setActiveTab] = useState("silhouette");
-  
+
   // Trouver le client correspondant à l'ID dans l'URL
   const client = mockClients.find(client => client.id === clientId);
-  
+
   // Filtrer les tenues pour ce client
   const clientOutfits = mockOutfits.filter(outfit => outfit.clientId === clientId);
-  
+
   if (!client) {
     return (
       <div className="flex min-h-screen bg-background">
@@ -120,24 +120,24 @@ const ClientDetail = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-bibabop-navy flex items-center">
-                <img 
-                  src={client.avatar} 
-                  alt={client.name} 
-                  className="w-12 h-12 rounded-full mr-4 object-cover" 
+                <img
+                  src={client.avatar}
+                  alt={client.name}
+                  className="w-12 h-12 rounded-full mr-4 object-cover"
                 />
                 {client.name}
               </h1>
               <p className="subtitle">Fiche client détaillée</p>
             </div>
           </div>
-          
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 mb-6">
               <TabsTrigger value="silhouette">Silhouette</TabsTrigger>
               <TabsTrigger value="outfits">Tenues</TabsTrigger>
               <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="silhouette" className="animate-fade-in">
               <div className="grid md:grid-cols-2 gap-6">
                 <Card>
@@ -148,14 +148,14 @@ const ClientDetail = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <img 
-                      src={client.silhouette} 
-                      alt="Silhouette personnalisée" 
+                    <img
+                      src={client.silhouette}
+                      alt="Silhouette personnalisée"
                       className="max-h-96 object-contain"
                     />
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Informations personnelles</CardTitle>
@@ -199,7 +199,7 @@ const ClientDetail = () => {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="outfits" className="animate-fade-in">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Carte pour créer une nouvelle tenue */}
@@ -219,7 +219,7 @@ const ClientDetail = () => {
                     </Button>
                   </CardContent>
                 </Card>
-                
+
                 {/* Tenues existantes */}
                 {clientOutfits.map((outfit) => (
                   <Card key={outfit.id} className="card-hover">
@@ -231,10 +231,10 @@ const ClientDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-2 overflow-hidden">
-                        <img 
-                          src={outfit.image} 
-                          alt={outfit.name} 
-                          className="w-full h-auto object-contain"
+                        <img
+                          src={outfit.image}
+                          alt={outfit.name}
+                          className="w-full h-auto object-contain max-h-[200px]"
                         />
                       </div>
                       {outfit.comments && (
@@ -249,7 +249,7 @@ const ClientDetail = () => {
                     </CardFooter>
                   </Card>
                 ))}
-                
+
                 {clientOutfits.length === 0 && (
                   <div className="col-span-full text-center py-10">
                     <p className="text-muted-foreground">Aucune tenue créée pour ce client</p>
@@ -257,7 +257,7 @@ const ClientDetail = () => {
                 )}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="wardrobe" className="animate-fade-in">
               <Card>
                 <CardHeader>
@@ -274,7 +274,7 @@ const ClientDetail = () => {
                       </div>
                       <span className="text-sm font-medium">Ajouter</span>
                     </div>
-                    
+
                     {/* Placeholder pour les vêtements */}
                     {Array.from({ length: 5 }).map((_, index) => (
                       <div key={index} className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center">

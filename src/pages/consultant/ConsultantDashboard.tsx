@@ -51,7 +51,7 @@ const ConsultantDashboard = () => {
   const [activeTab, setActiveTab] = useState("clients");
 
   const filteredClients = mockClients.filter((client) =>
-    client.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -62,7 +62,7 @@ const ConsultantDashboard = () => {
       client: "Sophie Martin",
       clientId: "client1",
       date: new Date().toLocaleDateString("fr-FR"),
-      image: outfitImages[0]
+      image: outfitImages[3]
     },
     {
       name: "Sortie Weekend",
@@ -83,23 +83,23 @@ const ConsultantDashboard = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <ConsultantSidebar />
-      
+
       <div className="flex-1">
         <ConsultantHeader />
-        
+
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">Tableau de bord du conseiller en image</h1>
             <p className="subtitle">Gérez vos clients et créez des tenues professionnelles</p>
           </div>
-          
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 mb-6">
               <TabsTrigger value="clients">Mes Clients</TabsTrigger>
               <TabsTrigger value="outfits">Tenues Récentes</TabsTrigger>
               <TabsTrigger value="stats">Statistiques</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="clients" className="animate-fade-in">
               <Card>
                 <CardHeader>
@@ -131,7 +131,7 @@ const ConsultantDashboard = () => {
                         <Button className="btn-primary">Ajouter un client</Button>
                       </CardContent>
                     </Card>
-                    
+
                     {/* Liste des clients */}
                     {filteredClients.map((client) => (
                       <Card key={client.id} className="card-hover">
@@ -167,7 +167,7 @@ const ConsultantDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="outfits" className="animate-fade-in">
               <Card>
                 <CardHeader>
@@ -188,10 +188,10 @@ const ConsultantDashboard = () => {
                         </CardHeader>
                         <CardContent>
                           <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-2 overflow-hidden">
-                            <img 
+                            <img
                               src={outfit.image}
                               alt={outfit.name}
-                              className="w-full h-auto object-contain"
+                              className="w-full h-auto object-contain max-h-[200px]"
                             />
                           </div>
                         </CardContent>
@@ -207,7 +207,7 @@ const ConsultantDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="stats" className="animate-fade-in">
               <Card>
                 <CardHeader>
@@ -226,7 +226,7 @@ const ConsultantDashboard = () => {
                         <div className="text-4xl font-bold text-bibabop-navy">{mockClients.length}</div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Tenues Créées</CardTitle>
@@ -235,7 +235,7 @@ const ConsultantDashboard = () => {
                         <div className="text-4xl font-bold text-bibabop-navy">8</div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Retours Clients</CardTitle>
@@ -245,7 +245,7 @@ const ConsultantDashboard = () => {
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   <div className="mt-8">
                     <h3 className="text-xl font-medium mb-4">Activité Récente</h3>
                     <div className="space-y-4">
