@@ -48,6 +48,14 @@ const LandingPage = () => {
             >
               Pour les Conseillers
             </a>
+            <a
+              href="https://biba-bop.streamlit.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-bibabop-gold transition-colors"
+            >
+              Biba-Bop Labs
+            </a>
           </nav>
           <div className="flex items-center space-x-4">
             <Link to="/login">
