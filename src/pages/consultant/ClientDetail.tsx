@@ -278,9 +278,18 @@ const ClientDetail = () => {
                     </div>
 
                     {/* Placeholder pour les vêtements */}
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div key={index} className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center">
+                        <img
+                          src={`public/clothes/cloth-${index+1}.png`}
+                          alt="Vetement"
+                          className="w-full h-auto object-contain max-h-[200px]"
+                        />
+                      </div>
+                    ))}
                     {Array.from({ length: 5 }).map((_, index) => (
                       <div key={index} className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center">
-                        <span className="text-muted-foreground text-sm">Vêtement {index + 1}</span>
+                        <span className="text-muted-foreground text-sm">Vêtement {index + 5}</span>
                       </div>
                     ))}
                   </div>
