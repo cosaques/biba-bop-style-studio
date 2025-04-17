@@ -16,7 +16,7 @@ const mockClient: UserProfile = {
   height: 168,
   weight: 62,
   bustSize: 90,
-  silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette"
+  silhouette: "public/looks/look-0.png"
 };
 
 const mockClothes: ClothingItem[] = [
@@ -113,16 +113,16 @@ const OutfitCreator = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <ConsultantSidebar />
-      
+
       <div className="flex-1">
         <ConsultantHeader />
-        
+
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">Création de Tenue</h1>
             <p className="subtitle">Créez une tenue personnalisée pour votre client</p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
             {/* Panel de gauche: silhouette et tenue */}
             <div className="md:col-span-1">
@@ -133,31 +133,31 @@ const OutfitCreator = () => {
                 <CardContent>
                   <div className="flex flex-col items-center">
                     <div className="relative min-h-[400px] w-full bg-bibabop-lightgrey rounded-md flex items-center justify-center">
-                      <img 
-                        src={mockClient.silhouette} 
+                      <img
+                        src={mockClient.silhouette}
                         alt="Silhouette du client"
                         className="h-full object-contain"
                       />
-                      
+
                       {/* Vêtements sélectionnés qui seraient positionnés sur la silhouette */}
                       {selectedClothes.map(itemId => {
                         const item = [...mockClothes, ...externalCatalog].find(i => i.id === itemId);
                         if (!item) return null;
-                        
+
                         let positionClass = "";
                         if (item.type === "haut") positionClass = "top-1/4";
                         if (item.type === "bas") positionClass = "top-1/2";
                         if (item.type === "chaussures") positionClass = "bottom-0";
                         if (item.type === "accessoire") positionClass = "top-10 right-10";
-                        
+
                         return (
-                          <div 
-                            key={itemId} 
+                          <div
+                            key={itemId}
                             className={`absolute w-16 h-16 ${positionClass} cursor-move`}
                             style={{opacity: 0.8}}
                           >
-                            <img 
-                              src={item.image} 
+                            <img
+                              src={item.image}
                               alt={item.type}
                               className="w-full h-full object-contain"
                             />
@@ -165,7 +165,7 @@ const OutfitCreator = () => {
                         );
                       })}
                     </div>
-                    
+
                     <div className="mt-6 w-full">
                       <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
                       <Textarea
@@ -175,8 +175,8 @@ const OutfitCreator = () => {
                         onChange={(e) => setComments(e.target.value)}
                       />
                     </div>
-                    
-                    <Button 
+
+                    <Button
                       className="btn-primary w-full mt-4"
                       onClick={handleSaveOutfit}
                       disabled={selectedClothes.length === 0 || isSaving}
@@ -187,7 +187,7 @@ const OutfitCreator = () => {
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Panel de droite: sélection des vêtements */}
             <div className="md:col-span-2">
               <Card>
@@ -199,7 +199,7 @@ const OutfitCreator = () => {
                       <TabsTrigger value="catalog">Catalogue</TabsTrigger>
                     </TabsList>
                   </Tabs>
-                  
+
                   <Tabs value={filter} onValueChange={setFilter}>
                     <TabsList className="grid grid-cols-5 mb-4">
                       <TabsTrigger value="tous">Tous</TabsTrigger>
@@ -210,24 +210,24 @@ const OutfitCreator = () => {
                     </TabsList>
                   </Tabs>
                 </CardHeader>
-                
+
                 <CardContent>
                   <TabsContent value={activeTab} className="mt-0">
                     <TabsContent value="wardrobe" className="mt-0">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {filteredWardrobe.map((item) => (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                              selectedClothes.includes(item.id) 
-                                ? 'ring-2 ring-bibabop-gold' 
+                              selectedClothes.includes(item.id)
+                                ? 'ring-2 ring-bibabop-gold'
                                 : 'hover:shadow-md'
                             }`}
                             onClick={() => handleItemSelect(item.id)}
                           >
                             <div className="aspect-square bg-bibabop-lightgrey relative">
-                              <img 
-                                src={item.image} 
+                              <img
+                                src={item.image}
                                 alt={`${item.color} ${item.type}`}
                                 className="w-full h-full object-cover"
                               />
@@ -244,22 +244,22 @@ const OutfitCreator = () => {
                         ))}
                       </div>
                     </TabsContent>
-                    
+
                     <TabsContent value="catalog" className="mt-0">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {filteredCatalog.map((item) => (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                              selectedClothes.includes(item.id) 
-                                ? 'ring-2 ring-bibabop-gold' 
+                              selectedClothes.includes(item.id)
+                                ? 'ring-2 ring-bibabop-gold'
                                 : 'hover:shadow-md'
                             }`}
                             onClick={() => handleItemSelect(item.id)}
                           >
                             <div className="aspect-square bg-bibabop-lightgrey relative">
-                              <img 
-                                src={item.image} 
+                              <img
+                                src={item.image}
                                 alt={`${item.color} ${item.type}`}
                                 className="w-full h-full object-cover"
                               />
@@ -275,7 +275,7 @@ const OutfitCreator = () => {
                             </div>
                           </div>
                         ))}
-                        
+
                         {/* Option pour ajouter un vêtement au catalogue */}
                         <div className="border border-dashed rounded-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all">
                           <div className="aspect-square flex flex-col items-center justify-center">

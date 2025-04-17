@@ -16,7 +16,7 @@ const mockProfile: UserProfile = {
   height: 168,
   weight: 62,
   bustSize: 90,
-  silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette"
+  silhouette: "public/looks/look-0.png"
 };
 
 const mockOutfits: Outfit[] = [
@@ -75,11 +75,13 @@ const ClientDashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <img
-                      src={mockProfile.silhouette}
-                      alt="Silhouette personnalisée"
-                      className="max-h-96 object-contain"
-                    />
+                    <div className="bg-bibabop-lightgrey rounded-md">
+                      <img
+                        src={mockProfile.silhouette}
+                        alt="Silhouette personnalisée"
+                        className="max-h-96 object-contain"
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 

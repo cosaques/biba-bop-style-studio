@@ -18,7 +18,7 @@ const mockClients: UserProfile[] = [
     height: 168,
     weight: 62,
     bustSize: 90,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette1",
+    silhouette: "public/looks/look-0.png",
     name: "Sophie Martin",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"
   },
@@ -28,7 +28,7 @@ const mockClients: UserProfile[] = [
     age: 42,
     height: 182,
     weight: 78,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette2",
+    silhouette: "public/looks/look-0.png",
     name: "Thomas Dubois",
     avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=150&h=150&auto=format&fit=crop"
   },
@@ -39,7 +39,7 @@ const mockClients: UserProfile[] = [
     height: 165,
     weight: 58,
     bustSize: 85,
-    silhouette: "https://placehold.co/300x600/1A2A4A/F8F5E6?text=Silhouette3",
+    silhouette: "public/looks/look-0.png",
     name: "Amélie Petit",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&h=150&auto=format&fit=crop"
   }
@@ -148,11 +148,13 @@ const ClientDetail = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <img
-                      src={client.silhouette}
-                      alt="Silhouette personnalisée"
-                      className="max-h-96 object-contain"
-                    />
+                    <div className="bg-bibabop-lightgrey rounded-md">
+                      <img
+                        src={client.silhouette}
+                        alt="Silhouette personnalisée"
+                        className="max-h-96 object-contain"
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
