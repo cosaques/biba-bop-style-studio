@@ -261,11 +261,11 @@ const LandingPage = () => {
                 Inscrivez-vous gratuitement
               </Button>
             </Link>
-            <Link to="/contact">
+            <a href="mailto:contact@biba-bop.fr">
               <Button className="btn-secondary">
                 Contactez-nous
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -284,9 +284,21 @@ const LandingPage = () => {
               <h4 className="font-bold mb-4">Liens rapides</h4>
               <ul className="space-y-2">
                 <li><a href="#" className="text-white/70 hover:text-white">Accueil</a></li>
-                <li><a href="#features" className="text-white/70 hover:text-white">Fonctionnalités</a></li>
-                <li><a href="#clients" className="text-white/70 hover:text-white">Pour les Clients</a></li>
-                <li><a href="#consultants" className="text-white/70 hover:text-white">Pour les Conseillers</a></li>
+                <li><a href="#features" onClick={(e) => {
+                  e.preventDefault(); // Empêche le scroll natif
+                  const el = document.getElementById('features');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }} className="text-white/70 hover:text-white">Fonctionnalités</a></li>
+                <li><a href="#clients" onClick={(e) => {
+                  e.preventDefault(); // Empêche le scroll natif
+                  const el = document.getElementById('clients');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }} className="text-white/70 hover:text-white">Pour les Clients</a></li>
+                <li><a href="#consultants" onClick={(e) => {
+                  e.preventDefault(); // Empêche le scroll natif
+                  const el = document.getElementById('consultants');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }} className="text-white/70 hover:text-white">Pour les Conseillers</a></li>
               </ul>
             </div>
             <div>
