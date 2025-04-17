@@ -46,10 +46,15 @@ const LandingPage = () => {
             </Link>
           </div>
           <div className="relative max-w-4xl mx-auto">
-            <div className="aspect-video bg-bibabop-navy rounded-lg shadow-xl flex items-center justify-center text-white">
-              <span className="text-2xl">Interface Biba-Bop</span>
+            <div className="aspect-video bg-bibabop-navy rounded-lg shadow-xl overflow-hidden">
+              <video
+                src="Biba-Bop.mp4"
+                controls
+                className="w-full h-full object-cover rounded-lg"
+              />
             </div>
           </div>
+
         </div>
       </section>
 
