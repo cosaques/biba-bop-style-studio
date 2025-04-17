@@ -16,7 +16,7 @@ const mockClient: UserProfile = {
   height: 168,
   weight: 62,
   bustSize: 90,
-  silhouette: "public/looks/look-0.png"
+  silhouette: "looks/look-0.png"
 };
 
 const mockClothes: ClothingItem[] = [

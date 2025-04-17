@@ -18,7 +18,7 @@ const mockClients: UserProfile[] = [
     height: 168,
     weight: 62,
     bustSize: 90,
-    silhouette: "public/looks/look-0.png",
+    silhouette: "looks/look-0.png",
     name: "Sophie Martin",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"
   },
@@ -28,7 +28,7 @@ const mockClients: UserProfile[] = [
     age: 42,
     height: 182,
     weight: 78,
-    silhouette: "public/looks/look-0.png",
+    silhouette: "looks/look-0.png",
     name: "Thomas Dubois",
     avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=150&h=150&auto=format&fit=crop"
   },
@@ -39,7 +39,7 @@ const mockClients: UserProfile[] = [
     height: 165,
     weight: 58,
     bustSize: 85,
-    silhouette: "public/looks/look-0.png",
+    silhouette: "looks/look-0.png",
     name: "Amélie Petit",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&h=150&auto=format&fit=crop"
   }
