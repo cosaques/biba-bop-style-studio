@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Bell, User, Search, Menu } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export function ConsultantHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -18,11 +19,13 @@ export function ConsultantHeader() {
       </Button>
 
       <div className="flex items-center md:ml-0 ml-2">
-        <img
-          src="logo.png"
-          alt="Biba-Bop Logo"
-          className="h-10 mr-2"
-        />
+        <Link to="/" className="flex items-center">
+          <img
+            src="logo.png"
+            alt="Biba-Bop Logo"
+            className="h-10 mr-2"
+          />
+        </Link>
       </div>
 
       <div className="flex-1 md:flex md:justify-center md:w-1/3">

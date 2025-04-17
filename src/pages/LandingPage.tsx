@@ -10,12 +10,44 @@ const LandingPage = () => {
       <header className="bg-bibabop-navy text-[#e15b78] py-6">
         <div className="container mx-auto flex justify-between items-center px-4">
           <div className="flex items-center">
-            <img src="logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
+            <Link to="/" className="flex items-center">
+              <img src="logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
+            </Link>
           </div>
           <nav className="hidden md:flex space-x-8">
-            <a href="#features" className="hover:text-bibabop-gold transition-colors">Fonctionnalités</a>
-            <a href="#clients" className="hover:text-bibabop-gold transition-colors">Pour les Clients</a>
-            <a href="#consultants" className="hover:text-bibabop-gold transition-colors">Pour les Conseillers</a>
+            <a
+              href="#features"
+              onClick={(e) => {
+                e.preventDefault(); // Empêche le scroll natif
+                const el = document.getElementById('features');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hover:text-bibabop-gold transition-colors"
+            >
+              Fonctionnalités
+            </a>
+            <a
+              href="#clients"
+              onClick={(e) => {
+                e.preventDefault(); // Empêche le scroll natif
+                const el = document.getElementById('clients');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hover:text-bibabop-gold transition-colors"
+            >
+              Pour les Clients
+            </a>
+            <a
+              href="#consultants"
+              onClick={(e) => {
+                e.preventDefault(); // Empêche le scroll natif
+                const el = document.getElementById('consultants');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hover:text-bibabop-gold transition-colors"
+            >
+              Pour les Conseillers
+            </a>
           </nav>
           <div className="flex items-center space-x-4">
             <Link to="/login">

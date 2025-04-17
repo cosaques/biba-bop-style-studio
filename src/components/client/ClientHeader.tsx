@@ -1,16 +1,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Bell, User, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function ClientHeader() {
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-6">
       <div className="flex items-center">
-        <img
-          src="logo.png"
-          alt="Biba-Bop Logo"
-          className="h-10 mr-2"
-        />
+        <Link to="/" className="flex items-center">
+          <img
+            src="logo.png"
+            alt="Biba-Bop Logo"
+            className="h-10 mr-2"
+          />
+        </Link>
       </div>
 
       <div className="flex-1 md:flex md:justify-center md:w-1/3">
