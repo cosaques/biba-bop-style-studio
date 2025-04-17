@@ -22,28 +22,28 @@ const mockClothes: ClothingItem[] = [
   {
     id: "item1",
     userId: "client1",
-    image: "https://placehold.co/300x300/1A2A4A/F8F5E6?text=Chemise",
+    image: "clothes/cloth-1.png",
     type: "haut",
-    color: "bleu"
+    color: "blanc"
   },
   {
     id: "item2",
     userId: "client1",
-    image: "https://placehold.co/300x300/1A2A4A/F8F5E6?text=Pantalon",
+    image: "clothes/cloth-2.png",
     type: "bas",
-    color: "noir"
+    color: "bleu"
   },
   {
     id: "item3",
     userId: "client1",
-    image: "https://placehold.co/300x300/1A2A4A/F8F5E6?text=Veste",
+    image: "clothes/cloth-4.png",
     type: "haut",
-    color: "gris"
+    color: "marron"
   },
   {
     id: "item4",
     userId: "client1",
-    image: "https://placehold.co/300x300/1A2A4A/F8F5E6?text=Chaussures",
+    image: "clothes/cloth-5.png",
     type: "chaussures",
     color: "marron"
   }
@@ -54,23 +54,23 @@ const externalCatalog: ClothingItem[] = [
   {
     id: "ext1",
     userId: "external",
-    image: "https://placehold.co/300x300/D4AF37/F8F5E6?text=Bijou",
-    type: "accessoire",
-    color: "or"
+    image: "clothes/cloth-3.png",
+    type: "bas",
+    color: "gris"
   },
   {
     id: "ext2",
     userId: "external",
-    image: "https://placehold.co/300x300/D4AF37/F8F5E6?text=Sac",
+    image: "clothes/cloth-6.png",
     type: "accessoire",
     color: "marron"
   },
   {
     id: "ext3",
     userId: "external",
-    image: "https://placehold.co/300x300/D4AF37/F8F5E6?text=Écharpe",
+    image: "clothes/cloth-7.png",
     type: "accessoire",
-    color: "rouge"
+    color: "beige"
   }
 ];
 
@@ -135,7 +135,7 @@ const OutfitCreator = () => {
                       <img
                         src={mockClient.silhouette}
                         alt="Silhouette du client"
-                        className="h-full object-contain"
+                        className="max-h-[600px] w-auto object-contain"
                       />
 
                       {/* Vêtements sélectionnés qui seraient positionnés sur la silhouette */}
@@ -144,16 +144,23 @@ const OutfitCreator = () => {
                         if (!item) return null;
 
                         let positionClass = "";
-                        if (item.type === "haut") positionClass = "top-1/4";
-                        if (item.type === "bas") positionClass = "top-1/2";
-                        if (item.type === "chaussures") positionClass = "bottom-0";
+                        if (item.type === "haut") positionClass = "top-1/4 -translate-y-[40px]";
+                        if (item.type === "bas") positionClass = "top-1/2 -translate-y-[50px]";
+                        if (item.type === "chaussures") positionClass = "bottom-0 translate-y-[15px]";
                         if (item.type === "accessoire") positionClass = "top-10 right-10";
+
+                        // 🎯 Taille spécifique par type
+                        let tailleClass = "";
+                        if (item.type === "haut") tailleClass = "w-40 h-auto";         // haut → grand
+                        if (item.type === "bas") tailleClass = "w-28";          // bas → un peu plus petit
+                        if (item.type === "chaussures") tailleClass = "w-28 h-28";   // chaussures → plus petit
+                        if (item.type === "accessoire") tailleClass = "w-20 h-20";   // accessoire → encore plus petit
 
                         return (
                           <div
                             key={itemId}
-                            className={`absolute w-16 h-16 ${positionClass} cursor-move`}
-                            style={{opacity: 0.8}}
+                            className={`absolute ${tailleClass} ${positionClass} cursor-move`}
+                            style={{ opacity: 0.8 }}
                           >
                             <img
                               src={item.image}
@@ -163,6 +170,7 @@ const OutfitCreator = () => {
                           </div>
                         );
                       })}
+
                     </div>
 
                     <div className="mt-6 w-full">
@@ -215,19 +223,19 @@ const OutfitCreator = () => {
                           {filteredWardrobe.map((item) => (
                             <div
                               key={item.id}
-                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                                selectedClothes.includes(item.id)
-                                  ? 'ring-2 ring-bibabop-gold'
-                                  : 'hover:shadow-md'
-                              }`}
+                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${selectedClothes.includes(item.id)
+                                ? 'ring-2 ring-bibabop-gold'
+                                : 'hover:shadow-md'
+                                }`}
                               onClick={() => handleItemSelect(item.id)}
                             >
-                              <div className="aspect-square bg-bibabop-lightgrey relative">
+                              <div className="aspect-square bg-bibabop-lightgrey relative flex items-center justify-center">
                                 <img
                                   src={item.image}
                                   alt={`${item.color} ${item.type}`}
-                                  className="w-full h-full object-cover"
+                                  className="max-w-full max-h-full object-contain"
                                 />
+
                                 {selectedClothes.includes(item.id) && (
                                   <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
                                     ✓
@@ -249,19 +257,19 @@ const OutfitCreator = () => {
                           {filteredCatalog.map((item) => (
                             <div
                               key={item.id}
-                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                                selectedClothes.includes(item.id)
-                                  ? 'ring-2 ring-bibabop-gold'
-                                  : 'hover:shadow-md'
-                              }`}
+                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${selectedClothes.includes(item.id)
+                                ? 'ring-2 ring-bibabop-gold'
+                                : 'hover:shadow-md'
+                                }`}
                               onClick={() => handleItemSelect(item.id)}
                             >
-                              <div className="aspect-square bg-bibabop-lightgrey relative">
+                              <div className="aspect-square bg-bibabop-lightgrey relative flex items-center justify-center">
                                 <img
                                   src={item.image}
                                   alt={`${item.color} ${item.type}`}
-                                  className="w-full h-full object-cover"
+                                  className="max-w-full max-h-full object-contain"
                                 />
+
                                 {selectedClothes.includes(item.id) && (
                                   <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
                                     ✓
