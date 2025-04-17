@@ -15,11 +15,11 @@ const Login = () => {
 
   const handleLogin = (role: "client" | "consultant") => {
     setIsLoading(true);
-    
+
     // Simulation d'une connexion
     setTimeout(() => {
       setIsLoading(false);
-      
+
       if (role === "client") {
         navigate("/client/dashboard");
       } else {
@@ -35,19 +35,19 @@ const Login = () => {
           <h1 className="text-4xl font-bold text-bibabop-navy mb-2">Biba-Bop</h1>
           <p className="text-bibabop-charcoal subtitle">Plateforme de Stylisme Intelligent</p>
         </div>
-        
+
         <Tabs defaultValue="client" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="client">Client</TabsTrigger>
-            <TabsTrigger value="consultant">Consultant</TabsTrigger>
+            <TabsTrigger value="consultant">Conseiller</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="client">
             <Card>
               <CardHeader>
                 <CardTitle>Connexion Client</CardTitle>
                 <CardDescription>
-                  Accédez à votre espace personnel et découvrez les tenues créées par votre consultant.
+                  Accédez à votre espace personnel et découvrez les tenues créées par votre conseiller.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -72,9 +72,9 @@ const Login = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-4">
-                <Button 
-                  className="w-full btn-primary" 
-                  onClick={() => handleLogin("client")} 
+                <Button
+                  className="w-full btn-primary"
+                  onClick={() => handleLogin("client")}
                   disabled={isLoading}
                 >
                   {isLoading ? "Connexion..." : "Se connecter"}
@@ -85,11 +85,11 @@ const Login = () => {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="consultant">
             <Card>
               <CardHeader>
-                <CardTitle>Connexion Consultant</CardTitle>
+                <CardTitle>Connexion Conseiller</CardTitle>
                 <CardDescription>
                   Accédez à votre tableau de bord et gérez vos clients professionnellement.
                 </CardDescription>
@@ -116,7 +116,7 @@ const Login = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-4">
-                <Button 
+                <Button
                   className="w-full btn-primary"
                   onClick={() => handleLogin("consultant")}
                   disabled={isLoading}
@@ -124,7 +124,7 @@ const Login = () => {
                   {isLoading ? "Connexion..." : "Se connecter"}
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
-                  Nouveau consultant ? <Link to="/register/consultant" className="text-bibabop-navy font-medium hover:underline">Créer un compte</Link>
+                  Nouveau conseiller ? <Link to="/register/consultant" className="text-bibabop-navy font-medium hover:underline">Créer un compte</Link>
                 </p>
               </CardFooter>
             </Card>

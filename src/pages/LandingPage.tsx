@@ -10,12 +10,12 @@ const LandingPage = () => {
       <header className="bg-bibabop-navy text-white py-6">
         <div className="container mx-auto flex justify-between items-center px-4">
           <div className="flex items-center">
-            <h1 className="text-3xl font-serif font-bold">Biba-Bop</h1>
+            <img src="logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
           </div>
           <nav className="hidden md:flex space-x-8">
             <a href="#features" className="hover:text-bibabop-gold transition-colors">Fonctionnalités</a>
             <a href="#clients" className="hover:text-bibabop-gold transition-colors">Pour les Clients</a>
-            <a href="#consultants" className="hover:text-bibabop-gold transition-colors">Pour les Consultants</a>
+            <a href="#consultants" className="hover:text-bibabop-gold transition-colors">Pour les Conseillers</a>
           </nav>
           <div className="flex items-center space-x-4">
             <Link to="/login">
@@ -35,14 +35,14 @@ const LandingPage = () => {
             Plateforme de Stylisme Intelligent
           </h1>
           <p className="text-xl md:text-2xl text-bibabop-charcoal max-w-3xl mx-auto mb-10">
-            Biba-Bop révolutionne la collaboration entre consultants en image et leurs clients pour une expérience de mode personnalisée et durable.
+            Biba-Bop révolutionne la collaboration entre conseillers en image et leurs clients pour une expérience de mode personnalisée et durable.
           </p>
           <div className="flex flex-col md:flex-row justify-center gap-4 mb-16">
             <Link to="/register/client">
               <Button size="lg" className="btn-primary text-lg px-8 py-6">Je suis client</Button>
             </Link>
             <Link to="/register/consultant">
-              <Button size="lg" className="btn-secondary text-lg px-8 py-6">Je suis consultant</Button>
+              <Button size="lg" className="btn-secondary text-lg px-8 py-6">Je suis conseiller</Button>
             </Link>
           </div>
           <div className="relative max-w-4xl mx-auto">
@@ -92,7 +92,7 @@ const LandingPage = () => {
                 <div className="h-40 bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center">
                   <span>Aperçu tenue</span>
                 </div>
-                <p>Les consultants peuvent créer des tenues personnalisées en faisant glisser les vêtements sur votre silhouette.</p>
+                <p>Les conseillers peuvent créer des tenues personnalisées en faisant glisser les vêtements sur votre silhouette.</p>
               </CardContent>
             </Card>
           </div>
@@ -108,7 +108,7 @@ const LandingPage = () => {
                 Pour les Clients
               </h2>
               <p className="text-lg mb-6">
-                Découvrez comment tirer le meilleur parti de votre garde-robe existante et recevez des conseils personnalisés de votre consultant en image.
+                Découvrez comment tirer le meilleur parti de votre garde-robe existante et recevez des conseils personnalisés de votre conseiller en image.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-start">
@@ -125,7 +125,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-start">
                   <span className="text-bibabop-gold mr-2">✓</span>
-                  <span>Visualisation des tenues créées par votre consultant</span>
+                  <span>Visualisation des tenues créées par votre conseiller</span>
                 </li>
               </ul>
               <div className="mt-8">
@@ -149,12 +149,12 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1 bg-bibabop-lightgrey p-6 rounded-lg shadow-lg">
               <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center text-white">
-                <span className="text-xl">Interface Consultant</span>
+                <span className="text-xl">Interface Conseiller</span>
               </div>
             </div>
             <div className="order-1 md:order-2">
               <h2 className="text-4xl font-serif font-bold text-bibabop-navy mb-6">
-                Pour les Consultants
+                Pour les Conseillers
               </h2>
               <p className="text-lg mb-6">
                 Optimisez votre flux de travail, gagnez du temps et offrez une expérience professionnelle à vos clients.
@@ -179,7 +179,7 @@ const LandingPage = () => {
               </ul>
               <div className="mt-8">
                 <Link to="/register/consultant">
-                  <Button className="btn-primary">Créer un compte consultant</Button>
+                  <Button className="btn-primary">Créer un compte conseiller</Button>
                 </Link>
               </div>
             </div>
@@ -218,7 +218,7 @@ const LandingPage = () => {
             <div>
               <h3 className="text-xl font-serif font-bold mb-4">Biba-Bop</h3>
               <p className="text-white/70">
-                Plateforme de stylisme intelligent pour consultants en image et leurs clients
+                Plateforme de stylisme intelligent pour conseillers en image et leurs clients
               </p>
             </div>
             <div>
@@ -227,7 +227,7 @@ const LandingPage = () => {
                 <li><a href="#" className="text-white/70 hover:text-white">Accueil</a></li>
                 <li><a href="#features" className="text-white/70 hover:text-white">Fonctionnalités</a></li>
                 <li><a href="#clients" className="text-white/70 hover:text-white">Pour les Clients</a></li>
-                <li><a href="#consultants" className="text-white/70 hover:text-white">Pour les Consultants</a></li>
+                <li><a href="#consultants" className="text-white/70 hover:text-white">Pour les Conseillers</a></li>
               </ul>
             </div>
             <div>
