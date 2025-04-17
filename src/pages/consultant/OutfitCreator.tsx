@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -190,106 +189,107 @@ const OutfitCreator = () => {
 
             {/* Panel de droite: sélection des vêtements */}
             <div className="md:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sélection des Vêtements</CardTitle>
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sélection des Vêtements</CardTitle>
                     <TabsList className="grid grid-cols-2 w-48 mb-4">
                       <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
                       <TabsTrigger value="catalog">Catalogue</TabsTrigger>
                     </TabsList>
-                  </Tabs>
+                    <Tabs value={filter} onValueChange={setFilter}>
+                      <TabsList className="grid grid-cols-5 mb-4">
+                        <TabsTrigger value="tous">Tous</TabsTrigger>
+                        <TabsTrigger value="haut">Hauts</TabsTrigger>
+                        <TabsTrigger value="bas">Bas</TabsTrigger>
+                        <TabsTrigger value="chaussures">Chaussures</TabsTrigger>
+                        <TabsTrigger value="accessoire">Accessoires</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </CardHeader>
 
-                  <Tabs value={filter} onValueChange={setFilter}>
-                    <TabsList className="grid grid-cols-5 mb-4">
-                      <TabsTrigger value="tous">Tous</TabsTrigger>
-                      <TabsTrigger value="haut">Hauts</TabsTrigger>
-                      <TabsTrigger value="bas">Bas</TabsTrigger>
-                      <TabsTrigger value="chaussures">Chaussures</TabsTrigger>
-                      <TabsTrigger value="accessoire">Accessoires</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </CardHeader>
+                  <CardContent>
+                    {activeTab === "wardrobe" && (
+                      <TabsContent value="wardrobe" className="mt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {filteredWardrobe.map((item) => (
+                            <div
+                              key={item.id}
+                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
+                                selectedClothes.includes(item.id)
+                                  ? 'ring-2 ring-bibabop-gold'
+                                  : 'hover:shadow-md'
+                              }`}
+                              onClick={() => handleItemSelect(item.id)}
+                            >
+                              <div className="aspect-square bg-bibabop-lightgrey relative">
+                                <img
+                                  src={item.image}
+                                  alt={`${item.color} ${item.type}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {selectedClothes.includes(item.id) && (
+                                  <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
+                                    ✓
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-2">
+                                <p className="font-medium">{item.color} {item.type}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+                    )}
 
-                <CardContent>
-                  <TabsContent value={activeTab} className="mt-0">
-                    <TabsContent value="wardrobe" className="mt-0">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {filteredWardrobe.map((item) => (
-                          <div
-                            key={item.id}
-                            className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                              selectedClothes.includes(item.id)
-                                ? 'ring-2 ring-bibabop-gold'
-                                : 'hover:shadow-md'
-                            }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <div className="aspect-square bg-bibabop-lightgrey relative">
-                              <img
-                                src={item.image}
-                                alt={`${item.color} ${item.type}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {selectedClothes.includes(item.id) && (
-                                <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
-                                  ✓
-                                </div>
-                              )}
+                    {activeTab === "catalog" && (
+                      <TabsContent value="catalog" className="mt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {filteredCatalog.map((item) => (
+                            <div
+                              key={item.id}
+                              className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
+                                selectedClothes.includes(item.id)
+                                  ? 'ring-2 ring-bibabop-gold'
+                                  : 'hover:shadow-md'
+                              }`}
+                              onClick={() => handleItemSelect(item.id)}
+                            >
+                              <div className="aspect-square bg-bibabop-lightgrey relative">
+                                <img
+                                  src={item.image}
+                                  alt={`${item.color} ${item.type}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {selectedClothes.includes(item.id) && (
+                                  <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
+                                    ✓
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-2">
+                                <p className="font-medium">{item.color} {item.type}</p>
+                                <p className="text-xs text-muted-foreground">Catalogue externe</p>
+                              </div>
                             </div>
-                            <div className="p-2">
-                              <p className="font-medium">{item.color} {item.type}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
+                          ))}
 
-                    <TabsContent value="catalog" className="mt-0">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {filteredCatalog.map((item) => (
-                          <div
-                            key={item.id}
-                            className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                              selectedClothes.includes(item.id)
-                                ? 'ring-2 ring-bibabop-gold'
-                                : 'hover:shadow-md'
-                            }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <div className="aspect-square bg-bibabop-lightgrey relative">
-                              <img
-                                src={item.image}
-                                alt={`${item.color} ${item.type}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {selectedClothes.includes(item.id) && (
-                                <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
-                                  ✓
-                                </div>
-                              )}
+                          {/* Option pour ajouter un vêtement au catalogue */}
+                          <div className="border border-dashed rounded-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all">
+                            <div className="aspect-square flex flex-col items-center justify-center">
+                              <div className="w-12 h-12 rounded-full bg-bibabop-navy flex items-center justify-center text-white mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                              </div>
+                              <p className="font-medium">Ajouter au catalogue</p>
                             </div>
-                            <div className="p-2">
-                              <p className="font-medium">{item.color} {item.type}</p>
-                              <p className="text-xs text-muted-foreground">Catalogue externe</p>
-                            </div>
-                          </div>
-                        ))}
-
-                        {/* Option pour ajouter un vêtement au catalogue */}
-                        <div className="border border-dashed rounded-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all">
-                          <div className="aspect-square flex flex-col items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-bibabop-navy flex items-center justify-center text-white mb-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                            </div>
-                            <p className="font-medium">Ajouter au catalogue</p>
                           </div>
                         </div>
-                      </div>
-                    </TabsContent>
-                  </TabsContent>
-                </CardContent>
-              </Card>
+                      </TabsContent>
+                    )}
+                  </CardContent>
+                </Card>
+              </Tabs>
             </div>
           </div>
         </main>
