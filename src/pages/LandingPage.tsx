@@ -193,7 +193,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-bibabop-navy text-white text-center">
+      <section className="py-20 bg-bibabop-navy text-[#e15b78] text-center">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-serif font-bold mb-6">
             Prêt à révolutionner votre expérience de stylisme ?
