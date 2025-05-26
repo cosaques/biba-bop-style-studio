@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const navigate = useNavigate();
   const { role } = useParams<{ role: string }>();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,7 +26,6 @@ const Register = () => {
   const isConsultant = role === "consultant";
 
   if (!isClient && !isConsultant) {
-    // Rediriger vers la page d'accueil si le rôle n'est pas valide
     navigate("/");
     return null;
   }
@@ -34,7 +37,6 @@ const Register = () => {
       [name]: value
     });
 
-    // Effacer l'erreur pour ce champ
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -70,7 +72,7 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -79,16 +81,47 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulation d'inscription
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { error } = await signUp(formData.email, formData.password, {
+        full_name: formData.name,
+        role: role
+      });
 
-      if (isClient) {
-        navigate("/client/onboarding");
-      } else if (isConsultant) {
-        navigate("/consultant/dashboard");
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Compte existant",
+            description: "Un compte avec cette adresse email existe déjà. Essayez de vous connecter.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erreur d'inscription",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Inscription réussie",
+          description: "Votre compte a été créé avec succès. Vérifiez votre email pour confirmer votre compte.",
+        });
+
+        if (isClient) {
+          navigate("/client/onboarding");
+        } else if (isConsultant) {
+          navigate("/consultant/dashboard");
+        }
       }
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
