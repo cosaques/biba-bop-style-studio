@@ -15,35 +15,35 @@ const mockClient: UserProfile = {
   height: 168,
   weight: 62,
   bustSize: 90,
-  silhouette: "looks/look-0.png"
+  silhouette: "/looks/look-0.png"
 };
 
 const mockClothes: ClothingItem[] = [
   {
     id: "item1",
     userId: "client1",
-    image: "clothes/cloth-1.png",
+    image: "/clothes/cloth-1.png",
     type: "haut",
     color: "blanc"
   },
   {
     id: "item2",
     userId: "client1",
-    image: "clothes/cloth-2.png",
+    image: "/clothes/cloth-2.png",
     type: "bas",
     color: "bleu"
   },
   {
     id: "item3",
     userId: "client1",
-    image: "clothes/cloth-4.png",
+    image: "/clothes/cloth-4.png",
     type: "haut",
     color: "marron"
   },
   {
     id: "item4",
     userId: "client1",
-    image: "clothes/cloth-5.png",
+    image: "/clothes/cloth-5.png",
     type: "chaussures",
     color: "marron"
   }
@@ -54,21 +54,21 @@ const externalCatalog: ClothingItem[] = [
   {
     id: "ext1",
     userId: "external",
-    image: "clothes/cloth-3.png",
+    image: "/clothes/cloth-3.png",
     type: "bas",
     color: "gris"
   },
   {
     id: "ext2",
     userId: "external",
-    image: "clothes/cloth-6.png",
+    image: "/clothes/cloth-6.png",
     type: "accessoire",
     color: "marron"
   },
   {
     id: "ext3",
     userId: "external",
-    image: "clothes/cloth-7.png",
+    image: "/clothes/cloth-7.png",
     type: "accessoire",
     color: "beige"
   }

@@ -14,7 +14,7 @@ export function SilhouetteSection() {
 
   const renderGenderDisplay = (gender?: string | null) => {
     if (!gender) return "Non renseigné";
-    
+
     switch(gender) {
       case "homme": return "Homme";
       case "femme": return "Femme";
@@ -50,7 +50,7 @@ export function SilhouetteSection() {
         <CardContent className="flex justify-center">
           <div className="bg-bibabop-lightgrey rounded-md">
             <img
-              src="looks/look-0.png"
+              src="/looks/look-0.png"
               alt="Silhouette personnalisée"
               className="max-h-96 object-contain"
             />
@@ -123,8 +123,8 @@ export function SilhouetteSection() {
         </CardContent>
         {!showEditForm && (
           <CardFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full"
               onClick={() => setShowEditForm(true)}
             >

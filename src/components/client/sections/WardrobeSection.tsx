@@ -43,7 +43,7 @@ export function WardrobeSection() {
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center">
               <img
-                src={`clothes/cloth-${index+1}.png`}
+                src={`/clothes/cloth-${index+1}.png`}
                 alt="Vetement"
                 className="w-full h-auto object-contain max-h-[200px]"
               />

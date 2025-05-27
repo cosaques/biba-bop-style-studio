@@ -11,7 +11,7 @@ const LandingPage = () => {
         <div className="container mx-auto flex justify-between items-center px-4">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <img src="logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
+              <img src="/logo.png" alt="Biba-Bop logo" className="h-15 w-auto" />
             </Link>
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -88,7 +88,7 @@ const LandingPage = () => {
           <div className="relative max-w-4xl mx-auto">
             <div className="aspect-video bg-bibabop-navy rounded-lg shadow-xl overflow-hidden">
               <video
-                src="Biba-Bop.mp4"
+                src="/Biba-Bop.mp4"
                 controls
                 className="w-full h-full object-cover rounded-lg"
               />
@@ -112,7 +112,7 @@ const LandingPage = () => {
               <CardContent>
                 <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
                   <img
-                    src="functions/1.png"
+                    src="/functions/1.png"
                     alt="Aperçu silhouette"
                     className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
                   />
@@ -130,7 +130,7 @@ const LandingPage = () => {
               <CardContent>
                 <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
                   <img
-                    src="functions/2.png"
+                    src="/functions/2.png"
                     alt="Aperçu silhouette"
                     className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
                   />
@@ -146,7 +146,7 @@ const LandingPage = () => {
               <CardContent>
                 <div className="bg-bibabop-lightgrey rounded-md mb-4 flex items-center justify-center overflow-hidden">
                   <img
-                    src="functions/3.png"
+                    src="/functions/3.png"
                     alt="Aperçu silhouette"
                     className="w-full h-full object-contain transform transition-transform duration-300 hover:scale-110"
                   />
@@ -196,7 +196,7 @@ const LandingPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center overflow-hidden">
                 <img
-                  src="functions/clients.png"
+                  src="/functions/clients.png"
                   alt="Interface Client"
                   className="w-full h-full object-cover"
                 />
@@ -213,7 +213,7 @@ const LandingPage = () => {
             <div className="order-2 md:order-1 bg-bibabop-lightgrey p-6 rounded-lg shadow-lg">
               <div className="aspect-[3/4] bg-bibabop-navy rounded-md flex items-center justify-center text-white">
                 <img
-                  src="functions/consultants.png"
+                  src="/functions/consultants.png"
                   alt="Interface Consultant"
                   className="w-full h-full object-cover"
                 />

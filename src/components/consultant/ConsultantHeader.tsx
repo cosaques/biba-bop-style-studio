@@ -21,7 +21,7 @@ export function ConsultantHeader() {
       <div className="flex items-center md:ml-0 ml-2">
         <Link to="/" className="flex items-center">
           <img
-            src="logo.png"
+            src="/logo.png"
             alt="Biba-Bop Logo"
             className="h-10 mr-2"
           />

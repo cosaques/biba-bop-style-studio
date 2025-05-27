@@ -28,7 +28,7 @@ const ClientDashboard = () => {
   const getSectionTitle = () => {
     switch (activeSection) {
       case "silhouette":
-        return "Ma Silhouette";
+        return "Mon espace personnel";
       case "outfits":
         return "Mes Tenues";
       case "wardrobe":
@@ -36,13 +36,13 @@ const ClientDashboard = () => {
       case "settings":
         return "Paramètres";
       default:
-        return "Ma Silhouette";
+        return "Mon espace personnel";
     }
   };
 
   return (
     <div className="flex min-h-screen bg-background">
-      <ClientSidebar 
+      <ClientSidebar
         onSectionChange={setActiveSection}
         activeSection={activeSection}
       />
@@ -54,7 +54,7 @@ const ClientDashboard = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">{getSectionTitle()}</h1>
             <p className="subtitle">
-              {activeSection === "silhouette" && "Explorez votre silhouette personnalisée"}
+              {activeSection === "silhouette" && "Gérez votre silhouette, votre garde-robe et suivez les conseils de votre conseiller"}
               {activeSection === "outfits" && "Découvrez vos tenues créées par votre conseiller"}
               {activeSection === "wardrobe" && "Gérez votre garde-robe personnelle"}
               {activeSection === "settings" && "Modifiez vos paramètres de compte"}

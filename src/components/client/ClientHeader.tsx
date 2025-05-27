@@ -11,7 +11,7 @@ export function ClientHeader() {
       <div className="flex items-center">
         <Link to="/" className="flex items-center">
           <img
-            src="logo.png"
+            src="/logo.png"
             alt="Biba-Bop Logo"
             className="h-10 mr-2"
           />
@@ -21,7 +21,7 @@ export function ClientHeader() {
       <div className="flex items-center gap-4">
         {profile?.first_name && (
           <span className="text-sm font-medium">
-            Hi, {profile.first_name}
+            Bonjour, {profile.first_name}
           </span>
         )}
         {profile?.profile_photo_url && (
