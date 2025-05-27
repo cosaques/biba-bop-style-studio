@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ClientSidebar } from "@/components/client/ClientSidebar";
 import { ClientHeader } from "@/components/client/ClientHeader";
 import { ClientSettings } from "@/components/client/ClientSettings";
@@ -8,7 +9,18 @@ import { OutfitsSection } from "@/components/client/sections/OutfitsSection";
 import { WardrobeSection } from "@/components/client/sections/WardrobeSection";
 
 const ClientDashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSection] = useState("silhouette");
+
+  useEffect(() => {
+    const section = searchParams.get('section') || 'silhouette';
+    setActiveSection(section);
+  }, [searchParams]);
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    setSearchParams({ section });
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -40,10 +52,25 @@ const ClientDashboard = () => {
     }
   };
 
+  const getSectionSubtitle = () => {
+    switch (activeSection) {
+      case "silhouette":
+        return "Gérez votre silhouette, votre garde-robe et suivez les conseils de votre conseiller";
+      case "outfits":
+        return "Découvrez vos tenues créées par votre conseiller";
+      case "wardrobe":
+        return "Gérez votre garde-robe personnelle";
+      case "settings":
+        return "Modifiez vos paramètres de compte";
+      default:
+        return "Gérez votre silhouette, votre garde-robe et suivez les conseils de votre conseiller";
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <ClientSidebar
-        onSectionChange={setActiveSection}
+        onSectionChange={handleSectionChange}
         activeSection={activeSection}
       />
 
@@ -53,12 +80,7 @@ const ClientDashboard = () => {
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">{getSectionTitle()}</h1>
-            <p className="subtitle">
-              {activeSection === "silhouette" && "Gérez votre silhouette, votre garde-robe et suivez les conseils de votre conseiller"}
-              {activeSection === "outfits" && "Découvrez vos tenues créées par votre conseiller"}
-              {activeSection === "wardrobe" && "Gérez votre garde-robe personnelle"}
-              {activeSection === "settings" && "Modifiez vos paramètres de compte"}
-            </p>
+            <p className="subtitle">{getSectionSubtitle()}</p>
           </div>
 
           <div className="animate-fade-in">

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ClientInformationsEdit } from "@/components/client/ClientInformationsEdit";
 import { ProfilePhotoUpload } from "@/components/client/ProfilePhotoUpload";
 import { useClientProfile } from "@/hooks/useClientProfile";
@@ -9,8 +9,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 
 export function SilhouetteSection() {
   const [showEditForm, setShowEditForm] = useState(false);
-  const { profile: clientProfile, loading } = useClientProfile();
-  const { profile: userProfile, updateProfile } = useUserProfile();
+  const { profile: clientProfile, loading, refetch: refetchClientProfile } = useClientProfile();
+  const { profile: userProfile, updateProfile, refetch: refetchUserProfile } = useUserProfile();
 
   const renderGenderDisplay = (gender?: string | null) => {
     if (!gender) return "Non renseigné";
@@ -25,6 +25,13 @@ export function SilhouetteSection() {
 
   const handlePhotoUpdate = (url: string | null) => {
     updateProfile({ profile_photo_url: url });
+  };
+
+  const handleFormClose = () => {
+    setShowEditForm(false);
+    // Refetch both profiles to ensure we have the latest data
+    refetchClientProfile();
+    refetchUserProfile();
   };
 
   if (loading) {
@@ -67,7 +74,7 @@ export function SilhouetteSection() {
         </CardHeader>
         <CardContent>
           {showEditForm ? (
-            <ClientInformationsEdit onClose={() => setShowEditForm(false)} />
+            <ClientInformationsEdit onClose={handleFormClose} />
           ) : (
             <div className="space-y-4">
               <div className="flex justify-center mb-4">

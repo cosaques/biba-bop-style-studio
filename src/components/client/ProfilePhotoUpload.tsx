@@ -40,6 +40,23 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
     }
   };
 
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    
+    // Calculate crop to center a square that fits within the image
+    const size = Math.min(naturalWidth, naturalHeight);
+    const x = (naturalWidth - size) / 2;
+    const y = (naturalHeight - size) / 2;
+    
+    setCrop({
+      unit: 'px',
+      width: size * 0.6,
+      height: size * 0.6,
+      x: x + (size * 0.2),
+      y: y + (size * 0.2),
+    });
+  };
+
   const getCroppedImg = (image: HTMLImageElement, crop: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -75,11 +92,31 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
     });
   };
 
+  const deleteOldPhoto = async (photoUrl: string) => {
+    try {
+      // Extract the file path from the URL
+      const urlParts = photoUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `${user?.id}/${fileName}`;
+      
+      await supabase.storage
+        .from('profile-photos')
+        .remove([filePath]);
+    } catch (error) {
+      console.error('Error deleting old photo:', error);
+    }
+  };
+
   const uploadPhoto = async () => {
     if (!imgRef.current || !completedCrop || !user) return;
 
     setIsUploading(true);
     try {
+      // Delete old photo if exists
+      if (currentPhotoUrl) {
+        await deleteOldPhoto(currentPhotoUrl);
+      }
+
       const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
       
       const fileName = `${user.id}/profile-photo-${Date.now()}.jpg`;
@@ -119,6 +156,11 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
 
     setIsUploading(true);
     try {
+      // Delete photo from storage if exists
+      if (currentPhotoUrl) {
+        await deleteOldPhoto(currentPhotoUrl);
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({ profile_photo_url: null })
@@ -143,7 +185,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
           {currentPhotoUrl ? 'Modifier' : 'Ajouter'} une photo
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Photo de profil</DialogTitle>
         </DialogHeader>
@@ -189,19 +231,21 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="max-h-64 overflow-hidden">
+              <div className="max-h-96 overflow-hidden flex justify-center">
                 <ReactCrop
                   crop={crop}
                   onChange={(_, percentCrop) => setCrop(percentCrop)}
                   onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
                   circularCrop
+                  className="max-w-full"
                 >
                   <img
                     ref={imgRef}
                     alt="Crop me"
                     src={imageSrc}
-                    className="max-h-64 w-auto"
+                    className="max-h-96 max-w-full object-contain"
+                    onLoad={onImageLoad}
                   />
                 </ReactCrop>
               </div>

@@ -18,7 +18,7 @@ export function ClientHeader() {
         </Link>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {profile?.first_name && (
           <span className="text-sm font-medium">
             Bonjour, {profile.first_name}

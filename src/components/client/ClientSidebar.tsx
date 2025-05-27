@@ -72,9 +72,7 @@ export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarP
           <Shirt className="mr-2 h-5 w-5" />
           Ma Garde-robe
         </Button>
-      </nav>
 
-      <div className="p-4 mt-auto border-t border-white border-opacity-30 space-y-2">
         <Button 
           variant="ghost" 
           className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
@@ -94,7 +92,7 @@ export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarP
           <LogOut className="mr-2 h-5 w-5" />
           Déconnexion
         </Button>
-      </div>
+      </nav>
     </div>
   );
 }
