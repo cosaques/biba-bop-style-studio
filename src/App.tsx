@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -31,14 +32,38 @@ const App = () => (
             <Route path="/register/:role" element={<Register />} />
 
             {/* Routes Client */}
-            <Route path="/client/dashboard" element={<ClientDashboard />} />
-            <Route path="/client/onboarding" element={<Onboarding />} />
-            <Route path="/client/wardrobe" element={<WardrobeManager />} />
+            <Route path="/client/dashboard" element={
+              <ProtectedRoute>
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/client/onboarding" element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            } />
+            <Route path="/client/wardrobe" element={
+              <ProtectedRoute>
+                <WardrobeManager />
+              </ProtectedRoute>
+            } />
 
             {/* Routes Conseiller en Image */}
-            <Route path="/consultant/dashboard" element={<ConsultantDashboard />} />
-            <Route path="/consultant/client/:clientId" element={<ClientDetail />} />
-            <Route path="/consultant/outfit-creator" element={<OutfitCreator />} />
+            <Route path="/consultant/dashboard" element={
+              <ProtectedRoute>
+                <ConsultantDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/consultant/client/:clientId" element={
+              <ProtectedRoute>
+                <ClientDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/consultant/outfit-creator" element={
+              <ProtectedRoute>
+                <OutfitCreator />
+              </ProtectedRoute>
+            } />
 
             {/* Route 404 */}
             <Route path="*" element={<NotFound />} />

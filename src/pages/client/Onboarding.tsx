@@ -7,12 +7,24 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Gender, UserProfile } from "@/types";
+import { Gender } from "@/types";
+import { useClientProfile } from "@/hooks/useClientProfile";
+import { useToast } from "@/hooks/use-toast";
+
+interface OnboardingFormData {
+  gender?: Gender;
+  age?: number;
+  height?: number;
+  weight?: number;
+  bustSize?: number;
+}
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { createProfile } = useClientProfile();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<Partial<UserProfile>>({});
+  const [formData, setFormData] = useState<OnboardingFormData>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNextStep = () => {
@@ -29,15 +41,42 @@ const Onboarding = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsLoading(true);
     
-    // Simulation de traitement du formulaire et génération de silhouette
-    setTimeout(() => {
-      // Normalement ici on enverrait les données au serveur pour générer la silhouette
+    try {
+      const profileData = {
+        gender: formData.gender,
+        age: formData.age,
+        height: formData.height,
+        weight: formData.weight,
+        bust_size: formData.bustSize
+      };
+
+      const { error } = await createProfile(profileData);
+      
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Une erreur s'est produite lors de la sauvegarde de vos informations.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Profil créé",
+          description: "Votre profil a été créé avec succès!",
+        });
+        navigate("/client/dashboard");
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      navigate("/client/dashboard");
-    }, 1500);
+    }
   };
 
   const updateFormData = (field: string, value: any) => {
@@ -200,7 +239,7 @@ const Onboarding = () => {
                 isLoading
               }
             >
-              {step < 5 ? 'Suivant' : isLoading ? 'Création de votre silhouette...' : 'Terminer'}
+              {step < 5 ? 'Suivant' : isLoading ? 'Création de votre profil...' : 'Terminer'}
             </Button>
           </CardFooter>
         </Card>

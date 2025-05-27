@@ -14,7 +14,8 @@ const Register = () => {
   const { signUp } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -48,8 +49,12 @@ const Register = () => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Le nom est requis";
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Le prénom est requis";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Le nom est requis";
     }
 
     if (!formData.email.trim()) {
@@ -83,7 +88,8 @@ const Register = () => {
 
     try {
       const { error } = await signUp(formData.email, formData.password, {
-        full_name: formData.name,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         role: role
       });
 
@@ -147,18 +153,29 @@ const Register = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">
-                  {isClient ? "Nom complet" : "Nom professionnel"}
-                </Label>
+                <Label htmlFor="firstName">Prénom</Label>
                 <Input
-                  id="name"
-                  name="name"
-                  placeholder={isClient ? "Votre nom" : "Nom de votre entreprise ou nom personnel"}
-                  value={formData.name}
+                  id="firstName"
+                  name="firstName"
+                  placeholder="Votre prénom"
+                  value={formData.firstName}
                   onChange={handleChange}
-                  className={errors.name ? "border-destructive" : ""}
+                  className={errors.firstName ? "border-destructive" : ""}
                 />
-                {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
+                {errors.firstName && <p className="text-destructive text-sm">{errors.firstName}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Nom</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Votre nom"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={errors.lastName ? "border-destructive" : ""}
+                />
+                {errors.lastName && <p className="text-destructive text-sm">{errors.lastName}</p>}
               </div>
 
               <div className="space-y-2">

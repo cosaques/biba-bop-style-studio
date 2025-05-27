@@ -9,28 +9,67 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_profiles: {
+        Row: {
+          age: number | null
+          bust_size: number | null
+          created_at: string
+          gender: string | null
+          height: number | null
+          id: string
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          age?: number | null
+          bust_size?: number | null
+          created_at?: string
+          gender?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          age?: number | null
+          bust_size?: number | null
+          created_at?: string
+          gender?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
-          full_name: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           role: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           email?: string | null
-          full_name?: string | null
+          first_name?: string | null
           id: string
+          last_name?: string | null
           role: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string | null
-          full_name?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           role?: string
           updated_at?: string
         }

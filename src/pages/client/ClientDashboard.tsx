@@ -6,19 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientSidebar } from "@/components/client/ClientSidebar";
 import { ClientHeader } from "@/components/client/ClientHeader";
-import { UserProfile, Outfit, outfitImages } from "@/types";
+import { ClientSettings } from "@/components/client/ClientSettings";
+import { ClientInformationsEdit } from "@/components/client/ClientInformationsEdit";
+import { useClientProfile } from "@/hooks/useClientProfile";
+import { Outfit, outfitImages } from "@/types";
 
 // Données fictives pour la démo
-const mockProfile: UserProfile = {
-  id: "client1",
-  gender: "femme",
-  age: 32,
-  height: 168,
-  weight: 62,
-  bustSize: 90,
-  silhouette: "looks/look-0.png"
-};
-
 const mockOutfits: Outfit[] = [
   {
     id: "outfit1",
@@ -44,6 +37,33 @@ const mockOutfits: Outfit[] = [
 
 const ClientDashboard = () => {
   const [activeTab, setActiveTab] = useState("silhouette");
+  const [showEditForm, setShowEditForm] = useState(false);
+  const { profile, loading } = useClientProfile();
+
+  const renderGenderDisplay = (gender?: string | null) => {
+    if (!gender) return "Non renseigné";
+    
+    switch(gender) {
+      case "homme": return "Homme";
+      case "femme": return "Femme";
+      case "autre": return "Autre";
+      default: return "Non renseigné";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <ClientSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy mx-auto mb-4"></div>
+            <p>Chargement...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -59,10 +79,11 @@ const ClientDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
+            <TabsList className="grid grid-cols-4 mb-6">
               <TabsTrigger value="silhouette">Ma Silhouette</TabsTrigger>
               <TabsTrigger value="outfits">Mes Tenues</TabsTrigger>
               <TabsTrigger value="wardrobe">Ma Garde-robe</TabsTrigger>
+              <TabsTrigger value="settings">Paramètres</TabsTrigger>
             </TabsList>
 
             <TabsContent value="silhouette" className="animate-fade-in">
@@ -77,7 +98,7 @@ const ClientDashboard = () => {
                   <CardContent className="flex justify-center">
                     <div className="bg-bibabop-lightgrey rounded-md">
                       <img
-                        src={mockProfile.silhouette}
+                        src="looks/look-0.png"
                         alt="Silhouette personnalisée"
                         className="max-h-96 object-contain"
                       />
@@ -93,34 +114,46 @@ const ClientDashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Genre</span>
-                        <span>{mockProfile.gender === "femme" ? "Femme" : mockProfile.gender === "homme" ? "Homme" : "Autre"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Âge</span>
-                        <span>{mockProfile.age} ans</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Taille</span>
-                        <span>{mockProfile.height} cm</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Poids</span>
-                        <span>{mockProfile.weight} kg</span>
-                      </div>
-                      {mockProfile.bustSize && (
+                    {showEditForm ? (
+                      <ClientInformationsEdit onClose={() => setShowEditForm(false)} />
+                    ) : (
+                      <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="font-medium">Tour de poitrine</span>
-                          <span>{mockProfile.bustSize} cm</span>
+                          <span className="font-medium">Genre</span>
+                          <span>{renderGenderDisplay(profile?.gender)}</span>
                         </div>
-                      )}
-                    </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Âge</span>
+                          <span>{profile?.age ? `${profile.age} ans` : "Non renseigné"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Taille</span>
+                          <span>{profile?.height ? `${profile.height} cm` : "Non renseigné"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Poids</span>
+                          <span>{profile?.weight ? `${profile.weight} kg` : "Non renseigné"}</span>
+                        </div>
+                        {profile?.bust_size && (
+                          <div className="flex justify-between">
+                            <span className="font-medium">Tour de poitrine</span>
+                            <span>{profile.bust_size} cm</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full">Modifier mes informations</Button>
-                  </CardFooter>
+                  {!showEditForm && (
+                    <CardFooter>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => setShowEditForm(true)}
+                      >
+                        Modifier mes informations
+                      </Button>
+                    </CardFooter>
+                  )}
                 </Card>
               </div>
             </TabsContent>
@@ -200,6 +233,10 @@ const ClientDashboard = () => {
                   </Link>
                 </CardFooter>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="settings" className="animate-fade-in">
+              <ClientSettings />
             </TabsContent>
           </Tabs>
         </main>
