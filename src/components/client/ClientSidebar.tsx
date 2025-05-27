@@ -3,16 +3,34 @@ import { Button } from "@/components/ui/button";
 import {
   Home,
   Settings,
-  LogOut
+  LogOut,
+  Shirt,
+  Image
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function ClientSidebar() {
+interface ClientSidebarProps {
+  onSectionChange?: (section: string) => void;
+  activeSection?: string;
+}
+
+export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarProps) {
   const { signOut } = useAuth();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleSectionClick = (section: string) => {
+    if (onSectionChange) {
+      onSectionChange(section);
+    }
+  };
+
+  const isActive = (section: string) => {
+    return activeSection === section;
   };
 
   return (
@@ -22,21 +40,51 @@ export function ClientSidebar() {
       </div>
 
       <nav className="flex-1 px-4 space-y-2">
-        <Link to="/client/dashboard">
-          <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
-            <Home className="mr-2 h-5 w-5" />
-            Accueil
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+            isActive('silhouette') ? 'bg-white/20' : ''
+          }`}
+          onClick={() => handleSectionClick('silhouette')}
+        >
+          <Home className="mr-2 h-5 w-5" />
+          Accueil
+        </Button>
+
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+            isActive('outfits') ? 'bg-white/20' : ''
+          }`}
+          onClick={() => handleSectionClick('outfits')}
+        >
+          <Image className="mr-2 h-5 w-5" />
+          Mes Tenues
+        </Button>
+
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+            isActive('wardrobe') ? 'bg-white/20' : ''
+          }`}
+          onClick={() => handleSectionClick('wardrobe')}
+        >
+          <Shirt className="mr-2 h-5 w-5" />
+          Ma Garde-robe
+        </Button>
       </nav>
 
       <div className="p-4 mt-auto border-t border-white border-opacity-30 space-y-2">
-        <Link to="/client/dashboard">
-          <Button variant="ghost" className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80">
-            <Settings className="mr-2 h-5 w-5" />
-            Paramètres
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+            isActive('settings') ? 'bg-white/20' : ''
+          }`}
+          onClick={() => handleSectionClick('settings')}
+        >
+          <Settings className="mr-2 h-5 w-5" />
+          Paramètres
+        </Button>
 
         <Button 
           variant="ghost" 

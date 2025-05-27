@@ -52,6 +52,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          profile_photo_url: string | null
           role: string
           updated_at: string
         }
@@ -61,6 +62,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          profile_photo_url?: string | null
           role: string
           updated_at?: string
         }
@@ -70,6 +72,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          profile_photo_url?: string | null
           role?: string
           updated_at?: string
         }
