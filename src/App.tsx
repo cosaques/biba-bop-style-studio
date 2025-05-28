@@ -15,7 +15,6 @@ import ClientOutfits from "./pages/client/ClientOutfits";
 import ClientWardrobe from "./pages/client/ClientWardrobe";
 import ClientSettingsPage from "./pages/client/ClientSettings";
 import Onboarding from "./pages/client/Onboarding";
-import WardrobeManager from "./pages/client/WardrobeManager";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
@@ -50,11 +49,6 @@ const App = () => (
             <Route path="/client/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />
-              </ProtectedRoute>
-            } />
-            <Route path="/client/wardrobe" element={
-              <ProtectedRoute>
-                <WardrobeManager />
               </ProtectedRoute>
             } />
 

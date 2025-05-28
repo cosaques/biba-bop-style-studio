@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +23,19 @@ export function ClientInformations() {
     weight: clientProfile?.weight || undefined,
     bustSize: clientProfile?.bust_size || undefined
   });
+
+  // Update form data when clientProfile changes OR when edit form is shown
+  useEffect(() => {
+    if (clientProfile) {
+      setFormData({
+        gender: clientProfile.gender as Gender | undefined,
+        age: clientProfile.age || undefined,
+        height: clientProfile.height || undefined,
+        weight: clientProfile.weight || undefined,
+        bustSize: clientProfile.bust_size || undefined
+      });
+    }
+  }, [clientProfile, showEditForm]); // Added showEditForm dependency
 
   const renderGenderDisplay = (gender?: string | null) => {
     if (!gender) return "Non renseigné";
@@ -115,7 +127,7 @@ export function ClientInformations() {
             <div className="space-y-3">
               <Label>Genre</Label>
               <RadioGroup 
-                value={formData.gender}
+                value={formData.gender || ""}
                 onValueChange={(value: Gender) => updateFormData("gender", value)}
                 className="space-y-2"
               >
@@ -142,7 +154,7 @@ export function ClientInformations() {
                 min="18"
                 max="120"
                 value={formData.age || ""}
-                onChange={(e) => updateFormData("age", parseInt(e.target.value))}
+                onChange={(e) => updateFormData("age", parseInt(e.target.value) || undefined)}
               />
             </div>
 
@@ -154,7 +166,7 @@ export function ClientInformations() {
                 min="120"
                 max="250"
                 value={formData.height || ""}
-                onChange={(e) => updateFormData("height", parseInt(e.target.value))}
+                onChange={(e) => updateFormData("height", parseInt(e.target.value) || undefined)}
               />
             </div>
 
@@ -166,7 +178,7 @@ export function ClientInformations() {
                 min="30"
                 max="250"
                 value={formData.weight || ""}
-                onChange={(e) => updateFormData("weight", parseInt(e.target.value))}
+                onChange={(e) => updateFormData("weight", parseInt(e.target.value) || undefined)}
               />
             </div>
 
@@ -179,7 +191,7 @@ export function ClientInformations() {
                   min="60"
                   max="150"
                   value={formData.bustSize || ""}
-                  onChange={(e) => updateFormData("bustSize", parseInt(e.target.value))}
+                  onChange={(e) => updateFormData("bustSize", parseInt(e.target.value) || undefined)}
                 />
               </div>
             )}

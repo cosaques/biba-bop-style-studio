@@ -147,27 +147,41 @@ export default function ClientSettingsPage() {
       // Delete profile photo from storage if it exists
       if (profile?.profile_photo_url) {
         const photoUrl = profile.profile_photo_url;
-        // Extract file path from URL
-        const urlParts = photoUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        const filePath = `${user?.id}/${fileName}`;
+        // Extract file path from URL - get everything after the last slash in the bucket path
+        const urlParts = photoUrl.split('/storage/v1/object/public/profile-photos/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          console.log('Attempting to delete file:', filePath);
 
-        await supabase.storage
-          .from('profile-photos')
-          .remove([filePath]);
+          const { error: storageError } = await supabase.storage
+            .from('profile-photos')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.error('Error deleting photo:', storageError);
+          }
+        }
       }
 
       // Delete client profile first
-      await supabase
+      const { error: clientError } = await supabase
         .from('client_profiles')
         .delete()
         .eq('user_id', user?.id);
 
-      // Delete user profile
-      await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user?.id);
+      if (clientError) {
+        console.error('Error deleting client profile:', clientError);
+      }
+
+      // Delete user profile using RPC function
+      const { error: profileError } = await supabase.rpc('delete_user_profile', {
+        user_id: user?.id
+      });
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
 
       // Sign out the user
       await signOut();
@@ -180,6 +194,7 @@ export default function ClientSettingsPage() {
       // Redirect to landing page
       navigate('/');
     } catch (error) {
+      console.error('Delete account error:', error);
       toast({
         title: "Erreur",
         description: "Une erreur s'est produite lors de la suppression du compte",
@@ -208,6 +223,15 @@ export default function ClientSettingsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={user?.email || ""}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Prénom</Label>
                   <Input
