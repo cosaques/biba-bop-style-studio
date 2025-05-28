@@ -10,12 +10,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface ClientSidebarProps {
-  onSectionChange?: (section: string) => void;
-  activeSection?: string;
-}
-
-export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarProps) {
+export function ClientSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
 
@@ -23,14 +18,8 @@ export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarP
     await signOut();
   };
 
-  const handleSectionClick = (section: string) => {
-    if (onSectionChange) {
-      onSectionChange(section);
-    }
-  };
-
-  const isActive = (section: string) => {
-    return activeSection === section;
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
   return (
@@ -40,49 +29,53 @@ export function ClientSidebar({ onSectionChange, activeSection }: ClientSidebarP
       </div>
 
       <nav className="flex-1 px-4 space-y-2">
-        <Button 
-          variant="ghost" 
-          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
-            isActive('silhouette') ? 'bg-white/20' : ''
-          }`}
-          onClick={() => handleSectionClick('silhouette')}
-        >
-          <Home className="mr-2 h-5 w-5" />
-          Accueil
-        </Button>
+        <Link to="/client/dashboard">
+          <Button 
+            variant="ghost" 
+            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+              isActive('/client/dashboard') ? 'bg-white/20' : ''
+            }`}
+          >
+            <Home className="mr-2 h-5 w-5" />
+            Accueil
+          </Button>
+        </Link>
 
-        <Button 
-          variant="ghost" 
-          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
-            isActive('outfits') ? 'bg-white/20' : ''
-          }`}
-          onClick={() => handleSectionClick('outfits')}
-        >
-          <Image className="mr-2 h-5 w-5" />
-          Mes Tenues
-        </Button>
+        <Link to="/client/dashboard/outfits">
+          <Button 
+            variant="ghost" 
+            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+              isActive('/client/dashboard/outfits') ? 'bg-white/20' : ''
+            }`}
+          >
+            <Image className="mr-2 h-5 w-5" />
+            Mes Tenues
+          </Button>
+        </Link>
 
-        <Button 
-          variant="ghost" 
-          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
-            isActive('wardrobe') ? 'bg-white/20' : ''
-          }`}
-          onClick={() => handleSectionClick('wardrobe')}
-        >
-          <Shirt className="mr-2 h-5 w-5" />
-          Ma Garde-robe
-        </Button>
+        <Link to="/client/dashboard/wardrobe">
+          <Button 
+            variant="ghost" 
+            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+              isActive('/client/dashboard/wardrobe') ? 'bg-white/20' : ''
+            }`}
+          >
+            <Shirt className="mr-2 h-5 w-5" />
+            Ma Garde-robe
+          </Button>
+        </Link>
 
-        <Button 
-          variant="ghost" 
-          className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
-            isActive('settings') ? 'bg-white/20' : ''
-          }`}
-          onClick={() => handleSectionClick('settings')}
-        >
-          <Settings className="mr-2 h-5 w-5" />
-          Paramètres
-        </Button>
+        <Link to="/client/dashboard/settings">
+          <Button 
+            variant="ghost" 
+            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+              isActive('/client/dashboard/settings') ? 'bg-white/20' : ''
+            }`}
+          >
+            <Settings className="mr-2 h-5 w-5" />
+            Paramètres
+          </Button>
+        </Link>
 
         <Button 
           variant="ghost" 

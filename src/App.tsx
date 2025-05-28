@@ -10,6 +10,10 @@ import LandingPage from "./pages/LandingPage";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientMain from "./pages/client/ClientMain";
+import ClientOutfits from "./pages/client/ClientOutfits";
+import ClientWardrobe from "./pages/client/ClientWardrobe";
+import ClientSettingsPage from "./pages/client/ClientSettings";
 import Onboarding from "./pages/client/Onboarding";
 import WardrobeManager from "./pages/client/WardrobeManager";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
@@ -36,7 +40,13 @@ const App = () => (
               <ProtectedRoute>
                 <ClientDashboard />
               </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<ClientMain />} />
+              <Route path="outfits" element={<ClientOutfits />} />
+              <Route path="wardrobe" element={<ClientWardrobe />} />
+              <Route path="settings" element={<ClientSettingsPage />} />
+            </Route>
+            
             <Route path="/client/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />

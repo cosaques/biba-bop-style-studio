@@ -118,7 +118,7 @@ export function SilhouetteSection() {
                   <span className="font-medium">Poids</span>
                   <span>{clientProfile?.weight ? `${clientProfile.weight} kg` : "Non renseigné"}</span>
                 </div>
-                {clientProfile?.bust_size && (
+                {clientProfile?.bust_size && clientProfile?.gender === 'femme' && (
                   <div className="flex justify-between">
                     <span className="font-medium">Tour de poitrine</span>
                     <span>{clientProfile.bust_size} cm</span>
