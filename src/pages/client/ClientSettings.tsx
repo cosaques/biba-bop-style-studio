@@ -150,10 +150,11 @@ export default function ClientSettingsPage() {
         // Extract file path from URL
         const urlParts = photoUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
-        
+        const filePath = `${user?.id}/${fileName}`;
+
         await supabase.storage
-          .from('avatars')
-          .remove([fileName]);
+          .from('profile-photos')
+          .remove([filePath]);
       }
 
       // Delete client profile first
@@ -196,7 +197,7 @@ export default function ClientSettingsPage() {
           <h1 className="text-3xl font-bold text-bibabop-navy">Paramètres</h1>
           <p className="subtitle">Modifiez vos paramètres de compte</p>
         </div>
-        
+
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -278,8 +279,8 @@ export default function ClientSettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleDeleteAccount}
                 disabled={isLoading}
               >
