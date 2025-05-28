@@ -41,19 +41,20 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
   };
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = e.currentTarget;
-    
-    // Calculate crop to center a square that fits within the image
-    const size = Math.min(naturalWidth, naturalHeight);
-    const x = (naturalWidth - size) / 2;
-    const y = (naturalHeight - size) / 2;
-    
+    const img = e.currentTarget;
+    const width = img.width;
+    const height = img.height;
+    const size = Math.min(width, height, 150); // 150 = max crop size
+
+    const x = (width - size) / 2;
+    const y = (height - size) / 2;
+
     setCrop({
       unit: 'px',
-      width: size * 0.6,
-      height: size * 0.6,
-      x: x + (size * 0.2),
-      y: y + (size * 0.2),
+      width: size,
+      height: size,
+      x,
+      y,
     });
   };
 
@@ -98,7 +99,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
       const urlParts = photoUrl.split('/');
       const fileName = urlParts[urlParts.length - 1];
       const filePath = `${user?.id}/${fileName}`;
-      
+
       await supabase.storage
         .from('profile-photos')
         .remove([filePath]);
@@ -118,9 +119,9 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
       }
 
       const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
-      
+
       const fileName = `${user.id}/profile-photo-${Date.now()}.jpg`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('profile-photos')
         .upload(fileName, croppedImageBlob, {
@@ -189,7 +190,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
         <DialogHeader>
           <DialogTitle>Photo de profil</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           {!imageSrc ? (
             <div className="space-y-4">
@@ -206,13 +207,13 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
                   )}
                 </div>
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <Button onClick={() => fileInputRef.current?.click()}>
                   <Upload className="mr-2 h-4 w-4" />
                   Choisir une photo
                 </Button>
-                
+
                 {currentPhotoUrl && (
                   <Button variant="destructive" onClick={removePhoto} disabled={isUploading}>
                     <X className="mr-2 h-4 w-4" />
@@ -220,7 +221,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
                   </Button>
                 )}
               </div>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -231,25 +232,25 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="max-h-96 overflow-hidden flex justify-center">
+              <div className="flex justify-center">
                 <ReactCrop
                   crop={crop}
                   onChange={(_, percentCrop) => setCrop(percentCrop)}
                   onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
                   circularCrop
-                  className="max-w-full"
+                  className="max-h-96 max-w-full"
                 >
                   <img
                     ref={imgRef}
                     alt="Crop me"
                     src={imageSrc}
-                    className="max-h-96 max-w-full object-contain"
+                    className="max-w-full object-contain"
                     onLoad={onImageLoad}
                   />
                 </ReactCrop>
               </div>
-              
+
               <div className="flex gap-2">
                 <Button onClick={uploadPhoto} disabled={isUploading}>
                   {isUploading ? 'Envoi...' : 'Confirmer'}
