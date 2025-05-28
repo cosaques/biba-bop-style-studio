@@ -19,7 +19,7 @@ interface OnboardingFormData {
   bustSize?: number;
 }
 
-const Onboarding = () => {
+const ClientOnboarding = () => {
   const navigate = useNavigate();
   const { createProfile } = useClientProfile();
   const { toast } = useToast();
@@ -43,7 +43,7 @@ const Onboarding = () => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    
+
     try {
       const profileData = {
         gender: formData.gender,
@@ -54,7 +54,7 @@ const Onboarding = () => {
       };
 
       const { error } = await createProfile(profileData);
-      
+
       if (error) {
         toast({
           title: "Erreur",
@@ -88,7 +88,7 @@ const Onboarding = () => {
 
   const renderGenderDisplay = () => {
     if (!formData.gender) return "";
-    
+
     switch(formData.gender) {
       case "homme": return "Homme";
       case "femme": return "Femme";
@@ -112,7 +112,7 @@ const Onboarding = () => {
           <h1 className="text-4xl font-bold text-bibabop-navy mb-2">Bienvenue sur Biba-Bop</h1>
           <p className="subtitle">Quelques questions pour personnaliser votre expérience</p>
         </div>
-        
+
         <Card className="w-full animate-fade-in">
           <CardHeader>
             <CardTitle>Étape {step} sur 5</CardTitle>
@@ -125,10 +125,10 @@ const Onboarding = () => {
               {shouldShowRecapInfo() && "Récapitulatif de vos informations"}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {step === 1 && (
-              <RadioGroup 
+              <RadioGroup
                 value={formData.gender as Gender | undefined}
                 onValueChange={(value: Gender) => updateFormData("gender", value)}
                 className="space-y-3"
@@ -147,7 +147,7 @@ const Onboarding = () => {
                 </div>
               </RadioGroup>
             )}
-            
+
             {step === 2 && (
               <div className="space-y-2">
                 <Label htmlFor="age">Âge</Label>
@@ -161,7 +161,7 @@ const Onboarding = () => {
                 />
               </div>
             )}
-            
+
             {step === 3 && (
               <div className="space-y-2">
                 <Label htmlFor="height">Taille (cm)</Label>
@@ -175,7 +175,7 @@ const Onboarding = () => {
                 />
               </div>
             )}
-            
+
             {step === 4 && (
               <div className="space-y-2">
                 <Label htmlFor="weight">Poids (kg)</Label>
@@ -189,7 +189,7 @@ const Onboarding = () => {
                 />
               </div>
             )}
-            
+
             {shouldShowBustSizeInput() && (
               <div className="space-y-2">
                 <Label htmlFor="bustSize">Tour de poitrine (cm)</Label>
@@ -203,7 +203,7 @@ const Onboarding = () => {
                 />
               </div>
             )}
-            
+
             {shouldShowRecapInfo() && (
               <Alert className="bg-bibabop-lightgrey">
                 <AlertDescription>
@@ -217,17 +217,17 @@ const Onboarding = () => {
               </Alert>
             )}
           </CardContent>
-          
+
           <CardFooter className="flex justify-between">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handlePrevStep}
               disabled={step === 1 || isLoading}
             >
               Précédent
             </Button>
-            
-            <Button 
+
+            <Button
               className="btn-primary"
               onClick={handleNextStep}
               disabled={
@@ -248,4 +248,4 @@ const Onboarding = () => {
   );
 };
 
-export default Onboarding;
+export default ClientOnboarding;

@@ -30,9 +30,9 @@ export function ClientSidebar() {
 
       <nav className="flex-1 px-4 space-y-2">
         <Link to="/client/dashboard">
-          <Button 
-            variant="ghost" 
-            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
               isActive('/client/dashboard') ? 'bg-white/20' : ''
             }`}
           >
@@ -42,9 +42,9 @@ export function ClientSidebar() {
         </Link>
 
         <Link to="/client/dashboard/outfits">
-          <Button 
-            variant="ghost" 
-            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
               isActive('/client/dashboard/outfits') ? 'bg-white/20' : ''
             }`}
           >
@@ -54,9 +54,9 @@ export function ClientSidebar() {
         </Link>
 
         <Link to="/client/dashboard/wardrobe">
-          <Button 
-            variant="ghost" 
-            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
               isActive('/client/dashboard/wardrobe') ? 'bg-white/20' : ''
             }`}
           >
@@ -66,9 +66,9 @@ export function ClientSidebar() {
         </Link>
 
         <Link to="/client/dashboard/settings">
-          <Button 
-            variant="ghost" 
-            className={`w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80 ${
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
               isActive('/client/dashboard/settings') ? 'bg-white/20' : ''
             }`}
           >
@@ -77,9 +77,9 @@ export function ClientSidebar() {
           </Button>
         </Link>
 
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-white hover:bg-bibabop-pink hover:bg-opacity-80"
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80"
           onClick={handleLogout}
         >
           <LogOut className="mr-2 h-5 w-5" />

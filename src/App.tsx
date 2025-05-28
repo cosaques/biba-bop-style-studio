@@ -14,7 +14,7 @@ import ClientMain from "./pages/client/ClientMain";
 import ClientOutfits from "./pages/client/ClientOutfits";
 import ClientWardrobe from "./pages/client/ClientWardrobe";
 import ClientSettingsPage from "./pages/client/ClientSettings";
-import Onboarding from "./pages/client/Onboarding";
+import ClientOnboarding from "./pages/client/ClientOnboarding";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
@@ -45,10 +45,10 @@ const App = () => (
               <Route path="wardrobe" element={<ClientWardrobe />} />
               <Route path="settings" element={<ClientSettingsPage />} />
             </Route>
-            
+
             <Route path="/client/onboarding" element={
               <ProtectedRoute>
-                <Onboarding />
+                <ClientOnboarding />
               </ProtectedRoute>
             } />
 
