@@ -163,28 +163,18 @@ export default function ClientSettingsPage() {
         }
       }
 
-      // Delete client profile first
-      const { error: clientError } = await supabase
-        .from('client_profiles')
-        .delete()
-        .eq('user_id', user?.id);
+      // Use the new RPC function to completely delete the account
+      const { error } = await supabase.rpc('delete_user_account');
 
-      if (clientError) {
-        console.error('Error deleting client profile:', clientError);
+      if (error) {
+        console.error('Error deleting account:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur s'est produite lors de la suppression du compte",
+          variant: "destructive",
+        });
+        return;
       }
-
-      // Delete user profile using RPC function
-      const { error: profileError } = await supabase.rpc('delete_user_profile', {
-        user_id: user?.id
-      });
-
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
-        throw profileError;
-      }
-
-      // Sign out the user
-      await signOut();
 
       toast({
         title: "Compte supprimé",

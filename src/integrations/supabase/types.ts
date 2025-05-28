@@ -83,6 +83,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_account: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       delete_user_profile: {
         Args: { user_id: string }
         Returns: undefined
