@@ -7,13 +7,15 @@ import { Database } from '@/integrations/supabase/types';
 type UserProfile = Database['public']['Tables']['profiles']['Row'];
 
 export const useUserProfile = () => {
-  const { user } = useAuth();
+  const { user, loading: loadingUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
     if (!user) {
-      setLoading(false);
+      if (!loadingUser) {
+        setLoading(false);
+      }
       return;
     }
 
