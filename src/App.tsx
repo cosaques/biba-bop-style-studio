@@ -16,6 +16,8 @@ import ClientWardrobe from "./pages/client/ClientWardrobe";
 import ClientSettingsPage from "./pages/client/ClientSettings";
 import ClientOnboarding from "./pages/client/ClientOnboarding";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
+import ConsultantMain from "./pages/consultant/ConsultantMain";
+import ConsultantSettings from "./pages/consultant/ConsultantSettings";
 import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
@@ -36,7 +38,7 @@ const App = () => (
 
             {/* Routes Client */}
             <Route path="/client/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="client">
                 <ClientDashboard />
               </ProtectedRoute>
             }>
@@ -47,24 +49,28 @@ const App = () => (
             </Route>
 
             <Route path="/client/onboarding" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="client">
                 <ClientOnboarding />
               </ProtectedRoute>
             } />
 
             {/* Routes Conseiller en Image */}
             <Route path="/consultant/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="consultant">
                 <ConsultantDashboard />
               </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<ConsultantMain />} />
+              <Route path="settings" element={<ConsultantSettings />} />
+            </Route>
+
             <Route path="/consultant/client/:clientId" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="consultant">
                 <ClientDetail />
               </ProtectedRoute>
             } />
             <Route path="/consultant/outfit-creator" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="consultant">
                 <OutfitCreator />
               </ProtectedRoute>
             } />

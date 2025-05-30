@@ -1,5 +1,5 @@
 
-import { ProfilePhotoUpload } from "@/components/client/ProfilePhotoUpload";
+import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 export function PhotoSection() {

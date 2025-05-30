@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,15 +11,30 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const { profile, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login');
+    if (!loading && !profileLoading) {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+      
+      if (requiredRole && profile?.role !== requiredRole) {
+        // Redirect to appropriate dashboard based on user role
+        if (profile?.role === 'client') {
+          navigate('/client/dashboard');
+        } else if (profile?.role === 'consultant') {
+          navigate('/consultant/dashboard');
+        } else {
+          navigate('/login');
+        }
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, profile, loading, profileLoading, navigate, requiredRole]);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -30,6 +46,10 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (requiredRole && profile?.role !== requiredRole) {
     return null;
   }
 
