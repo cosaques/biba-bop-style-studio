@@ -1,6 +1,6 @@
 
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 
 export function PhotoSection() {
   const { profile: userProfile, updateProfile: updateUserProfile } = useUserProfile();

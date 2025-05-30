@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 
 export function ConsultantHeader() {
   const { profile } = useUserProfile();

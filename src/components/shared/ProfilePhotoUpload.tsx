@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -6,6 +7,7 @@ import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -15,6 +17,7 @@ interface ProfilePhotoUploadProps {
 
 export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }: ProfilePhotoUploadProps) {
   const { user } = useAuth();
+  const { updateProfile } = useUserProfile();
   const [isOpen, setIsOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>('');
   const [crop, setCrop] = useState<Crop>({
@@ -131,12 +134,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
         .from('profile-photos')
         .getPublicUrl(fileName);
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ profile_photo_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
+      await updateProfile({ profile_photo_url: publicUrl });
 
       onPhotoUpdate(publicUrl);
       setIsOpen(false);
@@ -157,12 +155,7 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
         await deleteOldPhoto(currentPhotoUrl);
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ profile_photo_url: null })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      await updateProfile({ profile_photo_url: null });
 
       onPhotoUpdate(null);
       setIsOpen(false);
@@ -173,7 +166,6 @@ export function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate, className }
     }
   };
 
-  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>

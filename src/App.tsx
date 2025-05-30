@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/auth/Login";
@@ -27,59 +28,61 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register/:role" element={<Register />} />
+      <UserProfileProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register/:role" element={<Register />} />
 
-            {/* Routes Client */}
-            <Route path="/client/dashboard" element={
-              <ProtectedRoute requiredRole="client">
-                <ClientDashboard />
-              </ProtectedRoute>
-            }>
-              <Route index element={<ClientMain />} />
-              <Route path="outfits" element={<ClientOutfits />} />
-              <Route path="wardrobe" element={<ClientWardrobe />} />
-              <Route path="settings" element={<ClientSettingsPage />} />
-            </Route>
+              {/* Routes Client */}
+              <Route path="/client/dashboard" element={
+                <ProtectedRoute requiredRole="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              }>
+                <Route index element={<ClientMain />} />
+                <Route path="outfits" element={<ClientOutfits />} />
+                <Route path="wardrobe" element={<ClientWardrobe />} />
+                <Route path="settings" element={<ClientSettingsPage />} />
+              </Route>
 
-            <Route path="/client/onboarding" element={
-              <ProtectedRoute requiredRole="client">
-                <ClientOnboarding />
-              </ProtectedRoute>
-            } />
+              <Route path="/client/onboarding" element={
+                <ProtectedRoute requiredRole="client">
+                  <ClientOnboarding />
+                </ProtectedRoute>
+              } />
 
-            {/* Routes Conseiller en Image */}
-            <Route path="/consultant/dashboard" element={
-              <ProtectedRoute requiredRole="consultant">
-                <ConsultantDashboard />
-              </ProtectedRoute>
-            }>
-              <Route index element={<ConsultantMain />} />
-              <Route path="settings" element={<ConsultantSettings />} />
-            </Route>
+              {/* Routes Conseiller en Image */}
+              <Route path="/consultant/dashboard" element={
+                <ProtectedRoute requiredRole="consultant">
+                  <ConsultantDashboard />
+                </ProtectedRoute>
+              }>
+                <Route index element={<ConsultantMain />} />
+                <Route path="settings" element={<ConsultantSettings />} />
+              </Route>
 
-            <Route path="/consultant/client/:clientId" element={
-              <ProtectedRoute requiredRole="consultant">
-                <ClientDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/consultant/outfit-creator" element={
-              <ProtectedRoute requiredRole="consultant">
-                <OutfitCreator />
-              </ProtectedRoute>
-            } />
+              <Route path="/consultant/client/:clientId" element={
+                <ProtectedRoute requiredRole="consultant">
+                  <ClientDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/consultant/outfit-creator" element={
+                <ProtectedRoute requiredRole="consultant">
+                  <OutfitCreator />
+                </ProtectedRoute>
+              } />
 
-            {/* Route 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              {/* Route 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </UserProfileProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
