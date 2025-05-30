@@ -1,7 +1,7 @@
 
-import { ProfileUpdateForm } from "@/components/shared/settings/ProfileUpdateForm";
-import { PasswordChangeForm } from "@/components/shared/settings/PasswordChangeForm";
-import { AccountDeletionForm } from "@/components/shared/settings/AccountDeletionForm";
+import { ProfileUpdateForm } from "@/components/shared/ProfileUpdateForm";
+import { PasswordChangeForm } from "@/components/shared/PasswordChangeForm";
+import { AccountDeletionForm } from "@/components/shared/AccountDeletionForm";
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
