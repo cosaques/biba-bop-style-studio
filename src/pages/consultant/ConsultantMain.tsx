@@ -55,75 +55,66 @@ const ConsultantMain = () => {
     <div className="min-h-screen bg-background">
       <div className="p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-bibabop-navy">Mes Clients</h1>
+          <h1 className="text-3xl font-bold text-bibabop-navy">Mon espace personnel</h1>
           <p className="subtitle">Gérez vos clients et créez des tenues professionnelles</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Mes Clients</CardTitle>
-            <CardDescription>
-              Liste de tous vos clients et leurs profils
-            </CardDescription>
-            <div className="mt-4">
-              <Input
-                placeholder="Rechercher un client..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Carte pour ajouter un client */}
-              <Card className="border-dashed border-2">
-                <CardContent className="flex flex-col items-center justify-center p-6 h-full">
-                  <div className="w-16 h-16 mb-4 rounded-full bg-bibabop-navy flex items-center justify-center text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                  </div>
-                  <h3 className="text-xl font-medium mb-2">Nouveau Client</h3>
-                  <p className="text-center text-muted-foreground text-sm mb-4">
-                    Ajoutez un nouveau client à votre portefeuille
-                  </p>
-                  <Button className="btn-primary">Ajouter un client</Button>
-                </CardContent>
-              </Card>
+        <div className="mb-6">
+          <Input
+            placeholder="Rechercher un client..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
 
-              {/* Liste des clients */}
-              {filteredClients.map((client) => (
-                <Card key={client.id} className="card-hover">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center">
-                      <Avatar className="h-12 w-12 mr-3">
-                        <AvatarImage src={client.avatar} alt={client.name || `Client ${client.id}`} />
-                        <AvatarFallback>{client.name?.charAt(0) || client.id.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      {client.name || `Client ${client.id.replace("client", "")}`}
-                    </CardTitle>
-                    <CardDescription>
-                      {client.gender === "femme" ? "Femme" : "Homme"}, {client.age} ans
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      <p>Taille: {client.height} cm</p>
-                      <p>Poids: {client.weight} kg</p>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button variant="outline" asChild>
-                      <Link to={`/consultant/client/${client.id}`}>Détails</Link>
-                    </Button>
-                    <Button className="btn-primary" asChild>
-                      <Link to={`/consultant/outfit-creator?clientId=${client.id}`}>Créer une tenue</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Carte pour ajouter un client */}
+          <Card className="border-dashed border-2">
+            <CardContent className="flex flex-col items-center justify-center p-6 h-full">
+              <div className="w-16 h-16 mb-4 rounded-full bg-bibabop-navy flex items-center justify-center text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+              </div>
+              <h3 className="text-xl font-medium mb-2">Nouveau Client</h3>
+              <p className="text-center text-muted-foreground text-sm mb-4">
+                Ajoutez un nouveau client à votre portefeuille
+              </p>
+              <Button className="btn-primary">Ajouter un client</Button>
+            </CardContent>
+          </Card>
+
+          {/* Liste des clients */}
+          {filteredClients.map((client) => (
+            <Card key={client.id} className="card-hover">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center">
+                  <Avatar className="h-12 w-12 mr-3">
+                    <AvatarImage src={client.avatar} alt={client.name || `Client ${client.id}`} />
+                    <AvatarFallback>{client.name?.charAt(0) || client.id.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  {client.name || `Client ${client.id.replace("client", "")}`}
+                </CardTitle>
+                <CardDescription>
+                  {client.gender === "femme" ? "Femme" : "Homme"}, {client.age} ans
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="mt-2 text-sm text-muted-foreground">
+                  <p>Taille: {client.height} cm</p>
+                  <p>Poids: {client.weight} kg</p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" asChild>
+                  <Link to={`/consultant/client/${client.id}`}>Détails</Link>
+                </Button>
+                <Button className="btn-primary" asChild>
+                  <Link to={`/consultant/outfit-creator?clientId=${client.id}`}>Créer une tenue</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

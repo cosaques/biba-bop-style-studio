@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -134,8 +133,10 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-bibabop-cream p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-bibabop-navy mb-2">Biba-Bop</h1>
-          <p className="text-bibabop-charcoal subtitle">Plateforme de Stylisme Intelligent</p>
+          <Link to="/" className="flex items-center justify-center">
+            <img src="/logo.png" alt="Biba-Bop Logo" className="h-16" />
+          </Link>
+          <p className="text-bibabop-charcoal subtitle mt-4">Plateforme de Stylisme Intelligent</p>
         </div>
 
         <Card>

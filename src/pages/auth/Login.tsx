@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,12 @@ const Login = () => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent, role: "client" | "consultant") => {
+    if (e.key === 'Enter') {
+      handleLogin(role);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!resetEmail) {
       toast({
@@ -108,8 +114,10 @@ const Login = () => {
       <div className="min-h-screen flex items-center justify-center bg-bibabop-cream p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-bibabop-navy mb-2">Biba-Bop</h1>
-            <p className="text-bibabop-charcoal subtitle">Réinitialisation du mot de passe</p>
+            <Link to="/" className="flex items-center justify-center">
+              <img src="/logo.png" alt="Biba-Bop Logo" className="h-16" />
+            </Link>
+            <p className="text-bibabop-charcoal subtitle mt-4">Réinitialisation du mot de passe</p>
           </div>
 
           <Card>
@@ -157,8 +165,10 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-bibabop-cream p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-bibabop-navy mb-2">Biba-Bop</h1>
-          <p className="text-bibabop-charcoal subtitle">Plateforme de Stylisme Intelligent</p>
+          <Link to="/" className="flex items-center justify-center">
+            <img src="/logo.png" alt="Biba-Bop Logo" className="h-16" />
+          </Link>
+          <p className="text-bibabop-charcoal subtitle mt-4">Plateforme de Stylisme Intelligent</p>
         </div>
 
         <Tabs defaultValue="client" className="w-full">
@@ -184,6 +194,7 @@ const Login = () => {
                     placeholder="votre@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, "client")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -193,6 +204,7 @@ const Login = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, "client")}
                   />
                 </div>
               </CardContent>
@@ -236,6 +248,7 @@ const Login = () => {
                     placeholder="votre@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, "consultant")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -245,6 +258,7 @@ const Login = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, "consultant")}
                   />
                 </div>
               </CardContent>

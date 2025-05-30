@@ -1,7 +1,8 @@
 
-import { ProfileUpdateForm } from "@/components/client/settings/ProfileUpdateForm";
-import { PasswordChangeForm } from "@/components/client/settings/PasswordChangeForm";
-import { AccountDeletionForm } from "@/components/client/settings/AccountDeletionForm";
+import { ProfileUpdateForm } from "@/components/shared/settings/ProfileUpdateForm";
+import { PasswordChangeForm } from "@/components/shared/settings/PasswordChangeForm";
+import { AccountDeletionForm } from "@/components/shared/settings/AccountDeletionForm";
+import { PhotoSection } from "@/components/client/profile/PhotoSection";
 
 export default function ClientSettingsPage() {
   return (
@@ -13,6 +14,10 @@ export default function ClientSettingsPage() {
         </div>
 
         <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border">
+            <h2 className="text-xl font-semibold mb-4">Photo de profil</h2>
+            <PhotoSection />
+          </div>
           <ProfileUpdateForm />
           <PasswordChangeForm />
           <AccountDeletionForm />

@@ -1,9 +1,22 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const LandingPage = () => {
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
+
+  const getAccountUrl = () => {
+    if (profile?.role === 'consultant') {
+      return '/consultant/dashboard';
+    } else if (profile?.role === 'client') {
+      return '/client/dashboard';
+    }
+    return '/login';
+  };
+
   return (
     <div className="min-h-screen bg-bibabop-cream">
       {/* Header */}
@@ -58,12 +71,15 @@ const LandingPage = () => {
             </a>
           </nav>
           <div className="flex items-center space-x-4">
-            <Link to="/login">
-              <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Connexion</Button>
-            </Link>
-            <Link to="/register/client">
-              <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Inscription</Button>
-            </Link>
+            {user ? (
+              <Link to={getAccountUrl()}>
+                <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Mon Compte</Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button className="bg-bibabop-gold text-bibabop-navy hover:bg-opacity-90">Connexion</Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
