@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Gender } from "@/types";
 import { useClientProfile } from "@/hooks/useClientProfile";
-import { useUserProfile } from "@/contexts/UserProfileContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface InformationEditFormProps {
@@ -14,8 +13,7 @@ interface InformationEditFormProps {
 }
 
 export function InformationEditForm({ onCancel }: InformationEditFormProps) {
-  const { profile: clientProfile, updateProfile, refetch: refetchClientProfile } = useClientProfile();
-  const { refetch: refetchUserProfile } = useUserProfile();
+  const { profile: clientProfile, updateProfile } = useClientProfile();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -59,7 +57,7 @@ export function InformationEditForm({ onCancel }: InformationEditFormProps) {
       };
 
       const { error } = await updateProfile(profileData);
-      
+
       if (error) {
         toast({
           title: "Erreur",
@@ -72,8 +70,6 @@ export function InformationEditForm({ onCancel }: InformationEditFormProps) {
           description: "Vos informations ont été mises à jour avec succès!",
         });
         onCancel();
-        refetchClientProfile();
-        refetchUserProfile();
       }
     } catch (error) {
       toast({
@@ -90,7 +86,7 @@ export function InformationEditForm({ onCancel }: InformationEditFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-3">
         <Label>Genre</Label>
-        <RadioGroup 
+        <RadioGroup
           value={formData.gender || ""}
           onValueChange={(value: Gender) => updateFormData("gender", value)}
           className="space-y-2"
@@ -161,16 +157,16 @@ export function InformationEditForm({ onCancel }: InformationEditFormProps) {
       )}
 
       <div className="flex gap-2 pt-4">
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={onCancel}
           disabled={isLoading}
           className="flex-1"
         >
           Annuler
         </Button>
-        <Button 
+        <Button
           type="submit"
           disabled={isLoading}
           className="flex-1 btn-primary"
