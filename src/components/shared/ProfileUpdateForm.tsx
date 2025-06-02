@@ -5,13 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export function ProfileUpdateForm() {
   const { user } = useAuth();
-  const { profile, refetch } = useUserProfile();
+  const { profile, updateProfile, refetch } = useUserProfile();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -48,13 +47,10 @@ export function ProfileUpdateForm() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName
-        })
-        .eq('id', user?.id);
+      const { error } = await updateProfile({
+        first_name: formData.firstName,
+        last_name: formData.lastName
+      });
 
       if (error) {
         toast({

@@ -1,9 +1,9 @@
 
+import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { ProfileUpdateForm } from "@/components/shared/ProfileUpdateForm";
 import { PasswordChangeForm } from "@/components/shared/PasswordChangeForm";
 import { AccountDeletionForm } from "@/components/shared/AccountDeletionForm";
-import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 
 export default function ConsultantSettings() {
   const { profile: userProfile, updateProfile: updateUserProfile } = useUserProfile();

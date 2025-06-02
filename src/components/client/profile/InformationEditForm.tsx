@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Gender } from "@/types";
 import { useClientProfile } from "@/hooks/useClientProfile";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface InformationEditFormProps {
