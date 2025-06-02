@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
@@ -13,9 +13,15 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && !profileLoading) {
+      // Allow access to password reset page even when authenticated
+      if (location.pathname === '/password-reset') {
+        return;
+      }
+
       if (!user) {
         navigate('/login');
         return;
@@ -32,7 +38,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
         }
       }
     }
-  }, [user, profile, loading, profileLoading, navigate, requiredRole]);
+  }, [user, profile, loading, profileLoading, navigate, requiredRole, location.pathname]);
 
   if (loading || profileLoading) {
     return (
@@ -45,11 +51,11 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     );
   }
 
-  if (!user) {
+  if (!user && location.pathname !== '/password-reset') {
     return null;
   }
 
-  if (requiredRole && profile?.role !== requiredRole) {
+  if (requiredRole && profile?.role !== requiredRole && location.pathname !== '/password-reset') {
     return null;
   }
 
