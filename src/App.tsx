@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import ConsultantSettings from "./pages/consultant/ConsultantSettings";
 import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
+import PasswordReset from "./pages/auth/PasswordReset";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register/:role" element={<Register />} />
+              <Route path="/password-reset" element={<PasswordReset />} />
 
               {/* Routes Client */}
               <Route path="/client/dashboard" element={
