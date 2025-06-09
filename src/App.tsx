@@ -11,6 +11,7 @@ import LandingPage from "./pages/LandingPage";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import PasswordReset from "./pages/auth/PasswordReset";
+import InviteAccept from "./pages/auth/InviteAccept";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientMain from "./pages/client/ClientMain";
 import ClientOutfits from "./pages/client/ClientOutfits";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register/:role" element={<Register />} />
               <Route path="/password-reset" element={<PasswordReset />} />
+              <Route path="/invite/:token" element={<InviteAccept />} />
 
               {/* Routes Client */}
               <Route path="/client/dashboard" element={

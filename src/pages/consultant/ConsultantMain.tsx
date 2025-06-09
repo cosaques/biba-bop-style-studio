@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ClientInviteModal } from "@/components/consultant/ClientInviteModal";
 import { UserProfile } from "@/types";
 
 // Données fictives pour la démo
@@ -45,6 +45,7 @@ const mockClients: UserProfile[] = [
 
 const ConsultantMain = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const filteredClients = mockClients.filter((client) =>
     client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,7 +80,12 @@ const ConsultantMain = () => {
               <p className="text-center text-muted-foreground text-sm mb-4">
                 Ajoutez un nouveau client à votre portefeuille
               </p>
-              <Button className="btn-primary">Ajouter un client</Button>
+              <Button 
+                className="btn-primary"
+                onClick={() => setShowInviteModal(true)}
+              >
+                Ajouter un client
+              </Button>
             </CardContent>
           </Card>
 
@@ -115,6 +121,11 @@ const ConsultantMain = () => {
             </Card>
           ))}
         </div>
+
+        <ClientInviteModal
+          open={showInviteModal}
+          onOpenChange={setShowInviteModal}
+        />
       </div>
     </div>
   );
