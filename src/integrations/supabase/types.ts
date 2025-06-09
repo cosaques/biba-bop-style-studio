@@ -78,6 +78,54 @@ export type Database = {
         }
         Relationships: []
       }
+      client_invites: {
+        Row: {
+          token: string
+          consultant_id: string
+          email: string
+          created_at: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          token?: string
+          consultant_id: string
+          email: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          token?: string
+          consultant_id?: string
+          email?: string
+          created_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      consultant_clients: {
+        Row: {
+          id: string
+          consultant_id: string
+          client_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          consultant_id: string
+          client_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          consultant_id?: string
+          client_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

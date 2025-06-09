@@ -1,6 +1,9 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useClientInvite } from "@/hooks/useClientInvite";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,11 +48,28 @@ const mockClients: UserProfile[] = [
 
 const ConsultantMain = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [email, setEmail] = useState("");
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const { createInvite, loading } = useClientInvite();
+  const { toast } = useToast();
 
   const filteredClients = mockClients.filter((client) =>
     client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleInvite = async () => {
+    if (!email) {
+      toast({ title: "Erreur", description: "Veuillez entrer un email", variant: "destructive" });
+      return;
+    }
+    const { error, token } = await createInvite(email);
+    if (error) {
+      toast({ title: "Erreur", description: error.message || String(error), variant: "destructive" });
+    } else if (token) {
+      setInviteLink(`${window.location.origin}/invite/${token}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +99,47 @@ const ConsultantMain = () => {
               <p className="text-center text-muted-foreground text-sm mb-4">
                 Ajoutez un nouveau client à votre portefeuille
               </p>
-              <Button className="btn-primary">Ajouter un client</Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="btn-primary">Ajouter un client</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Inviter un client</DialogTitle>
+                    <DialogDescription>
+                      Saisissez l&apos;email du client pour générer un lien d&apos;invitation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {inviteLink ? (
+                    <div className="space-y-4">
+                      <p className="text-sm break-all">{inviteLink}</p>
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(inviteLink);
+                          toast({ title: 'Lien copié' });
+                        }}
+                        className="btn-primary"
+                      >
+                        Copier le lien
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Input
+                        type="email"
+                        placeholder="email@exemple.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <DialogFooter>
+                        <Button onClick={handleInvite} disabled={loading} className="btn-primary w-full">
+                          {loading ? 'Envoi...' : 'Générer le lien'}
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
 

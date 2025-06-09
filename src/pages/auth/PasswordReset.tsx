@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserProfile } from "@/contexts/UserProfileContext";
 
 const PasswordReset = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -73,9 +75,18 @@ const PasswordReset = () => {
       } else {
         toast({
           title: "Mot de passe mis à jour",
-          description: "Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter.",
+          description: "Votre mot de passe a été mis à jour avec succès.",
         });
-        navigate("/login");
+
+        let redirectPath = "/";
+        if (profile?.role === "client") {
+          redirectPath = "/client/dashboard";
+        } else if (profile?.role === "consultant") {
+          redirectPath = "/consultant/dashboard";
+        } else {
+          redirectPath = "/login";
+        }
+        navigate(redirectPath);
       }
     } catch (error) {
       toast({
