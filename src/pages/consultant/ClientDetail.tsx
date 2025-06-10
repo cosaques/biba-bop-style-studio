@@ -1,50 +1,31 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
-import { UserProfile, Outfit, outfitImages } from "@/types";
+import { Outfit, outfitImages } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-// Données de démonstration
-const mockClients: UserProfile[] = [
-  {
-    id: "client1",
-    gender: "femme",
-    age: 32,
-    height: 168,
-    weight: 62,
-    bustSize: 90,
-    silhouette: "/looks/look-0.png",
-    name: "Sophie Martin",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"
-  },
-  {
-    id: "client2",
-    gender: "homme",
-    age: 42,
-    height: 182,
-    weight: 78,
-    silhouette: "/looks/look-0.png",
-    name: "Thomas Dubois",
-    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=150&h=150&auto=format&fit=crop"
-  },
-  {
-    id: "client3",
-    gender: "femme",
-    age: 28,
-    height: 165,
-    weight: 58,
-    bustSize: 85,
-    silhouette: "/looks/look-0.png",
-    name: "Amélie Petit",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&h=150&auto=format&fit=crop"
-  }
-];
+interface ClientData {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  profile_photo_url?: string;
+  age?: number;
+  height?: number;
+  weight?: number;
+  bust_size?: number;
+  gender?: string;
+}
 
+// Données de démonstration pour les tenues (à remplacer plus tard)
 const mockOutfits: Outfit[] = [
   {
     id: "outfit1",
@@ -81,12 +62,113 @@ const mockOutfits: Outfit[] = [
 const ClientDetail = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [activeTab, setActiveTab] = useState("silhouette");
+  const [client, setClient] = useState<ClientData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Trouver le client correspondant à l'ID dans l'URL
-  const client = mockClients.find(client => client.id === clientId);
+  useEffect(() => {
+    if (clientId && user) {
+      fetchClientData();
+    }
+  }, [clientId, user]);
 
-  // Filtrer les tenues pour ce client
+  const fetchClientData = async () => {
+    try {
+      setIsLoading(true);
+
+      // First, verify that this client belongs to the current consultant
+      const { data: relationship, error: relationshipError } = await supabase
+        .from('consultant_clients')
+        .select('client_id')
+        .eq('consultant_id', user?.id)
+        .eq('client_id', clientId)
+        .single();
+
+      if (relationshipError || !relationship) {
+        throw new Error("Client not found or unauthorized");
+      }
+
+      // Fetch client profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', clientId)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Fetch client personal data
+      const { data: clientProfileData, error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('user_id', clientId)
+        .maybeSingle();
+
+      if (clientProfileError) {
+        console.error('Error fetching client profile:', clientProfileError);
+      }
+
+      const clientData: ClientData = {
+        id: profileData.id,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        email: profileData.email,
+        profile_photo_url: profileData.profile_photo_url,
+        age: clientProfileData?.age,
+        height: clientProfileData?.height,
+        weight: clientProfileData?.weight,
+        bust_size: clientProfileData?.bust_size,
+        gender: clientProfileData?.gender,
+      };
+
+      setClient(clientData);
+    } catch (error) {
+      console.error('Error fetching client data:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données du client",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getClientDisplayName = (client: ClientData) => {
+    if (client.first_name || client.last_name) {
+      return `${client.first_name || ''} ${client.last_name || ''}`.trim();
+    }
+    return client.email || 'Client sans nom';
+  };
+
+  const getClientInitials = (client: ClientData) => {
+    if (client.first_name || client.last_name) {
+      return `${client.first_name?.charAt(0) || ''}${client.last_name?.charAt(0) || ''}`;
+    }
+    return client.email?.charAt(0).toUpperCase() || 'C';
+  };
+
+  // Filtrer les tenues pour ce client (mock data for now)
   const clientOutfits = mockOutfits.filter(outfit => outfit.clientId === clientId);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <ConsultantSidebar />
+        <div className="flex-1">
+          <ConsultantHeader />
+          <main className="p-6">
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy"></div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -120,12 +202,18 @@ const ClientDetail = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-bibabop-navy flex items-center">
-                <img
-                  src={client.avatar}
-                  alt={client.name}
-                  className="w-12 h-12 rounded-full mr-4 object-cover"
-                />
-                {client.name}
+                {client.profile_photo_url ? (
+                  <img
+                    src={client.profile_photo_url}
+                    alt={getClientDisplayName(client)}
+                    className="w-12 h-12 rounded-full mr-4 object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full mr-4 bg-bibabop-navy flex items-center justify-center text-white font-medium">
+                    {getClientInitials(client)}
+                  </div>
+                )}
+                {getClientDisplayName(client)}
               </h1>
               <p className="subtitle">Fiche client détaillée</p>
             </div>
@@ -150,7 +238,7 @@ const ClientDetail = () => {
                   <CardContent className="flex justify-center">
                     <div className="bg-bibabop-lightgrey rounded-md">
                       <img
-                        src={client.silhouette}
+                        src="/looks/look-0.png"
                         alt="Silhouette personnalisée"
                         className="max-h-96 object-contain"
                       />
@@ -162,42 +250,51 @@ const ClientDetail = () => {
                   <CardHeader>
                     <CardTitle>Informations personnelles</CardTitle>
                     <CardDescription>
-                      Détails utilisés pour générer la silhouette
+                      Informations du profil client
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="font-medium">Nom</span>
-                        <span>{client.name}</span>
+                        <span>{getClientDisplayName(client)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="font-medium">Genre</span>
-                        <span>{client.gender === "femme" ? "Femme" : client.gender === "homme" ? "Homme" : "Autre"}</span>
+                        <span className="font-medium">Email</span>
+                        <span>{client.email || 'Non renseigné'}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Âge</span>
-                        <span>{client.age} ans</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Taille</span>
-                        <span>{client.height} cm</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Poids</span>
-                        <span>{client.weight} kg</span>
-                      </div>
-                      {client.bustSize && (
+                      {client.gender && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">Genre</span>
+                          <span>{client.gender === "femme" ? "Femme" : client.gender === "homme" ? "Homme" : "Autre"}</span>
+                        </div>
+                      )}
+                      {client.age && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">Âge</span>
+                          <span>{client.age} ans</span>
+                        </div>
+                      )}
+                      {client.height && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">Taille</span>
+                          <span>{client.height} cm</span>
+                        </div>
+                      )}
+                      {client.weight && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">Poids</span>
+                          <span>{client.weight} kg</span>
+                        </div>
+                      )}
+                      {client.bust_size && (
                         <div className="flex justify-between">
                           <span className="font-medium">Tour de poitrine</span>
-                          <span>{client.bustSize} cm</span>
+                          <span>{client.bust_size} cm</span>
                         </div>
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full">Modifier les informations</Button>
-                  </CardFooter>
                 </Card>
               </div>
             </TabsContent>
