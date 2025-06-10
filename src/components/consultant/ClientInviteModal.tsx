@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Copy, Mail } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ClientInviteModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
   const [inviteLink, setInviteLink] = useState("");
   const [showLink, setShowLink] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,29 +37,69 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
     setIsLoading(true);
 
     try {
-      // Create the invitation
-      const { data, error } = await supabase
+      const currentUser = await supabase.auth.getUser();
+      if (!currentUser.data.user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Check if invitation already exists for this email and consultant
+      const { data: existingInvite, error: checkError } = await supabase
         .from('client_invites')
-        .insert({
-          email,
-          consultant_id: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select('token')
+        .select('token, expires_at')
+        .eq('email', email)
+        .eq('consultant_id', currentUser.data.user.id)
+        .is('used_at', null)
         .single();
 
-      if (error) {
-        throw error;
+      let token;
+
+      if (existingInvite && !checkError) {
+        // Extend existing invitation by 7 days
+        const newExpiresAt = new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+        const { error: updateError } = await supabase
+          .from('client_invites')
+          .update({ expires_at: newExpiresAt.toISOString() })
+          .eq('token', existingInvite.token);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        token = existingInvite.token;
+        
+        toast({
+          title: "Invitation mise à jour",
+          description: "L'invitation existante a été prolongée de 7 jours",
+        });
+      } else {
+        // Create new invitation
+        const { data, error } = await supabase
+          .from('client_invites')
+          .insert({
+            email,
+            consultant_id: currentUser.data.user.id
+          })
+          .select('token')
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        token = data.token;
+
+        toast({
+          title: "Invitation créée",
+          description: "L'invitation a été générée avec succès",
+        });
       }
 
       // Generate the invite link
-      const link = `${window.location.origin}/invite/${data.token}`;
+      const link = `${window.location.origin}/invite/${token}`;
       setInviteLink(link);
       setShowLink(true);
-
-      toast({
-        title: "Invitation créée",
-        description: "L'invitation a été générée avec succès",
-      });
     } catch (error) {
       console.error('Error creating invitation:', error);
       toast({
@@ -86,11 +128,33 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
     }
   };
 
-  const sendByEmail = () => {
-    const subject = "Invitation à rejoindre Biba-Bop";
-    const body = `Bonjour,\n\nVous avez été invité(e) à rejoindre Biba-Bop en tant que client.\n\nCliquez sur ce lien pour accepter l'invitation :\n${inviteLink}\n\nCe lien expire dans 7 jours.\n\nCordialement`;
-    
-    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  const sendByEmail = async () => {
+    try {
+      // Get consultant info for personalized email
+      const { data: consultant, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const consultantName = `${consultant.first_name || ''} ${consultant.last_name || ''}`.trim() || 'votre conseiller en image';
+      
+      const subject = "Invitation à rejoindre Biba-Bop";
+      const body = `Bonjour,\n\nVous avez été invité(e) par ${consultantName} à rejoindre Biba-Bop en tant que client.\n\nCliquez sur ce lien pour accepter l'invitation :\n${inviteLink}\n\nCe lien expire dans 7 jours.\n\nCordialement,\n${consultantName}`;
+      
+      window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    } catch (error) {
+      console.error('Error getting consultant info:', error);
+      // Fallback to generic email
+      const subject = "Invitation à rejoindre Biba-Bop";
+      const body = `Bonjour,\n\nVous avez été invité(e) à rejoindre Biba-Bop en tant que client.\n\nCliquez sur ce lien pour accepter l'invitation :\n${inviteLink}\n\nCe lien expire dans 7 jours.\n\nCordialement`;
+      
+      window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    }
   };
 
   const handleClose = () => {
@@ -106,7 +170,10 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
         <DialogHeader>
           <DialogTitle>Inviter un nouveau client</DialogTitle>
           <DialogDescription>
-            Entrez l'adresse email du client que vous souhaitez inviter.
+            {!showLink 
+              ? "Entrez l'adresse email du client que vous souhaitez inviter."
+              : "Partagez ce lien avec votre client pour qu'il puisse rejoindre votre liste de clients. Il peut s'inscrire ou se connecter en utilisant ce lien."
+            }
           </DialogDescription>
         </DialogHeader>
 

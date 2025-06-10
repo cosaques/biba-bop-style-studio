@@ -1,17 +1,22 @@
-import { useState } from "react";
-import { useNavigate, Link, useParams } from "react-router-dom";
+
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const navigate = useNavigate();
   const { role } = useParams<{ role: string }>();
   const { signUp } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('inviteToken');
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,6 +26,11 @@ const Register = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [inviteInfo, setInviteInfo] = useState<{
+    email: string;
+    consultantFirstName: string;
+    consultantLastName: string;
+  } | null>(null);
 
   const isClient = role === "client";
   const isConsultant = role === "consultant";
@@ -29,6 +39,87 @@ const Register = () => {
     navigate("/");
     return null;
   }
+
+  useEffect(() => {
+    if (inviteToken && isClient) {
+      loadInviteInfo();
+    }
+  }, [inviteToken, isClient]);
+
+  const loadInviteInfo = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_invitation_info', { invite_token: inviteToken });
+
+      if (error) throw error;
+
+      if (data && data.length > 0 && data[0].is_valid) {
+        const info = data[0];
+        setInviteInfo({
+          email: info.email,
+          consultantFirstName: info.consultant_first_name,
+          consultantLastName: info.consultant_last_name
+        });
+        setFormData(prev => ({ ...prev, email: info.email }));
+      }
+    } catch (error) {
+      console.error('Error loading invite info:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les informations d'invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const acceptInvitation = async () => {
+    if (!inviteToken) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get the invitation details
+      const { data: invite, error: inviteError } = await supabase
+        .from('client_invites')
+        .select('consultant_id')
+        .eq('token', inviteToken)
+        .single();
+
+      if (inviteError || !invite) {
+        throw new Error('Invitation not found');
+      }
+
+      // Mark invitation as used
+      await supabase
+        .from('client_invites')
+        .update({ 
+          used_by: user.id, 
+          used_at: new Date().toISOString() 
+        })
+        .eq('token', inviteToken);
+
+      // Create consultant-client relationship
+      await supabase
+        .from('consultant_clients')
+        .insert({
+          consultant_id: invite.consultant_id,
+          client_id: user.id
+        });
+
+      toast({
+        title: "Invitation acceptée",
+        description: "Vous avez été associé avec succès à votre conseiller en image",
+      });
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'accepter l'invitation",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -112,6 +203,11 @@ const Register = () => {
           description: "Votre compte a été créé avec succès. Vérifiez votre email pour confirmer votre compte.",
         });
 
+        // Accept invitation if token is present for client
+        if (inviteToken && isClient) {
+          await acceptInvitation();
+        }
+
         if (isClient) {
           navigate("/client/onboarding");
         } else if (isConsultant) {
@@ -139,6 +235,16 @@ const Register = () => {
           <p className="text-bibabop-charcoal subtitle mt-4">Plateforme de Stylisme Intelligent</p>
         </div>
 
+        {inviteInfo && isClient && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-800">
+              Vous avez été invité(e) par <span className="font-medium">
+                {inviteInfo.consultantFirstName} {inviteInfo.consultantLastName}
+              </span> à rejoindre Biba-Bop en tant que client.
+            </p>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>
@@ -146,7 +252,9 @@ const Register = () => {
             </CardTitle>
             <CardDescription>
               {isClient
-                ? "Créez votre compte pour bénéficier de conseils de style personnalisés"
+                ? inviteToken 
+                  ? "Créez votre compte pour rejoindre votre conseiller en image"
+                  : "Créez votre compte pour bénéficier de conseils de style personnalisés"
                 : "Créez votre compte conseiller pour gérer vos clients et créer des tenues"
               }
             </CardDescription>
@@ -189,6 +297,8 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className={errors.email ? "border-destructive" : ""}
+                  readOnly={!!inviteToken}
+                  disabled={!!inviteToken}
                 />
                 {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
               </div>
@@ -241,7 +351,10 @@ const Register = () => {
 
               <p className="text-sm text-center text-muted-foreground">
                 Vous avez déjà un compte?{" "}
-                <Link to="/login" className="text-bibabop-navy font-medium hover:underline">
+                <Link 
+                  to={inviteToken ? `/login?inviteToken=${inviteToken}` : "/login"} 
+                  className="text-bibabop-navy font-medium hover:underline"
+                >
                   Se connecter
                 </Link>
               </p>

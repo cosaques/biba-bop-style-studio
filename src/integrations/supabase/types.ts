@@ -175,6 +175,16 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
+      get_invitation_info: {
+        Args: { invite_token: string }
+        Returns: {
+          is_valid: boolean
+          email: string
+          consultant_first_name: string
+          consultant_last_name: string
+          profile_exists: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
