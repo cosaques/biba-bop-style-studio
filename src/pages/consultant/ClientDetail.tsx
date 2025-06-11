@@ -287,7 +287,7 @@ const ClientDetail = () => {
                           <span>{client.weight} kg</span>
                         </div>
                       )}
-                      {client.bust_size && (
+                      {client.gender === "femme" && client.bust_size && (
                         <div className="flex justify-between">
                           <span className="font-medium">Tour de poitrine</span>
                           <span>{client.bust_size} cm</span>
