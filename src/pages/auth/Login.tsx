@@ -62,15 +62,11 @@ const Login = () => {
   const acceptInvitation = async () => {
     if (!inviteToken) return;
 
-    console.log('Login: Starting invitation acceptance process');
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('Login: No user found for invitation acceptance');
         return;
       }
-
-      console.log('Login: Accepting invitation for user:', user.id);
 
       // Get the invitation details
       const { data: invite, error: inviteError } = await supabase
@@ -83,8 +79,6 @@ const Login = () => {
         throw new Error('Invitation not found');
       }
 
-      console.log('Login: Found invitation, consultant_id:', invite.consultant_id);
-
       // Mark invitation as used
       await supabase
         .from('client_invites')
@@ -94,8 +88,6 @@ const Login = () => {
         })
         .eq('token', inviteToken);
 
-      console.log('Login: Marked invitation as used');
-
       // Create consultant-client relationship
       await supabase
         .from('consultant_clients')
@@ -104,14 +96,12 @@ const Login = () => {
           client_id: user.id
         });
 
-      console.log('Login: Created consultant-client relationship');
-
       toast({
         title: "Invitation acceptée",
         description: "Vous avez été associé avec succès à votre conseiller en image",
       });
     } catch (error) {
-      console.error('Login: Error accepting invitation:', error);
+      console.error('Error accepting invitation:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'accepter l'invitation",
@@ -121,7 +111,6 @@ const Login = () => {
   };
 
   const getUserProfile = async (userId: string) => {
-    console.log('Login: Fetching user profile for:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -130,21 +119,19 @@ const Login = () => {
         .single();
 
       if (error) {
-        console.error('Login: Error fetching user profile:', error);
+        console.error('Error fetching user profile:', error);
         return null;
       }
 
-      console.log('Login: User profile fetched:', data);
       return data;
     } catch (error) {
-      console.error('Login: Error fetching user profile:', error);
+      console.error('Error fetching user profile:', error);
       return null;
     }
   };
 
   const handleLogin = async (role: "client" | "consultant") => {
     if (!email || !password) {
-      console.log('Login: Missing email or password');
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs",
@@ -153,22 +140,18 @@ const Login = () => {
       return;
     }
 
-    console.log('Login: Starting login process for role:', role, 'email:', email);
     setIsLoading(true);
 
     try {
-      console.log('Login: Calling signIn...');
       const { error } = await signIn(email, password);
 
       if (error) {
-        console.log('Login: SignIn error:', error);
         toast({
           title: "Erreur de connexion",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        console.log('Login: SignIn successful, showing success toast');
         toast({
           title: "Connexion réussie",
           description: "Vous êtes maintenant connecté",
@@ -176,28 +159,20 @@ const Login = () => {
 
         // Accept invitation if token is present
         if (inviteToken) {
-          console.log('Login: Processing invitation token');
           await acceptInvitation();
         }
         
         // Get current user to fetch their actual role
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          console.log('Login: Getting user profile to determine correct dashboard');
           const profile = await getUserProfile(user.id);
           
           if (profile?.role) {
-            console.log('Login: User actual role is:', profile.role);
-            console.log('Login: Redirecting to correct dashboard based on actual role');
-            
             if (profile.role === 'client') {
-              console.log('Login: Navigating to /client/dashboard');
               navigate("/client/dashboard");
             } else if (profile.role === 'consultant') {
-              console.log('Login: Navigating to /consultant/dashboard');
               navigate("/consultant/dashboard");
             } else {
-              console.log('Login: Unknown role, staying on login page');
               toast({
                 title: "Erreur",
                 description: "Rôle utilisateur non reconnu",
@@ -205,21 +180,17 @@ const Login = () => {
               });
             }
           } else {
-            console.log('Login: Could not fetch user profile, using selected role for navigation');
             // Fallback to original behavior if profile fetch fails
             if (role === "client") {
-              console.log('Login: Navigating to /client/dashboard (fallback)');
               navigate("/client/dashboard");
             } else {
-              console.log('Login: Navigating to /consultant/dashboard (fallback)');
               navigate("/consultant/dashboard");
             }
           }
         }
-        console.log('Login: Navigation call completed');
       }
     } catch (error) {
-      console.error('Login: Unexpected error:', error);
+      console.error('Unexpected error:', error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
