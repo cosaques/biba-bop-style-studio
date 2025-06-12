@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -63,9 +62,15 @@ const Login = () => {
   const acceptInvitation = async () => {
     if (!inviteToken) return;
 
+    console.log('Login: Starting invitation acceptance process');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('Login: No user found for invitation acceptance');
+        return;
+      }
+
+      console.log('Login: Accepting invitation for user:', user.id);
 
       // Get the invitation details
       const { data: invite, error: inviteError } = await supabase
@@ -78,6 +83,8 @@ const Login = () => {
         throw new Error('Invitation not found');
       }
 
+      console.log('Login: Found invitation, consultant_id:', invite.consultant_id);
+
       // Mark invitation as used
       await supabase
         .from('client_invites')
@@ -87,6 +94,8 @@ const Login = () => {
         })
         .eq('token', inviteToken);
 
+      console.log('Login: Marked invitation as used');
+
       // Create consultant-client relationship
       await supabase
         .from('consultant_clients')
@@ -95,12 +104,14 @@ const Login = () => {
           client_id: user.id
         });
 
+      console.log('Login: Created consultant-client relationship');
+
       toast({
         title: "Invitation acceptée",
         description: "Vous avez été associé avec succès à votre conseiller en image",
       });
     } catch (error) {
-      console.error('Error accepting invitation:', error);
+      console.error('Login: Error accepting invitation:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'accepter l'invitation",
@@ -111,6 +122,7 @@ const Login = () => {
 
   const handleLogin = async (role: "client" | "consultant") => {
     if (!email || !password) {
+      console.log('Login: Missing email or password');
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs",
@@ -119,18 +131,22 @@ const Login = () => {
       return;
     }
 
+    console.log('Login: Starting login process for role:', role, 'email:', email);
     setIsLoading(true);
 
     try {
+      console.log('Login: Calling signIn...');
       const { error } = await signIn(email, password);
 
       if (error) {
+        console.log('Login: SignIn error:', error);
         toast({
           title: "Erreur de connexion",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Login: SignIn successful, showing success toast');
         toast({
           title: "Connexion réussie",
           description: "Vous êtes maintenant connecté",
@@ -138,16 +154,22 @@ const Login = () => {
 
         // Accept invitation if token is present
         if (inviteToken) {
+          console.log('Login: Processing invitation token');
           await acceptInvitation();
         }
         
+        console.log('Login: About to navigate to dashboard for role:', role);
         if (role === "client") {
+          console.log('Login: Navigating to /client/dashboard');
           navigate("/client/dashboard");
         } else {
+          console.log('Login: Navigating to /consultant/dashboard');
           navigate("/consultant/dashboard");
         }
+        console.log('Login: Navigation call completed');
       }
     } catch (error) {
+      console.error('Login: Unexpected error:', error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
