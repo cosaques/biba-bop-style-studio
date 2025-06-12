@@ -193,6 +193,10 @@ export type Database = {
           profile_exists: boolean
         }[]
       }
+      is_consultant_client_relationship: {
+        Args: { consultant_id: string; client_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
