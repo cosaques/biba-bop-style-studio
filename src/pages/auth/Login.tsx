@@ -120,6 +120,28 @@ const Login = () => {
     }
   };
 
+  const getUserProfile = async (userId: string) => {
+    console.log('Login: Fetching user profile for:', userId);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Login: Error fetching user profile:', error);
+        return null;
+      }
+
+      console.log('Login: User profile fetched:', data);
+      return data;
+    } catch (error) {
+      console.error('Login: Error fetching user profile:', error);
+      return null;
+    }
+  };
+
   const handleLogin = async (role: "client" | "consultant") => {
     if (!email || !password) {
       console.log('Login: Missing email or password');
@@ -158,13 +180,41 @@ const Login = () => {
           await acceptInvitation();
         }
         
-        console.log('Login: About to navigate to dashboard for role:', role);
-        if (role === "client") {
-          console.log('Login: Navigating to /client/dashboard');
-          navigate("/client/dashboard");
-        } else {
-          console.log('Login: Navigating to /consultant/dashboard');
-          navigate("/consultant/dashboard");
+        // Get current user to fetch their actual role
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          console.log('Login: Getting user profile to determine correct dashboard');
+          const profile = await getUserProfile(user.id);
+          
+          if (profile?.role) {
+            console.log('Login: User actual role is:', profile.role);
+            console.log('Login: Redirecting to correct dashboard based on actual role');
+            
+            if (profile.role === 'client') {
+              console.log('Login: Navigating to /client/dashboard');
+              navigate("/client/dashboard");
+            } else if (profile.role === 'consultant') {
+              console.log('Login: Navigating to /consultant/dashboard');
+              navigate("/consultant/dashboard");
+            } else {
+              console.log('Login: Unknown role, staying on login page');
+              toast({
+                title: "Erreur",
+                description: "Rôle utilisateur non reconnu",
+                variant: "destructive",
+              });
+            }
+          } else {
+            console.log('Login: Could not fetch user profile, using selected role for navigation');
+            // Fallback to original behavior if profile fetch fails
+            if (role === "client") {
+              console.log('Login: Navigating to /client/dashboard (fallback)');
+              navigate("/client/dashboard");
+            } else {
+              console.log('Login: Navigating to /consultant/dashboard (fallback)');
+              navigate("/consultant/dashboard");
+            }
+          }
         }
         console.log('Login: Navigation call completed');
       }
