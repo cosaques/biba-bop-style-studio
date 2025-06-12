@@ -15,3 +15,7 @@ dev:
 # Optional: alias for login
 login:
 	firebase login
+
+# Supabase
+generate-types:
+	supabase gen types typescript --project-id logvpbdvmhiydayjiddx > src/integrations/supabase/types.ts

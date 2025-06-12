@@ -40,7 +40,7 @@ const ConsultantMain = () => {
   const fetchClients = async () => {
     try {
       setIsLoading(true);
-      
+
       const { data, error } = await supabase
         .from('consultant_clients')
         .select(`
@@ -50,14 +50,14 @@ const ConsultantMain = () => {
             first_name,
             last_name,
             email,
-            profile_photo_url
-          ),
-          client_profiles!client_profiles_user_id_fkey (
-            age,
-            height,
-            weight,
-            bust_size,
-            gender
+            profile_photo_url,
+            client_profiles!client_profiles_user_id_fkey (
+              age,
+              height,
+              weight,
+              bust_size,
+              gender
+            )
           )
         `)
         .eq('consultant_id', user?.id);
@@ -96,7 +96,7 @@ const ConsultantMain = () => {
     const fullName = `${client.first_name || ''} ${client.last_name || ''}`.toLowerCase();
     const email = client.email?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
-    
+
     return fullName.includes(query) || email.includes(query);
   });
 
@@ -158,7 +158,7 @@ const ConsultantMain = () => {
               <p className="text-center text-muted-foreground text-sm mb-4">
                 Ajoutez un nouveau client à votre portefeuille
               </p>
-              <Button 
+              <Button
                 className="btn-primary"
                 onClick={() => setShowInviteModal(true)}
               >
