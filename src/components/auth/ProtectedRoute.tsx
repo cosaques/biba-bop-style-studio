@@ -14,20 +14,44 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const { profile, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
 
+  console.log('ProtectedRoute: Rendering with:', { 
+    user: user?.email, 
+    loading, 
+    profile: profile?.email, 
+    profileLoading, 
+    requiredRole,
+    profileRole: profile?.role 
+  });
+
   useEffect(() => {
+    console.log('ProtectedRoute: useEffect triggered', { 
+      user: user?.email, 
+      loading, 
+      profileLoading, 
+      profile: profile?.email, 
+      requiredRole 
+    });
+
     if (!loading && !profileLoading) {
       if (!user) {
+        console.log('ProtectedRoute: No user found, redirecting to login');
         navigate('/login');
         return;
       }
       
       if (requiredRole && profile?.role !== requiredRole) {
+        console.log('ProtectedRoute: Role mismatch', { 
+          requiredRole, 
+          userRole: profile?.role 
+        });
+        
         // Redirect to appropriate dashboard based on user role
         if (profile?.role === 'client') {
           navigate('/client/dashboard');
         } else if (profile?.role === 'consultant') {
           navigate('/consultant/dashboard');
         } else {
+          console.log('ProtectedRoute: Unknown role, redirecting to login');
           navigate('/login');
         }
       }
@@ -35,6 +59,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   }, [user, profile, loading, profileLoading, navigate, requiredRole]);
 
   if (loading || profileLoading) {
+    console.log('ProtectedRoute: Still loading');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -46,12 +71,15 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (!user) {
+    console.log('ProtectedRoute: No user, rendering null');
     return null;
   }
 
   if (requiredRole && profile?.role !== requiredRole) {
+    console.log('ProtectedRoute: Role check failed, rendering null');
     return null;
   }
 
+  console.log('ProtectedRoute: All checks passed, rendering children');
   return <>{children}</>;
 };

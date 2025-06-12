@@ -29,7 +29,10 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
+    console.log('UserProfileProvider: fetchProfile called', { user: user?.email, loadingUser });
+    
     if (!user) {
+      console.log('UserProfileProvider: No user, setting loading to false');
       if (!loadingUser) {
         setLoading(false);
       }
@@ -37,6 +40,8 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
+      console.log('UserProfileProvider: Fetching profile for user:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -44,13 +49,15 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         .single();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('UserProfileProvider: Error fetching user profile:', error);
       } else {
+        console.log('UserProfileProvider: Profile fetched successfully:', data);
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('UserProfileProvider: Exception fetching user profile:', error);
     } finally {
+      console.log('UserProfileProvider: Setting loading to false');
       setLoading(false);
     }
   };
@@ -80,8 +87,9 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   useEffect(() => {
+    console.log('UserProfileProvider: useEffect triggered', { user: user?.email, loadingUser });
     fetchProfile();
-  }, [user]);
+  }, [user, loadingUser]);
 
   const value = {
     profile,
@@ -89,6 +97,8 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     updateProfile,
     refetch: fetchProfile
   };
+
+  console.log('UserProfileProvider: Rendering with values:', { profile: profile?.email, loading, user: user?.email });
 
   return <UserProfileContext.Provider value={value}>{children}</UserProfileContext.Provider>;
 };
