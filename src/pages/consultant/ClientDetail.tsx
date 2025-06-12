@@ -152,7 +152,7 @@ const ClientDetail = () => {
   };
 
   // Filtrer les tenues pour ce client (mock data for now)
-  const clientOutfits = mockOutfits.filter(outfit => outfit.clientId === clientId);
+  const clientOutfits = mockOutfits;
 
   if (isLoading) {
     return (
@@ -209,7 +209,7 @@ const ClientDetail = () => {
                     className="w-12 h-12 rounded-full mr-4 object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full mr-4 bg-bibabop-navy flex items-center justify-center text-white font-medium">
+                  <div className="w-12 h-12 rounded-full mr-4 bg-bibabop-lightpink flex items-center justify-center font-medium">
                     {getClientInitials(client)}
                   </div>
                 )}

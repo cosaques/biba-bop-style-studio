@@ -72,11 +72,11 @@ const ConsultantMain = () => {
         last_name: item.profiles.last_name,
         email: item.profiles.email,
         profile_photo_url: item.profiles.profile_photo_url,
-        age: item.client_profiles?.age,
-        height: item.client_profiles?.height,
-        weight: item.client_profiles?.weight,
-        bust_size: item.client_profiles?.bust_size,
-        gender: item.client_profiles?.gender,
+        age: item.profiles.client_profiles?.age,
+        height: item.profiles.client_profiles?.height,
+        weight: item.profiles.client_profiles?.weight,
+        bust_size: item.profiles.client_profiles?.bust_size,
+        gender: item.profiles.client_profiles?.gender,
       })) || [];
 
       setClients(clientsData);
