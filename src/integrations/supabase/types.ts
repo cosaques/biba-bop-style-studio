@@ -101,6 +101,50 @@ export type Database = {
           },
         ]
       }
+      clothing_items: {
+        Row: {
+          category: string
+          color: string
+          created_at: string
+          id: string
+          image_url: string
+          notes: string | null
+          season: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          color?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          notes?: string | null
+          season?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          color?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          notes?: string | null
+          season?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clothing_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultant_clients: {
         Row: {
           client_id: string
