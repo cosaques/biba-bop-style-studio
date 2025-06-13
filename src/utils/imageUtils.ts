@@ -1,5 +1,5 @@
 
-export const compressAndResizeImage = (file: File, maxSize: number = 2000): Promise<Blob> => {
+export const compressAndResizeImage = (file: File, maxSize: number = 1024): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -44,8 +44,8 @@ export const compressAndResizeImage = (file: File, maxSize: number = 2000): Prom
 export const uploadClothingImage = async (file: File, userId: string): Promise<{ url: string; path: string }> => {
   const { supabase } = await import('@/integrations/supabase/client');
   
-  // Compress the image
-  const compressedBlob = await compressAndResizeImage(file);
+  // Compress the image to max 1024px
+  const compressedBlob = await compressAndResizeImage(file, 1024);
   
   // Generate unique filename
   const fileExt = file.name.split('.').pop();

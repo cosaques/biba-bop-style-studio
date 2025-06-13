@@ -125,7 +125,7 @@ export default function ClientWardrobe() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">Ma Garde-robe</h1>
             <p className="subtitle">Gérez vos vêtements pour créer des tenues personnalisées</p>
@@ -140,14 +140,14 @@ export default function ClientWardrobe() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-bibabop-navy">Ma Garde-robe</h1>
-          <p className="subtitle">Gérez vos vêtements pour créer des tenues personnalisées</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-bibabop-navy">Ma Garde-robe</h1>
+          <p className="subtitle text-sm md:text-base">Gérez vos vêtements pour créer des tenues personnalisées</p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <div className="w-full md:w-2/3">
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="w-full">
             <Input
               placeholder="Rechercher par type, couleur, saison, notes..."
               value={searchTerm}
@@ -156,7 +156,7 @@ export default function ClientWardrobe() {
             />
           </div>
 
-          <div className="w-full md:w-1/3 flex justify-end">
+          <div className="w-full flex justify-center md:justify-end">
             <Button 
               className="btn-primary w-full md:w-auto"
               onClick={() => setIsModalOpen(true)}
@@ -167,13 +167,19 @@ export default function ClientWardrobe() {
         </div>
 
         <Tabs defaultValue="tous" value={filter} onValueChange={setFilter} className="w-full">
-          <TabsList className="grid grid-cols-7 mb-6">
-            {categoryOptions.map((option) => (
-              <TabsTrigger key={option.value} value={option.value}>
-                {option.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="w-full overflow-x-auto mb-6">
+            <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground min-w-max">
+              {categoryOptions.map((option) => (
+                <TabsTrigger 
+                  key={option.value} 
+                  value={option.value}
+                  className="whitespace-nowrap px-2 md:px-3 text-xs md:text-sm"
+                >
+                  {option.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           <TabsContent value={filter} className="animate-fade-in">
             {filteredItems.length === 0 ? (
@@ -194,10 +200,10 @@ export default function ClientWardrobe() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {filteredItems.map((item) => (
-                  <Card key={item.id} className="card-hover">
-                    <CardHeader className="p-0">
+                  <Card key={item.id} className="card-hover flex flex-col">
+                    <CardHeader className="p-0 flex-shrink-0">
                       <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50">
                         <img
                           src={getOptimizedImageUrl(item.image_url, 400)}
@@ -206,12 +212,12 @@ export default function ClientWardrobe() {
                         />
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-4">
-                      <h3 className="font-medium">
+                    <CardContent className="pt-4 flex-grow">
+                      <h3 className="font-medium text-sm md:text-base">
                         {getColorLabel(item.color)} {getCategoryLabel(item.category)}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Saison: {getSeasonLabel(item.season)}
+                      <p className="text-xs md:text-sm text-muted-foreground">
+                        Sa: {getSeasonLabel(item.season)}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -219,22 +225,25 @@ export default function ClientWardrobe() {
                         </p>
                       )}
                     </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditItem(item)}
-                      >
-                        Modifier
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteItem(item)}
-                      >
-                        Supprimer
-                      </Button>
+                    <CardFooter className="pt-0 pb-4 flex-shrink-0">
+                      <div className="flex flex-col md:flex-row gap-2 w-full">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditItem(item)}
+                          className="flex-1 text-xs md:text-sm"
+                        >
+                          Modifier
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive flex-1 text-xs md:text-sm"
+                          onClick={() => handleDeleteItem(item)}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
                     </CardFooter>
                   </Card>
                 ))}

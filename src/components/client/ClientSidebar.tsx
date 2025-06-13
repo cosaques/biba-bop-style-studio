@@ -1,16 +1,19 @@
 
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Home,
   Settings,
   LogOut,
   Shirt,
-  Image
+  Image,
+  Menu
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-export function ClientSidebar() {
+function SidebarContent() {
   const { signOut } = useAuth();
   const location = useLocation();
 
@@ -23,7 +26,7 @@ export function ClientSidebar() {
   };
 
   return (
-    <div className="hidden md:flex w-64 flex-col border-r bg-bibabop-pink text-white">
+    <div className="flex flex-col h-full bg-bibabop-pink text-white">
       <div className="p-6">
         <p className="text-sm text-white/70">Portail Client</p>
       </div>
@@ -96,6 +99,31 @@ export function ClientSidebar() {
           </Button>
         </div>
       </nav>
+    </div>
+  );
+}
+
+export function ClientSidebar() {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-50">
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-64">
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <div className="hidden md:flex w-64 flex-col border-r">
+      <SidebarContent />
     </div>
   );
 }

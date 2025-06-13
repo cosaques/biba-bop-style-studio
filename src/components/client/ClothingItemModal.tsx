@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,13 +56,38 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>(editItem?.image_url || '');
+  const [previewUrl, setPreviewUrl] = useState<string>('');
   const [formData, setFormData] = useState({
-    category: editItem?.category || '',
-    color: editItem?.color || 'other',
-    season: editItem?.season || 'all',
-    notes: editItem?.notes || ''
+    category: '' as ClothingItem['category'] | '',
+    color: 'other' as ClothingItem['color'],
+    season: 'all' as ClothingItem['season'],
+    notes: ''
   });
+
+  // Reset form when modal opens/closes or editItem changes
+  useEffect(() => {
+    if (open) {
+      if (editItem) {
+        setFormData({
+          category: editItem.category,
+          color: editItem.color,
+          season: editItem.season,
+          notes: editItem.notes || ''
+        });
+        setPreviewUrl(editItem.image_url);
+        setSelectedImage(null);
+      } else {
+        setFormData({
+          category: '',
+          color: 'other',
+          season: 'all',
+          notes: ''
+        });
+        setPreviewUrl('');
+        setSelectedImage(null);
+      }
+    }
+  }, [open, editItem]);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -145,21 +170,11 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
       await onSave({
         image_url: imageUrl,
         category: formData.category as ClothingItem['category'],
-        color: formData.color as ClothingItem['color'],
-        season: formData.season as ClothingItem['season'],
+        color: formData.color,
+        season: formData.season,
         notes: formData.notes || undefined
       });
 
-      // Reset form
-      setSelectedImage(null);
-      setPreviewUrl('');
-      setFormData({
-        category: '',
-        color: 'other',
-        season: 'all',
-        notes: ''
-      });
-      
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving clothing item:', error);
@@ -193,11 +208,13 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
             >
               {previewUrl ? (
                 <div className="relative">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-md"
-                  />
+                  <div className="w-full h-[150px] flex items-center justify-center bg-gray-50 rounded-md overflow-hidden">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="max-w-[150px] max-h-[150px] object-contain"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="destructive"
@@ -237,7 +254,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
             <Label>Catégorie *</Label>
             <Select 
               value={formData.category} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value as ClothingItem['category'] }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionnez une catégorie" />
@@ -257,7 +274,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
             <Label>Couleur</Label>
             <Select 
               value={formData.color} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, color: value }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, color: value as ClothingItem['color'] }))}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -283,7 +300,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
             <Label>Saison</Label>
             <Select 
               value={formData.season} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, season: value }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, season: value as ClothingItem['season'] }))}
             >
               <SelectTrigger>
                 <SelectValue />
