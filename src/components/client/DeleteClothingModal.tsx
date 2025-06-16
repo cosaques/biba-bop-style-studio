@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ClothingItem } from "@/hooks/useClothingItems";
+import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
 interface DeleteClothingModalProps {
   open: boolean;
@@ -58,9 +59,9 @@ export function DeleteClothingModal({ open, onOpenChange, onConfirm, item, isDel
         <div className="py-4">
           <div className="flex items-center gap-4">
             <img
-              src={item.image_url}
+              src={getOptimizedImageUrl(item.image_url, 400)}
               alt={`${getColorLabel(item.color)} ${getCategoryLabel(item.category)}`}
-              className="w-16 h-16 object-cover rounded-md"
+              className="w-16 h-16 object-contain rounded-md"
             />
             <div>
               <p className="font-medium">

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { ClothingItem } from "@/hooks/useClothingItems";
-import { uploadClothingImage } from "@/utils/imageUtils";
+import { uploadClothingImage, getOptimizedImageUrl } from "@/utils/imageUtils";
 import { Upload, X } from "lucide-react";
 
 interface ClothingItemModalProps {
@@ -74,7 +74,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
           season: editItem.season,
           notes: editItem.notes || ''
         });
-        setPreviewUrl(editItem.image_url);
+        setPreviewUrl(getOptimizedImageUrl(editItem.image_url, 400));
         setSelectedImage(null);
       } else {
         setFormData({
@@ -136,7 +136,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
 
   const removeImage = () => {
     setSelectedImage(null);
-    setPreviewUrl(editItem?.image_url || '');
+    setPreviewUrl(editItem ? getOptimizedImageUrl(editItem.image_url, 400) : '');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
