@@ -74,12 +74,12 @@ export default function ClientWardrobe() {
 
   const filteredItems = items.filter((item) => {
     const matchesFilter = filter === "tous" || item.category === filter;
-    const matchesSearch = searchTerm === "" || 
+    const matchesSearch = searchTerm === "" ||
       getCategoryLabel(item.category).toLowerCase().includes(searchTerm.toLowerCase()) ||
       getColorLabel(item.color).toLowerCase().includes(searchTerm.toLowerCase()) ||
       getSeasonLabel(item.season).toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     return matchesFilter && matchesSearch;
   });
 
@@ -104,11 +104,11 @@ export default function ClientWardrobe() {
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-    
+
     setIsDeleting(true);
     const result = await deleteItem(itemToDelete.id, itemToDelete.image_url);
     setIsDeleting(false);
-    
+
     if (result.success) {
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -157,7 +157,7 @@ export default function ClientWardrobe() {
           </div>
 
           <div className="flex-shrink-0">
-            <Button 
+            <Button
               className="btn-primary w-full md:w-auto"
               onClick={() => setIsModalOpen(true)}
             >
@@ -170,8 +170,8 @@ export default function ClientWardrobe() {
           <div className="w-full overflow-x-auto mb-6">
             <TabsList className="grid w-full grid-cols-7 h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
               {categoryOptions.map((option) => (
-                <TabsTrigger 
-                  key={option.value} 
+                <TabsTrigger
+                  key={option.value}
                   value={option.value}
                   className="whitespace-nowrap px-2 md:px-3 text-xs md:text-sm"
                 >
@@ -204,17 +204,17 @@ export default function ClientWardrobe() {
                 {filteredItems.map((item) => (
                   <Card key={item.id} className="card-hover flex flex-col">
                     <CardHeader className="p-0 flex-shrink-0">
-                      <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-50">
+                      <div className="relative aspect-square overflow-hidden rounded-t-lg">
                         <img
                           src={getOptimizedImageUrl(item.image_url, 400)}
                           alt={`${getColorLabel(item.color)} ${getCategoryLabel(item.category)}`}
-                          className="w-full h-full object-contain p-2"
+                          className="w-full h-full object-contain p-1"
                         />
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 flex-grow">
-                      <h3 className="font-medium text-sm md:text-base mb-2">
-                        {getColorLabel(item.color)} {getCategoryLabel(item.category)}
+                      <h3 className="font-medium text-sm md:text-xl mb-2">
+                        {getCategoryLabel(item.category)} {getColorLabel(item.color)}
                       </h3>
                       <p className="text-xs md:text-sm text-muted-foreground">
                         Saison: {getSeasonLabel(item.season)}
@@ -225,25 +225,22 @@ export default function ClientWardrobe() {
                         </p>
                       )}
                     </CardContent>
-                    <CardFooter className="pt-0 pb-4 flex-shrink-0">
-                      <div className="flex flex-col gap-2 w-full">
-                        <Button 
-                          variant="outline" 
+                    <CardFooter className="pt-0 pb-4 justify-between pt-0">
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleEditItem(item)}
-                          className="w-full text-xs md:text-sm"
                         >
                           Modifier
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive w-full text-xs md:text-sm"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
                           onClick={() => handleDeleteItem(item)}
                         >
                           Supprimer
                         </Button>
-                      </div>
                     </CardFooter>
                   </Card>
                 ))}
