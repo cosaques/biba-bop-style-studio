@@ -10,7 +10,7 @@ export const compressAndResizeImage = (file: File, maxSize: number = 1024): Prom
       // Calculate new dimensions
       let { width, height } = img;
       const maxDimension = Math.max(width, height);
-      
+
       if (maxDimension > maxSize) {
         const ratio = maxSize / maxDimension;
         width *= ratio;
@@ -23,7 +23,7 @@ export const compressAndResizeImage = (file: File, maxSize: number = 1024): Prom
 
       // Draw and compress
       ctx?.drawImage(img, 0, 0, width, height);
-      
+
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -44,10 +44,10 @@ export const compressAndResizeImage = (file: File, maxSize: number = 1024): Prom
 
 export const uploadClothingImage = async (file: File, userId: string): Promise<{ url: string; path: string }> => {
   const { supabase } = await import('@/integrations/supabase/client');
-  
+
   // Compress the image to max 1024px
   const compressedBlob = await compressAndResizeImage(file, 1024);
-  
+
   // Generate unique filename
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -71,21 +71,21 @@ export const uploadClothingImage = async (file: File, userId: string): Promise<{
 
 export const getOptimizedImageUrl = (url: string, size: number = 400): string => {
   if (!url) return url;
-  
+
   // Check if this is a Supabase storage URL
   if (!url.includes('supabase.co/storage/v1/object/public/')) {
     return url;
   }
-  
+
   try {
     // Extract the bucket and path from the URL
     const urlParts = url.split('/storage/v1/object/public/');
     if (urlParts.length !== 2) return url;
-    
+
     const [bucketAndPath] = urlParts[1].split('/');
     const bucket = bucketAndPath;
     const path = urlParts[1].substring(bucket.length + 1);
-    
+
     // Use Supabase's image transformation
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
@@ -94,11 +94,10 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
           width: size,
           height: size,
           resize: 'contain',
-          format: 'webp',
           quality: 80
         }
       });
-    
+
     return publicUrl;
   } catch (error) {
     console.error('Error optimizing image URL:', error);
