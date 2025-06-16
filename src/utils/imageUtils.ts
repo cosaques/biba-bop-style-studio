@@ -69,9 +69,40 @@ export const uploadClothingImage = async (file: File, userId: string): Promise<{
 };
 
 export const getOptimizedImageUrl = (url: string, size: number = 400): string => {
-  if (!url.includes('supabase')) return url;
+  if (!url) return url;
   
-  // Add Supabase image transformation parameters
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}width=${size}&height=${size}&resize=contain&format=webp`;
+  // Check if this is a Supabase storage URL
+  if (!url.includes('supabase.co/storage/v1/object/public/')) {
+    return url;
+  }
+  
+  const { supabase } = require('@/integrations/supabase/client');
+  
+  try {
+    // Extract the bucket and path from the URL
+    const urlParts = url.split('/storage/v1/object/public/');
+    if (urlParts.length !== 2) return url;
+    
+    const [bucketAndPath] = urlParts[1].split('/');
+    const bucket = bucketAndPath;
+    const path = urlParts[1].substring(bucket.length + 1);
+    
+    // Use Supabase's image transformation
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path, {
+        transform: {
+          width: size,
+          height: size,
+          resize: 'contain',
+          format: 'webp',
+          quality: 80
+        }
+      });
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('Error optimizing image URL:', error);
+    return url;
+  }
 };
