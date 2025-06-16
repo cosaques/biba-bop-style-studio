@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
 import { ClothingItem, useClothingItems } from "@/hooks/useClothingItems";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
@@ -119,73 +119,74 @@ const ClientWardrobe = () => {
   }
 
   return (
-    <TooltipProvider>
-      <Card>
-        <CardHeader>
-          <CardTitle>Garde-robe du client</CardTitle>
-          <CardDescription>
-            Vêtements disponibles pour créer des tenues
-          </CardDescription>
-          <div className="flex gap-4 items-center pt-4">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categoryOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredClothes.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">
-                {selectedCategory === 'all' 
-                  ? "Aucun vêtement dans la garde-robe de ce client"
-                  : `Aucun vêtement de type "${categoryOptions.find(c => c.value === selectedCategory)?.label}" trouvé`
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredClothes.map((item) => (
-                <div key={item.id} className="space-y-2">
-                  <div className="aspect-square bg-bibabop-lightgrey rounded-md border border-gray-200 p-2 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={getOptimizedImageUrl(item.image_url, 400)}
-                      alt={`${categoryTranslations[item.category]} ${colorTranslations[item.color]}`}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      {categoryTranslations[item.category]} {colorTranslations[item.color]} · {seasonTranslations[item.season]}
-                    </div>
-                    {item.notes && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="cursor-help">
-                            <Info className="h-4 w-4 text-bibabop-pink hover:text-bibabop-darkpink transition-colors" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{item.notes}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Garde-robe du client</CardTitle>
+        <CardDescription>
+          Vêtements disponibles pour créer des tenues
+        </CardDescription>
+        <div className="flex gap-4 items-center pt-4">
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </TooltipProvider>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {filteredClothes.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">
+              {selectedCategory === 'all' 
+                ? "Aucun vêtement dans la garde-robe de ce client"
+                : `Aucun vêtement de type "${categoryOptions.find(c => c.value === selectedCategory)?.label}" trouvé`
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredClothes.map((item) => (
+              <div key={item.id} className="space-y-2">
+                <div className="aspect-square bg-bibabop-lightgrey rounded-md border border-gray-200 p-2 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={getOptimizedImageUrl(item.image_url, 400)}
+                    alt={`${categoryTranslations[item.category]} ${colorTranslations[item.color]}`}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {categoryTranslations[item.category]} {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                  </div>
+                  {item.notes && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
+                          <Info className="h-4 w-4 text-bibabop-pink" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">Notes</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{item.notes}</p>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
