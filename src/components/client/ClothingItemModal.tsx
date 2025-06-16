@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ClothingItem } from "@/hooks/useClothingItems";
 import { uploadClothingImage } from "@/utils/imageUtils";
 import { Upload, X } from "lucide-react";
-
-console.log("ClothingItemModal.tsx: Component file loaded");
 
 interface ClothingItemModalProps {
   open: boolean;
@@ -53,8 +52,6 @@ const seasonOptions = [
 ];
 
 export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: ClothingItemModalProps) {
-  console.log("ClothingItemModal: Component function called", { open, editItem: editItem?.id });
-  
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,11 +66,8 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
 
   // Reset form when modal opens/closes or editItem changes
   useEffect(() => {
-    console.log("ClothingItemModal: Effect triggered", { open, editItem: editItem?.id });
-    
     if (open) {
       if (editItem) {
-        console.log("ClothingItemModal: Setting form data for edit", editItem);
         setFormData({
           category: editItem.category,
           color: editItem.color,
@@ -83,7 +77,6 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
         setPreviewUrl(editItem.image_url);
         setSelectedImage(null);
       } else {
-        console.log("ClothingItemModal: Resetting form for new item");
         setFormData({
           category: '',
           color: 'other',
@@ -95,16 +88,6 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
       }
     }
   }, [open, editItem]);
-
-  useEffect(() => {
-    console.log("ClothingItemModal: Modal state changed", {
-      open,
-      isLoading,
-      hasSelectedImage: !!selectedImage,
-      previewUrl: !!previewUrl,
-      formData
-    });
-  }, [open, isLoading, selectedImage, previewUrl, formData]);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

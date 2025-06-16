@@ -19,7 +19,7 @@ const ClientDashboard = () => {
       
       <div className="flex-1">
         <ClientHeader />
-        <main>
+        <main className="relative">
           <Outlet />
         </main>
       </div>

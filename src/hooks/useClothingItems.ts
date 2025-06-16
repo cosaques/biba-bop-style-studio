@@ -1,10 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-console.log("useClothingItems.ts: Hook file loaded");
 
 export interface ClothingItem {
   id: string;
@@ -19,24 +17,18 @@ export interface ClothingItem {
 }
 
 export const useClothingItems = () => {
-  console.log("useClothingItems: Hook function called");
-  
   const { user } = useAuth();
   const { toast } = useToast();
   const [items, setItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchItems = async () => {
-    console.log("useClothingItems: fetchItems called", { user: user?.id });
-    
+  const fetchItems = useCallback(async () => {
     if (!user) {
-      console.log("useClothingItems: No user, setting loading to false");
       setLoading(false);
       return;
     }
 
     try {
-      console.log("useClothingItems: Fetching clothing items from Supabase");
       const { data, error } = await supabase
         .from('clothing_items')
         .select('*')
@@ -44,20 +36,18 @@ export const useClothingItems = () => {
 
       if (error) throw error;
       
-      console.log("useClothingItems: Successfully fetched items:", data?.length || 0);
       setItems((data || []) as ClothingItem[]);
     } catch (error) {
-      console.error('useClothingItems: Error fetching clothing items:', error);
+      console.error('Error fetching clothing items:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger vos vêtements",
         variant: "destructive",
       });
     } finally {
-      console.log("useClothingItems: Setting loading to false");
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   const createItem = async (itemData: Omit<ClothingItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return { error: 'User not authenticated' };
@@ -158,17 +148,8 @@ export const useClothingItems = () => {
   };
 
   useEffect(() => {
-    console.log("useClothingItems: Effect triggered, user changed:", user?.id);
     fetchItems();
-  }, [user]);
-
-  useEffect(() => {
-    console.log("useClothingItems: Hook state:", {
-      itemsCount: items.length,
-      loading,
-      userId: user?.id
-    });
-  }, [items, loading, user]);
+  }, [fetchItems]);
 
   return {
     items,

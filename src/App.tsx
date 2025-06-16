@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +25,16 @@ import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Prevent refetching on window focus that might cause remounting
+      refetchOnWindowFocus: false,
+      // Keep data in cache longer to prevent unnecessary refetches
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 console.log("App.tsx: App component loading");
 
@@ -44,6 +52,7 @@ const App = () => {
     
     const handleVisibilityChange = () => {
       console.log("App.tsx: Page visibility changed to:", document.visibilityState);
+      // Don't trigger any actions on visibility change that might cause remounting
     };
     
     const handleFocus = () => {
@@ -54,11 +63,17 @@ const App = () => {
       console.log("App.tsx: Window lost focus");
     };
 
+    // Add specific handling for page navigation to prevent unwanted reloads
+    const handlePopState = (event: PopStateEvent) => {
+      console.log("App.tsx: Browser navigation detected:", event);
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('unload', handleUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
       console.log("App.tsx: App component unmounting");
@@ -67,6 +82,7 @@ const App = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
