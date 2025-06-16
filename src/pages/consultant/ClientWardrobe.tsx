@@ -155,11 +155,11 @@ const ClientWardrobe = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredClothes.map((item) => (
                 <div key={item.id} className="space-y-2">
-                  <div className="aspect-square bg-bibabop-lightgrey rounded-md flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square bg-bibabop-lightgrey rounded-md border border-gray-200 p-2 flex items-center justify-center overflow-hidden">
                     <img
                       src={getOptimizedImageUrl(item.image_url, 400)}
                       alt={`${categoryTranslations[item.category]} ${colorTranslations[item.color]}`}
-                      className="w-full h-full object-cover"
+                      className="max-w-full max-h-full object-contain"
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -168,8 +168,10 @@ const ClientWardrobe = () => {
                     </div>
                     {item.notes && (
                       <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        <TooltipTrigger asChild>
+                          <div className="cursor-help">
+                            <Info className="h-4 w-4 text-bibabop-pink hover:text-bibabop-darkpink transition-colors" />
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="max-w-xs">{item.notes}</p>
