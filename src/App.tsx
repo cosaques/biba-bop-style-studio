@@ -24,71 +24,115 @@ import ConsultantSettings from "./pages/consultant/ConsultantSettings";
 import ClientDetail from "./pages/consultant/ClientDetail";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <UserProfileProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register/:role" element={<Register />} />
-              <Route path="/password-reset" element={<PasswordReset />} />
-              <Route path="/invite/:token" element={<InviteAccept />} />
+console.log("App.tsx: App component loading");
 
-              {/* Routes Client */}
-              <Route path="/client/dashboard" element={
-                <ProtectedRoute requiredRole="client">
-                  <ClientDashboard />
-                </ProtectedRoute>
-              }>
-                <Route index element={<ClientMain />} />
-                <Route path="outfits" element={<ClientOutfits />} />
-                <Route path="wardrobe" element={<ClientWardrobe />} />
-                <Route path="settings" element={<ClientSettingsPage />} />
-              </Route>
+const App = () => {
+  useEffect(() => {
+    console.log("App.tsx: App component mounted");
+    
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log("App.tsx: Page is about to unload/reload");
+    };
+    
+    const handleUnload = () => {
+      console.log("App.tsx: Page is unloading");
+    };
+    
+    const handleVisibilityChange = () => {
+      console.log("App.tsx: Page visibility changed to:", document.visibilityState);
+    };
+    
+    const handleFocus = () => {
+      console.log("App.tsx: Window gained focus");
+    };
+    
+    const handleBlur = () => {
+      console.log("App.tsx: Window lost focus");
+    };
 
-              <Route path="/client/onboarding" element={
-                <ProtectedRoute requiredRole="client">
-                  <ClientOnboarding />
-                </ProtectedRoute>
-              } />
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
 
-              {/* Routes Conseiller en Image */}
-              <Route path="/consultant/dashboard" element={
-                <ProtectedRoute requiredRole="consultant">
-                  <ConsultantDashboard />
-                </ProtectedRoute>
-              }>
-                <Route index element={<ConsultantMain />} />
-                <Route path="settings" element={<ConsultantSettings />} />
-              </Route>
+    return () => {
+      console.log("App.tsx: App component unmounting");
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
 
-              <Route path="/consultant/client/:clientId" element={
-                <ProtectedRoute requiredRole="consultant">
-                  <ClientDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/consultant/outfit-creator" element={
-                <ProtectedRoute requiredRole="consultant">
-                  <OutfitCreator />
-                </ProtectedRoute>
-              } />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <UserProfileProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register/:role" element={<Register />} />
+                <Route path="/password-reset" element={<PasswordReset />} />
+                <Route path="/invite/:token" element={<InviteAccept />} />
 
-              {/* Route 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </UserProfileProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+                {/* Routes Client */}
+                <Route path="/client/dashboard" element={
+                  <ProtectedRoute requiredRole="client">
+                    <ClientDashboard />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<ClientMain />} />
+                  <Route path="outfits" element={<ClientOutfits />} />
+                  <Route path="wardrobe" element={<ClientWardrobe />} />
+                  <Route path="settings" element={<ClientSettingsPage />} />
+                </Route>
+
+                <Route path="/client/onboarding" element={
+                  <ProtectedRoute requiredRole="client">
+                    <ClientOnboarding />
+                  </ProtectedRoute>
+                } />
+
+                {/* Routes Conseiller en Image */}
+                <Route path="/consultant/dashboard" element={
+                  <ProtectedRoute requiredRole="consultant">
+                    <ConsultantDashboard />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<ConsultantMain />} />
+                  <Route path="settings" element={<ConsultantSettings />} />
+                </Route>
+
+                <Route path="/consultant/client/:clientId" element={
+                  <ProtectedRoute requiredRole="consultant">
+                    <ClientDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/consultant/outfit-creator" element={
+                  <ProtectedRoute requiredRole="consultant">
+                    <OutfitCreator />
+                  </ProtectedRoute>
+                } />
+
+                {/* Route 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </UserProfileProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

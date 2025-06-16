@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +7,8 @@ import { useClothingItems, ClothingItem } from "@/hooks/useClothingItems";
 import { ClothingItemModal } from "@/components/client/ClothingItemModal";
 import { DeleteClothingModal } from "@/components/client/DeleteClothingModal";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
+
+console.log("ClientWardrobe.tsx: Component file loaded");
 
 const categoryOptions = [
   { value: 'tous', label: 'Tous' },
@@ -62,6 +63,8 @@ const getSeasonLabel = (season: string) => {
 };
 
 export default function ClientWardrobe() {
+  console.log("ClientWardrobe: Component function called");
+  
   const [filter, setFilter] = useState("tous");
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,6 +74,30 @@ export default function ClientWardrobe() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { items, loading, createItem, updateItem, deleteItem } = useClothingItems();
+
+  useEffect(() => {
+    console.log("ClientWardrobe: Component mounted");
+    console.log("ClientWardrobe: Current state:", {
+      filter,
+      searchTerm,
+      isModalOpen,
+      editingItem: editingItem?.id,
+      itemsCount: items.length
+    });
+    
+    return () => {
+      console.log("ClientWardrobe: Component unmounting");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("ClientWardrobe: State changed:", {
+      filter,
+      searchTerm,
+      isModalOpen,
+      editingItem: editingItem?.id
+    });
+  }, [filter, searchTerm, isModalOpen, editingItem]);
 
   const filteredItems = items.filter((item) => {
     const matchesFilter = filter === "tous" || item.category === filter;
@@ -123,6 +150,7 @@ export default function ClientWardrobe() {
   };
 
   if (loading) {
+    console.log("ClientWardrobe: Rendering loading state");
     return (
       <div className="min-h-screen bg-background">
         <div className="p-4 md:p-6">
@@ -138,6 +166,8 @@ export default function ClientWardrobe() {
     );
   }
 
+  console.log("ClientWardrobe: Rendering main component");
+
   return (
     <div className="min-h-screen bg-background">
       <div className="p-4 md:p-6">
@@ -151,7 +181,10 @@ export default function ClientWardrobe() {
             <Input
               placeholder="Rechercher par type, couleur, saison, notes..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                console.log("ClientWardrobe: Search term changed to:", e.target.value);
+                setSearchTerm(e.target.value);
+              }}
               className="w-full"
             />
           </div>
@@ -159,14 +192,20 @@ export default function ClientWardrobe() {
           <div className="flex-shrink-0">
             <Button
               className="btn-primary w-full md:w-auto"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                console.log("ClientWardrobe: Add clothing button clicked");
+                setIsModalOpen(true);
+              }}
             >
               Ajouter un vêtement
             </Button>
           </div>
         </div>
 
-        <Tabs defaultValue="tous" value={filter} onValueChange={setFilter} className="w-full">
+        <Tabs defaultValue="tous" value={filter} onValueChange={(value) => {
+          console.log("ClientWardrobe: Tab changed to:", value);
+          setFilter(value);
+        }} className="w-full">
           <div className="w-full overflow-x-auto mb-6">
             <TabsList className="grid w-full grid-cols-7 h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
               {categoryOptions.map((option) => (
