@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 
 export const compressAndResizeImage = (file: File, maxSize: number = 1024): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -75,8 +76,6 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
   if (!url.includes('supabase.co/storage/v1/object/public/')) {
     return url;
   }
-  
-  const { supabase } = require('@/integrations/supabase/client');
   
   try {
     // Extract the bucket and path from the URL
