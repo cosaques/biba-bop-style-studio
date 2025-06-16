@@ -146,8 +146,8 @@ export default function ClientWardrobe() {
           <p className="subtitle text-sm md:text-base">Gérez vos vêtements pour créer des tenues personnalisées</p>
         </div>
 
-        <div className="flex flex-col gap-4 mb-8">
-          <div className="w-full">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1">
             <Input
               placeholder="Rechercher par type, couleur, saison, notes..."
               value={searchTerm}
@@ -156,7 +156,7 @@ export default function ClientWardrobe() {
             />
           </div>
 
-          <div className="w-full flex justify-center md:justify-end">
+          <div className="flex-shrink-0">
             <Button 
               className="btn-primary w-full md:w-auto"
               onClick={() => setIsModalOpen(true)}
@@ -168,7 +168,7 @@ export default function ClientWardrobe() {
 
         <Tabs defaultValue="tous" value={filter} onValueChange={setFilter} className="w-full">
           <div className="w-full overflow-x-auto mb-6">
-            <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground min-w-max">
+            <TabsList className="grid w-full grid-cols-7 h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
               {categoryOptions.map((option) => (
                 <TabsTrigger 
                   key={option.value} 
@@ -213,11 +213,11 @@ export default function ClientWardrobe() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 flex-grow">
-                      <h3 className="font-medium text-sm md:text-base">
+                      <h3 className="font-medium text-sm md:text-base mb-2">
                         {getColorLabel(item.color)} {getCategoryLabel(item.category)}
                       </h3>
                       <p className="text-xs md:text-sm text-muted-foreground">
-                        Sa: {getSeasonLabel(item.season)}
+                        Saison: {getSeasonLabel(item.season)}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -226,19 +226,19 @@ export default function ClientWardrobe() {
                       )}
                     </CardContent>
                     <CardFooter className="pt-0 pb-4 flex-shrink-0">
-                      <div className="flex flex-col md:flex-row gap-2 w-full">
+                      <div className="flex flex-col gap-2 w-full">
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleEditItem(item)}
-                          className="flex-1 text-xs md:text-sm"
+                          className="w-full text-xs md:text-sm"
                         >
                           Modifier
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-destructive hover:text-destructive flex-1 text-xs md:text-sm"
+                          className="text-destructive hover:text-destructive w-full text-xs md:text-sm"
                           onClick={() => handleDeleteItem(item)}
                         >
                           Supprimer

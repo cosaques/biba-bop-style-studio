@@ -35,7 +35,7 @@ export const useClothingItems = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setItems(data || []);
+      setItems((data || []) as ClothingItem[]);
     } catch (error) {
       console.error('Error fetching clothing items:', error);
       toast({
@@ -63,7 +63,7 @@ export const useClothingItems = () => {
 
       if (error) throw error;
       
-      setItems(prev => [data, ...prev]);
+      setItems(prev => [data as ClothingItem, ...prev]);
       toast({
         title: "Succès",
         description: "Vêtement ajouté avec succès",
@@ -92,7 +92,7 @@ export const useClothingItems = () => {
 
       if (error) throw error;
       
-      setItems(prev => prev.map(item => item.id === id ? data : item));
+      setItems(prev => prev.map(item => item.id === id ? data as ClothingItem : item));
       toast({
         title: "Succès",
         description: "Vêtement modifié avec succès",
