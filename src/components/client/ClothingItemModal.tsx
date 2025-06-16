@@ -136,7 +136,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
 
   const removeImage = () => {
     setSelectedImage(null);
-    setPreviewUrl(editItem ? getOptimizedImageUrl(editItem.image_url, 400) : '');
+    setPreviewUrl('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -151,7 +151,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
       return;
     }
 
-    if (!previewUrl && !selectedImage) {
+    if (!editItem && !previewUrl && !selectedImage) {
       alert('Veuillez sélectionner une image');
       return;
     }
@@ -159,10 +159,10 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
     setIsLoading(true);
 
     try {
-      let imageUrl = previewUrl;
+      let imageUrl = editItem ? editItem.image_url : previewUrl;
 
-      // Upload new image if selected
-      if (selectedImage) {
+      // Upload new image only if adding new item and image is selected
+      if (!editItem && selectedImage) {
         const { url } = await uploadClothingImage(selectedImage, user.id);
         imageUrl = url;
       }
@@ -192,61 +192,83 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
             {editItem ? 'Modifier le vêtement' : 'Ajouter un nouveau vêtement'}
           </DialogTitle>
           <DialogDescription>
-            Téléchargez une photo et ajoutez les détails de votre vêtement
+            {editItem 
+              ? 'Modifiez les détails de votre vêtement'
+              : 'Téléchargez une photo et ajoutez les détails de votre vêtement'
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Image Upload */}
+          {/* Image Upload or Display */}
           <div className="space-y-2">
             <Label>Image *</Label>
-            <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              {previewUrl ? (
-                <div className="relative">
-                  <div className="w-full h-[150px] flex items-center justify-center bg-gray-50 rounded-md overflow-hidden">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="max-w-[150px] max-h-[150px] object-contain"
-                    />
+            {editItem ? (
+              // Show existing image when editing (read-only)
+              <div className="border-2 border-gray-200 rounded-lg p-4 text-center bg-gray-50">
+                <div className="w-full h-[150px] flex items-center justify-center rounded-md overflow-hidden">
+                  <img
+                    src={previewUrl}
+                    alt="Current image"
+                    className="max-w-[150px] max-h-[150px] object-contain"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  L'image ne peut pas être modifiée lors de l'édition
+                </p>
+              </div>
+            ) : (
+              // Show upload interface when adding new item
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                {previewUrl ? (
+                  <div className="relative">
+                    <div className="w-full h-[150px] flex items-center justify-center bg-gray-50 rounded-md overflow-hidden">
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="max-w-[150px] max-h-[150px] object-contain"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage();
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeImage();
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Upload className="h-12 w-12 mx-auto text-gray-400" />
-                  <p className="text-sm text-gray-600">
-                    Glissez-déposez une image ou cliquez pour sélectionner
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    JPEG, PNG • Max 5 MB
-                  </p>
-                </div>
-              )}
-            </div>
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png"
-              onChange={handleImageSelect}
-              className="hidden"
-            />
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                    <p className="text-sm text-gray-600">
+                      Glissez-déposez une image ou cliquez pour sélectionner
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      JPEG, PNG • Max 5 MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {!editItem && (
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            )}
           </div>
 
           {/* Category */}
