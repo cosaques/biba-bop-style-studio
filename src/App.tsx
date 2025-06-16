@@ -22,7 +22,7 @@ import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ConsultantMain from "./pages/consultant/ConsultantMain";
 import ConsultantSettings from "./pages/consultant/ConsultantSettings";
 import ConsultantClient from "./pages/consultant/ConsultantClient";
-import ClientSilhouette from "./pages/consultant/ClientSilhouette";
+import ConsultantClientMain from "./pages/consultant/ClientMain";
 import ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
 import ConsultantClientWardrobe from "./pages/consultant/ClientWardrobe";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
@@ -88,7 +88,7 @@ const App = () => {
                     <ConsultantClient />
                   </ProtectedRoute>
                 }>
-                  <Route index element={<ClientSilhouette />} />
+                  <Route index element={<ConsultantClientMain />} />
                   <Route path="outfits" element={<ConsultantClientOutfits />} />
                   <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
                 </Route>

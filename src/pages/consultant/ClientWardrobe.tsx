@@ -4,8 +4,8 @@ import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Info } from "lucide-react";
-import { ClothingItem, useClothingItems } from "@/hooks/useClothingItems";
+import { NotepadText } from "lucide-react";
+import { ClothingItem } from "@/hooks/useClothingItems";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,7 +92,7 @@ const ClientWardrobe = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setClientClothes((data || []) as ClothingItem[]);
     } catch (error) {
       console.error('Error fetching client clothes:', error);
@@ -106,7 +106,7 @@ const ClientWardrobe = () => {
     }
   };
 
-  const filteredClothes = clientClothes.filter(item => 
+  const filteredClothes = clientClothes.filter(item =>
     selectedCategory === 'all' || item.category === selectedCategory
   );
 
@@ -144,7 +144,7 @@ const ClientWardrobe = () => {
         {filteredClothes.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-muted-foreground">
-              {selectedCategory === 'all' 
+              {selectedCategory === 'all'
                 ? "Aucun vêtement dans la garde-robe de ce client"
                 : `Aucun vêtement de type "${categoryOptions.find(c => c.value === selectedCategory)?.label}" trouvé`
               }
@@ -154,7 +154,7 @@ const ClientWardrobe = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredClothes.map((item) => (
               <div key={item.id} className="space-y-2">
-                <div className="aspect-square bg-bibabop-lightgrey rounded-md border border-gray-200 p-2 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square rounded-md border border-gray-200 p-1 flex items-center justify-center overflow-hidden">
                   <img
                     src={getOptimizedImageUrl(item.image_url, 400)}
                     alt={`${categoryTranslations[item.category]} ${colorTranslations[item.color]}`}
@@ -163,13 +163,13 @@ const ClientWardrobe = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {categoryTranslations[item.category]} {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                    {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
                   </div>
                   {item.notes && (
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                          <Info className="h-4 w-4 text-bibabop-pink" />
+                          <NotepadText className="h-4 w-4 text-muted-foreground" />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-80">

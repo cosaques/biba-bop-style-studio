@@ -19,7 +19,7 @@ interface ContextType {
   client: ClientData;
 }
 
-const ClientSilhouette = () => {
+const ClientMain = () => {
   const { client } = useOutletContext<ContextType>();
 
   const getClientDisplayName = (client: ClientData) => {
@@ -103,4 +103,4 @@ const ClientSilhouette = () => {
   );
 };
 
-export default ClientSilhouette;
+export default ClientMain;
