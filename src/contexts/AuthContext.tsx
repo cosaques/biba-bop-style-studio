@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,11 +27,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const renderCountRef = useRef(0);
+  const mountTimeRef = useRef(Date.now());
+
+  renderCountRef.current += 1;
+  
+  console.log("AuthContext: AuthProvider render", {
+    renderCount: renderCountRef.current,
+    timeSinceMount: Date.now() - mountTimeRef.current,
+    hasUser: !!user,
+    hasSession: !!session,
+    loading,
+    timestamp: new Date().toISOString()
+  });
 
   useEffect(() => {
+    console.log("AuthContext: Setting up auth state listener", {
+      timestamp: new Date().toISOString()
+    });
+
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("AuthContext: Auth state change", {
+          event,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          timestamp: new Date().toISOString()
+        });
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -40,17 +64,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("AuthContext: Initial session check", {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        timestamp: new Date().toISOString()
+      });
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => {
+      console.log("AuthContext: Cleaning up auth subscription", {
+        timestamp: new Date().toISOString()
+      });
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    console.log("AuthContext: SignIn attempt", { email });
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -60,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, metadata: any) => {
+    console.log("AuthContext: SignUp attempt", { email, metadata });
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -71,10 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log("AuthContext: SignOut attempt");
     await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
+    console.log("AuthContext: Reset password attempt", { email });
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/password-reset`,
     });
