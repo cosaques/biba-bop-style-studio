@@ -22,6 +22,9 @@ import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ConsultantMain from "./pages/consultant/ConsultantMain";
 import ConsultantSettings from "./pages/consultant/ConsultantSettings";
 import ClientDetail from "./pages/consultant/ClientDetail";
+import ClientSilhouetteWrapper from "./pages/consultant/ClientSilhouetteWrapper";
+import ClientOutfits as ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
+import ClientWardrobe as ConsultantClientWardrobe from "./pages/consultant/ClientWardrobe";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
 
@@ -84,7 +87,12 @@ const App = () => {
                   <ProtectedRoute requiredRole="consultant">
                     <ClientDetail />
                   </ProtectedRoute>
-                } />
+                }>
+                  <Route index element={<ClientSilhouetteWrapper />} />
+                  <Route path="outfits" element={<ConsultantClientOutfits />} />
+                  <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
+                </Route>
+
                 <Route path="/consultant/outfit-creator" element={
                   <ProtectedRoute requiredRole="consultant">
                     <OutfitCreator />
