@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,10 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           timestamp: new Date().toISOString()
         });
         
-        // Only update state if the session actually changed
-        if (!isSameSession(lastSessionRef.current, newSession)) {
+        // Always update state for logout events, even if session comparison says they're the same
+        const isLogoutEvent = event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED';
+        const shouldUpdate = !isSameSession(lastSessionRef.current, newSession) || isLogoutEvent;
+        
+        if (shouldUpdate) {
           console.log("AuthContext: Session changed, updating state", {
             event,
+            isLogoutEvent,
             timestamp: new Date().toISOString()
           });
           
