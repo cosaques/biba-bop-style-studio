@@ -1,4 +1,5 @@
 
+import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ClientData {
@@ -14,11 +15,13 @@ interface ClientData {
   gender?: string;
 }
 
-interface ClientSilhouetteProps {
+interface ContextType {
   client: ClientData;
 }
 
-const ClientSilhouette = ({ client }: ClientSilhouetteProps) => {
+const ClientSilhouette = () => {
+  const { client } = useOutletContext<ContextType>();
+
   const getClientDisplayName = (client: ClientData) => {
     if (client.first_name || client.last_name) {
       return `${client.first_name || ''} ${client.last_name || ''}`.trim();

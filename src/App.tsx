@@ -21,10 +21,10 @@ import ClientOnboarding from "./pages/client/ClientOnboarding";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ConsultantMain from "./pages/consultant/ConsultantMain";
 import ConsultantSettings from "./pages/consultant/ConsultantSettings";
-import ClientDetail from "./pages/consultant/ClientDetail";
-import ClientSilhouetteWrapper from "./pages/consultant/ClientSilhouetteWrapper";
-import ClientOutfits as ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
-import ClientWardrobe as ConsultantClientWardrobe from "./pages/consultant/ClientWardrobe";
+import ConsultantClient from "./pages/consultant/ConsultantClient";
+import ClientSilhouette from "./pages/consultant/ClientSilhouette";
+import ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
+import ConsultantClientWardrobe from "./pages/consultant/ClientWardrobe";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
 import NotFound from "./pages/NotFound";
 
@@ -85,10 +85,10 @@ const App = () => {
 
                 <Route path="/consultant/client/:clientId" element={
                   <ProtectedRoute requiredRole="consultant">
-                    <ClientDetail />
+                    <ConsultantClient />
                   </ProtectedRoute>
                 }>
-                  <Route index element={<ClientSilhouetteWrapper />} />
+                  <Route index element={<ClientSilhouette />} />
                   <Route path="outfits" element={<ConsultantClientOutfits />} />
                   <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
                 </Route>
