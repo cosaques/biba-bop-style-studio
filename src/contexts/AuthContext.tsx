@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,12 +22,25 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper function to compare sessions and prevent unnecessary updates
+const isSameSession = (session1: Session | null, session2: Session | null): boolean => {
+  if (!session1 && !session2) return true;
+  if (!session1 || !session2) return false;
+  
+  return (
+    session1.access_token === session2.access_token &&
+    session1.refresh_token === session2.refresh_token &&
+    session1.user.id === session2.user.id
+  );
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const renderCountRef = useRef(0);
   const mountTimeRef = useRef(Date.now());
+  const lastSessionRef = useRef<Session | null>(null);
 
   renderCountRef.current += 1;
   
@@ -48,30 +60,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event, newSession) => {
         console.log("AuthContext: Auth state change", {
           event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
+          hasSession: !!newSession,
+          hasUser: !!newSession?.user,
           timestamp: new Date().toISOString()
         });
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        // Only update state if the session actually changed
+        if (!isSameSession(lastSessionRef.current, newSession)) {
+          console.log("AuthContext: Session changed, updating state", {
+            event,
+            timestamp: new Date().toISOString()
+          });
+          
+          lastSessionRef.current = newSession;
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          setLoading(false);
+        } else {
+          console.log("AuthContext: Session unchanged, skipping state update", {
+            event,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Still need to set loading to false on initial load
+          if (loading) {
+            setLoading(false);
+          }
+        }
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       console.log("AuthContext: Initial session check", {
-        hasSession: !!session,
-        hasUser: !!session?.user,
+        hasSession: !!initialSession,
+        hasUser: !!initialSession?.user,
         timestamp: new Date().toISOString()
       });
       
-      setSession(session);
-      setUser(session?.user ?? null);
+      lastSessionRef.current = initialSession;
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
       setLoading(false);
     });
 
@@ -81,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loading]);
 
   const signIn = async (email: string, password: string) => {
     console.log("AuthContext: SignIn attempt", { email });
