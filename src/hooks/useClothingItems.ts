@@ -8,6 +8,7 @@ export interface ClothingItem {
   id: string;
   user_id: string;
   image_url: string;
+  enhanced_image_url?: string | null;
   category: 'top' | 'bottom' | 'one_piece' | 'shoes' | 'outerwear' | 'accessory';
   color: 'black' | 'grey' | 'white' | 'beige' | 'brown' | 'pink' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'other';
   season: 'all' | 'spring' | 'summer' | 'autumn' | 'winter';
@@ -111,14 +112,29 @@ export const useClothingItems = () => {
     }
   };
 
-  const deleteItem = async (id: string, imageUrl: string) => {
+  const deleteItem = async (id: string, imageUrl: string, enhancedImageUrl?: string | null) => {
     try {
-      // Delete the image from storage first
-      const imagePath = imageUrl.split('/').pop();
-      if (imagePath && user) {
+      // Delete the images from storage first
+      const imagesToDelete: string[] = [];
+      
+      if (imageUrl) {
+        const imagePath = imageUrl.split('/').pop();
+        if (imagePath && user) {
+          imagesToDelete.push(`${user.id}/${imagePath}`);
+        }
+      }
+      
+      if (enhancedImageUrl) {
+        const enhancedImagePath = enhancedImageUrl.split('/').pop();
+        if (enhancedImagePath && user) {
+          imagesToDelete.push(`${user.id}/${enhancedImagePath}`);
+        }
+      }
+
+      if (imagesToDelete.length > 0) {
         await supabase.storage
           .from('clothing-images')
-          .remove([`${user.id}/${imagePath}`]);
+          .remove(imagesToDelete);
       }
 
       // Delete the item from database

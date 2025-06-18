@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,7 +155,7 @@ const ClientWardrobe = () => {
               <div key={item.id} className="space-y-2">
                 <div className="aspect-square rounded-md border border-gray-200 p-1 flex items-center justify-center overflow-hidden">
                   <img
-                    src={getOptimizedImageUrl(item.image_url, 400)}
+                    src={getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400)}
                     alt={`${categoryTranslations[item.category]} ${colorTranslations[item.color]}`}
                     className="max-w-full max-h-full object-contain"
                   />

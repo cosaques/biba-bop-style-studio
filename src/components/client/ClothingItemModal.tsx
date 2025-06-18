@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { ClothingItem } from "@/hooks/useClothingItems";
 import { uploadClothingImage, getOptimizedImageUrl } from "@/utils/imageUtils";
-import { Upload, X } from "lucide-react";
+import { useImageEnhancement } from "@/hooks/useImageEnhancement";
+import { Upload, X, Loader2, RefreshCw } from "lucide-react";
 
 interface ClothingItemModalProps {
   open: boolean;
@@ -64,6 +65,8 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
     notes: ''
   });
 
+  const { isEnhancing, enhancedImage, error: enhancementError, enhanceImage, resetEnhancement } = useImageEnhancement();
+
   // Reset form when modal opens/closes or editItem changes
   useEffect(() => {
     if (open) {
@@ -74,8 +77,11 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
           season: editItem.season,
           notes: editItem.notes || ''
         });
-        setPreviewUrl(getOptimizedImageUrl(editItem.image_url, 400));
+        // Show enhanced image if available, otherwise original
+        const imageUrl = editItem.enhanced_image_url || editItem.image_url;
+        setPreviewUrl(getOptimizedImageUrl(imageUrl, 400));
         setSelectedImage(null);
+        resetEnhancement();
       } else {
         setFormData({
           category: '',
@@ -85,11 +91,12 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
         });
         setPreviewUrl('');
         setSelectedImage(null);
+        resetEnhancement();
       }
     }
-  }, [open, editItem]);
+  }, [open, editItem, resetEnhancement]);
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Check file type
@@ -107,6 +114,10 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
       setSelectedImage(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      resetEnhancement();
+
+      // Start enhancement process
+      await enhanceImage(file);
     }
   };
 
@@ -115,7 +126,7 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -131,15 +142,33 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
       setSelectedImage(imageFile);
       const url = URL.createObjectURL(imageFile);
       setPreviewUrl(url);
+      resetEnhancement();
+
+      // Start enhancement process
+      await enhanceImage(imageFile);
     }
   };
 
   const removeImage = () => {
     setSelectedImage(null);
     setPreviewUrl('');
+    resetEnhancement();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const retryEnhancement = async () => {
+    if (selectedImage) {
+      await enhanceImage(selectedImage);
+    }
+  };
+
+  const getDisplayUrl = () => {
+    if (enhancedImage) {
+      return URL.createObjectURL(enhancedImage);
+    }
+    return previewUrl;
   };
 
   const handleSave = async () => {
@@ -159,16 +188,26 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
     setIsLoading(true);
 
     try {
-      let imageUrl = editItem ? editItem.image_url : previewUrl;
+      let imageUrl = editItem ? editItem.image_url : '';
+      let enhancedImageUrl = editItem ? editItem.enhanced_image_url : null;
 
-      // Upload new image only if adding new item and image is selected
+      // Upload new images only if adding new item and image is selected
       if (!editItem && selectedImage) {
-        const { url } = await uploadClothingImage(selectedImage, user.id);
-        imageUrl = url;
+        // Upload original image
+        const { url: originalUrl } = await uploadClothingImage(selectedImage, user.id);
+        imageUrl = originalUrl;
+
+        // Upload enhanced image if available
+        if (enhancedImage) {
+          const enhancedFile = new File([enhancedImage], `enhanced_${selectedImage.name}`, { type: 'image/png' });
+          const { url: enhancedUrl } = await uploadClothingImage(enhancedFile, user.id);
+          enhancedImageUrl = enhancedUrl;
+        }
       }
 
       await onSave({
         image_url: imageUrl,
+        enhanced_image_url: enhancedImageUrl,
         category: formData.category as ClothingItem['category'],
         color: formData.color,
         season: formData.season,
@@ -219,43 +258,77 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
               </div>
             ) : (
               // Show upload interface when adding new item
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                {previewUrl ? (
-                  <div className="relative">
-                    <div className="w-full h-[150px] flex items-center justify-center bg-gray-50 rounded-md overflow-hidden">
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="max-w-[150px] max-h-[150px] object-contain"
-                      />
+              <div className="space-y-2">
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors relative"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  {previewUrl ? (
+                    <div className="relative">
+                      <div className="w-full h-[150px] flex items-center justify-center bg-gray-50 rounded-md overflow-hidden">
+                        <img
+                          src={getDisplayUrl()}
+                          alt="Preview"
+                          className="max-w-[150px] max-h-[150px] object-contain"
+                        />
+                      </div>
+                      {isEnhancing && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                          <div className="text-white text-center">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                            <p className="text-sm">Amélioration en cours...</p>
+                          </div>
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage();
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeImage();
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                      <p className="text-sm text-gray-600">
+                        Glissez-déposez une image ou cliquez pour sélectionner
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        JPEG, PNG • Max 5 MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {enhancementError && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-red-600">{enhancementError}</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={retryEnhancement}
+                        disabled={!selectedImage}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        Réessayer
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-12 w-12 mx-auto text-gray-400" />
-                    <p className="text-sm text-gray-600">
-                      Glissez-déposez une image ou cliquez pour sélectionner
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      JPEG, PNG • Max 5 MB
-                    </p>
+                )}
+
+                {enhancedImage && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-2">
+                    <p className="text-sm text-green-600">✓ Image améliorée avec succès</p>
                   </div>
                 )}
               </div>
@@ -353,7 +426,11 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Annuler
           </Button>
-          <Button onClick={handleSave} disabled={isLoading} className="btn-primary">
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading || isEnhancing} 
+            className="btn-primary"
+          >
             {isLoading ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
         </DialogFooter>
