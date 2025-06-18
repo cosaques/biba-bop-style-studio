@@ -52,17 +52,25 @@ export const uploadClothingImage = async (file: File | Blob, userId: string, isE
   if (isEnhanced) {
     // For enhanced images, keep as PNG with transparent background
     processedBlob = file;
-    const originalName = file instanceof File ? file.name : 'enhanced.png';
-    const baseName = originalName.split('.')[0];
     fileName = `enhanced_${Date.now()}-${Math.random().toString(36).substr(2, 9)}.png`;
     contentType = 'image/png';
   } else {
-    // For original images, compress to JPEG as before
+    // For original images, check if it's PNG to preserve format
     const imageFile = file as File;
-    processedBlob = await compressAndResizeImage(imageFile, 1024);
-    const fileExt = imageFile.name.split('.').pop();
-    fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-    contentType = imageFile.type;
+    const isPngOriginal = imageFile.type === 'image/png';
+    
+    if (isPngOriginal) {
+      // Keep PNG original as PNG to preserve transparency
+      processedBlob = imageFile;
+      fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.png`;
+      contentType = 'image/png';
+    } else {
+      // Compress JPEG images as before
+      processedBlob = await compressAndResizeImage(imageFile, 1024);
+      const fileExt = imageFile.name.split('.').pop();
+      fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      contentType = imageFile.type;
+    }
   }
 
   const filePath = `${userId}/${fileName}`;
@@ -100,7 +108,7 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
     const bucket = bucketAndPath;
     const path = urlParts[1].substring(bucket.length + 1);
 
-    // For PNG images (enhanced), preserve transparency
+    // For PNG images (enhanced or original PNG), preserve transparency
     const isPng = path.toLowerCase().includes('enhanced') || path.toLowerCase().endsWith('.png');
     
     // Use Supabase's image transformation
@@ -111,8 +119,7 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
           width: size,
           height: size,
           resize: 'contain',
-          quality: isPng ? 100 : 80, // Higher quality for PNG to preserve transparency
-          format: isPng ? 'png' : undefined // Keep PNG format for enhanced images
+          quality: isPng ? 100 : 80 // Higher quality for PNG to preserve transparency
         }
       });
 
