@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -193,14 +192,13 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: Clot
 
       // Upload new images only if adding new item and image is selected
       if (!editItem && selectedImage) {
-        // Upload original image
-        const { url: originalUrl } = await uploadClothingImage(selectedImage, user.id);
+        // Upload original image (JPEG)
+        const { url: originalUrl } = await uploadClothingImage(selectedImage, user.id, false);
         imageUrl = originalUrl;
 
-        // Upload enhanced image if available
+        // Upload enhanced image if available (PNG with transparency)
         if (enhancedImage) {
-          const enhancedFile = new File([enhancedImage], `enhanced_${selectedImage.name}`, { type: 'image/png' });
-          const { url: enhancedUrl } = await uploadClothingImage(enhancedFile, user.id);
+          const { url: enhancedUrl } = await uploadClothingImage(enhancedImage, user.id, true);
           enhancedImageUrl = enhancedUrl;
         }
       }

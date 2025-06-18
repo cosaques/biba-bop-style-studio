@@ -34,15 +34,19 @@ export const useImageEnhancement = () => {
         throw new Error(`Enhancement failed: ${response.status}`);
       }
 
+      // The response should already be a PNG with transparent background
       const enhancedBlob = await response.blob();
+      
+      // Ensure the blob is treated as PNG
+      const pngBlob = new Blob([enhancedBlob], { type: 'image/png' });
       
       setEnhancementState({
         isEnhancing: false,
-        enhancedImage: enhancedBlob,
+        enhancedImage: pngBlob,
         error: null
       });
 
-      return enhancedBlob;
+      return pngBlob;
     } catch (error) {
       console.error('Error enhancing image:', error);
       setEnhancementState({
