@@ -59,7 +59,7 @@ export function DeleteClothingModal({ open, onOpenChange, onConfirm, item, isDel
         <div className="py-4">
           <div className="flex items-center gap-4">
             <img
-              src={getOptimizedImageUrl(item.image_url, 400)}
+              src={getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400)}
               alt={`${getColorLabel(item.color)} ${getCategoryLabel(item.category)}`}
               className="w-16 h-16 object-contain rounded-md"
             />
