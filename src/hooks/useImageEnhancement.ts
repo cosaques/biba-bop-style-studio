@@ -7,6 +7,15 @@ export interface EnhancementState {
   error: string | null;
 }
 
+const getBackendUrl = () => {
+  // Check if we're on the production domain
+  if (window.location.hostname === 'biba-bop.fr') {
+    return 'https://biba-bop-backend-340507328537.europe-west1.run.app';
+  }
+  // Default to localhost for development
+  return 'http://localhost:8000';
+};
+
 export const useImageEnhancement = () => {
   const [enhancementState, setEnhancementState] = useState<EnhancementState>({
     isEnhancing: false,
@@ -25,7 +34,8 @@ export const useImageEnhancement = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/enhance', {
+      const backendUrl = getBackendUrl();
+      const response = await fetch(`${backendUrl}/enhance`, {
         method: 'POST',
         body: formData,
       });
