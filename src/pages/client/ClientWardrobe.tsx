@@ -204,11 +204,11 @@ export default function ClientWardrobe() {
                 {filteredItems.map((item) => (
                   <Card key={item.id} className="card-hover flex flex-col">
                     <CardHeader className="p-0 flex-shrink-0">
-                      <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                      <div className="relative aspect-square overflow-hidden rounded-t-lg flex items-center justify-center">
                         <img
                           src={getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400)}
                           alt={`${getColorLabel(item.color)} ${getCategoryLabel(item.category)}`}
-                          className="w-full h-full object-contain p-1"
+                          className="max-w-full max-h-full object-contain p-1"
                         />
                       </div>
                     </CardHeader>
