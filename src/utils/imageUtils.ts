@@ -87,9 +87,6 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
     const bucket = bucketAndPath;
     const path = urlParts[1].substring(bucket.length + 1);
 
-    // For PNG images (enhanced or original PNG), preserve transparency
-    const isPng = path.toLowerCase().includes('enhanced') || path.toLowerCase().endsWith('.png');
-
     // Use Supabase's image transformation
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
@@ -98,7 +95,7 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
           width: size,
           height: size,
           resize: 'contain',
-          quality: isPng ? 100 : 80 // Higher quality for PNG to preserve transparency
+          quality: 80
         }
       });
 
