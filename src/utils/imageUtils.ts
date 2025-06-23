@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export const compressAndResizeImage = (file: File, maxSize: number = 1024): Promise<Blob> => {
+export const compressAndResizeImage = (file: File, maxSize: number = 1024, contentType: string): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -32,8 +32,8 @@ export const compressAndResizeImage = (file: File, maxSize: number = 1024): Prom
             reject(new Error('Failed to compress image'));
           }
         },
-        'image/jpeg',
-        0.8
+        contentType,
+        contentType === 'image/jpeg' ? 0.8 : 1.0
       );
     };
 
@@ -45,33 +45,12 @@ export const compressAndResizeImage = (file: File, maxSize: number = 1024): Prom
 export const uploadClothingImage = async (file: File | Blob, userId: string, isEnhanced: boolean = false): Promise<{ url: string; path: string }> => {
   const { supabase } = await import('@/integrations/supabase/client');
 
-  let processedBlob: Blob;
-  let fileName: string;
-  let contentType: string;
+  const imageFile = file as File;
+  const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${isEnhanced ? 'png': 'jpg'}`;
+  const maxSize = isEnhanced ? 512 : 1024;
+  const contentType = isEnhanced ? 'image/png' : 'image/jpeg';
 
-  if (isEnhanced) {
-    // For enhanced images, keep as PNG with transparent background
-    processedBlob = file;
-    fileName = `enhanced_${Date.now()}-${Math.random().toString(36).substr(2, 9)}.png`;
-    contentType = 'image/png';
-  } else {
-    // For original images, check if it's PNG to preserve format
-    const imageFile = file as File;
-    const isPngOriginal = imageFile.type === 'image/png';
-    
-    if (isPngOriginal) {
-      // Keep PNG original as PNG to preserve transparency
-      processedBlob = imageFile;
-      fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.png`;
-      contentType = 'image/png';
-    } else {
-      // Compress JPEG images as before
-      processedBlob = await compressAndResizeImage(imageFile, 1024);
-      const fileExt = imageFile.name.split('.').pop();
-      fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      contentType = imageFile.type;
-    }
-  }
+  const processedBlob = await compressAndResizeImage(imageFile, maxSize, contentType);
 
   const filePath = `${userId}/${fileName}`;
 
@@ -110,7 +89,7 @@ export const getOptimizedImageUrl = (url: string, size: number = 400): string =>
 
     // For PNG images (enhanced or original PNG), preserve transparency
     const isPng = path.toLowerCase().includes('enhanced') || path.toLowerCase().endsWith('.png');
-    
+
     // Use Supabase's image transformation
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
