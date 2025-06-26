@@ -194,7 +194,7 @@ const ConsultantMain = () => {
                   <Link to={`/consultant/client/${client.id}`}>Détails</Link>
                 </Button>
                 <Button className="btn-primary" asChild>
-                  <Link to={`/consultant/outfit-creator?clientId=${client.id}`}>Créer une tenue</Link>
+                  <Link to={`/consultant/client/${client.id}/outfits/create`}>Créer une tenue</Link>
                 </Button>
               </CardFooter>
             </Card>
