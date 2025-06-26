@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClothingItem } from "@/hooks/useClothingItems";
-import { StickyNote } from "lucide-react";
+import { NotepadText } from "lucide-react";
 
 interface ClientData {
   id: string;
@@ -105,7 +105,7 @@ const OutfitCreator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [client, setClient] = useState<ClientData | null>(null);
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
@@ -125,11 +125,11 @@ const OutfitCreator = () => {
       navigate("/consultant/dashboard");
       return;
     }
-    
+
     if (!user) {
       return;
     }
-    
+
     fetchClientData();
     fetchClientClothes();
   }, [clientId, user]);
@@ -207,7 +207,7 @@ const OutfitCreator = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setClientClothes((data || []) as ClothingItem[]);
     } catch (error) {
       console.error('Error fetching client clothes:', error);
@@ -322,12 +322,12 @@ const OutfitCreator = () => {
 
                     // 🎯 Taille spécifique par type
                     let tailleClass = "";
-                    if (item.category === "top") tailleClass = "w-40 h-auto";         
-                    if (item.category === "bottom") tailleClass = "w-28";          
+                    if (item.category === "top") tailleClass = "w-40 h-auto";
+                    if (item.category === "bottom") tailleClass = "w-28";
                     if (item.category === "one_piece") tailleClass = "w-40 h-auto";
-                    if (item.category === "shoes") tailleClass = "w-28 h-28";   
+                    if (item.category === "shoes") tailleClass = "w-28 h-28";
                     if (item.category === "outerwear") tailleClass = "w-44 h-auto";
-                    if (item.category === "accessory") tailleClass = "w-20 h-20";   
+                    if (item.category === "accessory") tailleClass = "w-20 h-20";
 
                     return (
                       <div
@@ -403,13 +403,13 @@ const OutfitCreator = () => {
                         {filteredWardrobe.map((item) => (
                           <div
                             key={item.id}
-                            className={`border rounded-lg overflow-hidden cursor-pointer transition-all bg-white ${selectedClothes.includes(item.id)
+                            className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${selectedClothes.includes(item.id)
                               ? 'ring-2 ring-bibabop-gold'
                               : 'hover:shadow-md'
                               }`}
                             onClick={() => handleItemSelect(item.id)}
                           >
-                            <div className="aspect-square bg-bibabop-lightgrey relative flex items-center justify-center">
+                            <div className="aspect-square relative flex items-center justify-center">
                               <img
                                 src={item.enhanced_image_url || item.image_url}
                                 alt={`${item.color} ${item.category}`}
@@ -417,7 +417,7 @@ const OutfitCreator = () => {
                               />
 
                               {selectedClothes.includes(item.id) && (
-                                <div className="absolute top-2 right-2 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center">
+                                <div className="absolute top-2 right-2 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center">
                                   ✓
                                 </div>
                               )}
@@ -431,7 +431,7 @@ const OutfitCreator = () => {
                                   <Popover>
                                     <PopoverTrigger asChild>
                                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                        <StickyNote className="h-4 w-4" />
+                                        <NotepadText className="h-4 w-4 text-muted-foreground" />
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-80">
