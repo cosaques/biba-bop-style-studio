@@ -1,12 +1,10 @@
 
 import { ClientSilhouette } from "@/components/client/ClientSilhouette";
 import { ClientInformations } from "@/components/client/ClientInformations";
-import { useAuth } from "@/contexts/AuthContext";
 import { useClientProfile } from "@/hooks/useClientProfile";
 
 export default function ClientMain() {
-  const { user } = useAuth();
-  const { profile } = useClientProfile(user?.id);
+  const { profile } = useClientProfile();
 
   return (
     <div className="min-h-screen bg-background">
@@ -17,7 +15,7 @@ export default function ClientMain() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <ClientSilhouette gender={profile?.gender} />
+          <ClientSilhouette/>
           <ClientInformations />
         </div>
       </div>

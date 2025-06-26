@@ -110,8 +110,8 @@ const OutfitCreator = () => {
     item => filter === "tous" || item.type === filter
   );
 
-  const silhouetteImage = mockClient.gender === "homme" 
-    ? "/lovable-uploads/c41f5023-8d50-47f0-bab9-e9b90648d156.png"
+  const silhouetteImage = mockClient.gender === "homme"
+    ? "/looks/m-look-0.png"
     : "/looks/look-0.png";
 
   return (

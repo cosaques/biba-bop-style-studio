@@ -1,13 +1,25 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useClientProfile } from "@/hooks/useClientProfile";
 
-interface ClientSilhouetteProps {
-  gender?: string;
-}
+export function ClientSilhouette() {
+  const { profile, loading } = useClientProfile();
 
-export function ClientSilhouette({ gender }: ClientSilhouetteProps) {
-  const silhouetteImage = gender === "homme" 
-    ? "/lovable-uploads/c41f5023-8d50-47f0-bab9-e9b90648d156.png"
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy mx-auto mb-4"></div>
+            <p>Chargement...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const silhouetteImage = profile.gender === "homme"
+    ? "/looks/m-look-0.png"
     : "/looks/look-0.png";
 
   return (
