@@ -1,4 +1,3 @@
-
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,19 +26,6 @@ const ClientOutfits = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-bibabop-navy">Tenues du client</h2>
-          <p className="text-muted-foreground">Gérez les tenues créées pour ce client</p>
-        </div>
-        <Button asChild className="btn-primary">
-          <Link to={`/consultant/client/${clientId}/outfits/create`}>
-            <Plus className="h-4 w-4 mr-2" />
-            Créer une tenue
-          </Link>
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Tenues existantes</CardTitle>
@@ -48,9 +34,30 @@ const ClientOutfits = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Aucune tenue créée pour le moment</p>
-            <p className="text-sm mt-2">Commencez par créer votre première tenue pour ce client</p>
+          <div className="grid gap-4">
+            {/* New Outfit Creation Card */}
+            <Card className="border-dashed border-2 hover:bg-muted/50 transition-colors">
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <div className="w-12 h-12 rounded-full bg-bibabop-navy flex items-center justify-center text-white mb-4">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Nouvelle Tenue</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Créez une nouvelle tenue pour ce client
+                </p>
+                <Button asChild className="btn-primary">
+                  <Link to={`/consultant/client/${clientId}/outfits/create`}>
+                    Créer une tenue
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Existing outfits would go here */}
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Aucune tenue créée pour le moment</p>
+              <p className="text-sm mt-2">Commencez par créer votre première tenue pour ce client</p>
+            </div>
           </div>
         </CardContent>
       </Card>

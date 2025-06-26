@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -100,11 +99,13 @@ const seasonTranslations: { [key: string]: string } = {
 };
 
 const OutfitCreator = () => {
-  const [searchParams] = useSearchParams();
+  const { clientId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const clientId = searchParams.get('clientId');
+  
+  console.log("OutfitCreator - clientId from params:", clientId);
+  console.log("OutfitCreator - user:", user?.id);
   
   const [client, setClient] = useState<ClientData | null>(null);
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
@@ -116,13 +117,21 @@ const OutfitCreator = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log("OutfitCreator useEffect - clientId:", clientId, "user:", user?.id);
+    
     if (!clientId) {
+      console.error("OutfitCreator - No clientId provided");
       toast({
         title: "Erreur",
         description: "ID client manquant",
         variant: "destructive",
       });
       navigate("/consultant/dashboard");
+      return;
+    }
+    
+    if (!user) {
+      console.log("OutfitCreator - No user yet, waiting...");
       return;
     }
     
