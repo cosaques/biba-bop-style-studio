@@ -29,6 +29,10 @@ const ClientMain = () => {
     return client.email || 'Client sans nom';
   };
 
+  const silhouetteImage = client.gender === "homme" 
+    ? "/lovable-uploads/c41f5023-8d50-47f0-bab9-e9b90648d156.png"
+    : "/looks/look-0.png";
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <Card>
@@ -41,7 +45,7 @@ const ClientMain = () => {
         <CardContent className="flex justify-center">
           <div className="bg-bibabop-lightgrey rounded-md">
             <img
-              src="/looks/look-0.png"
+              src={silhouetteImage}
               alt="Silhouette personnalisée"
               className="max-h-96 object-contain"
             />

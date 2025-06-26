@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,10 @@ const OutfitCreator = () => {
     item => filter === "tous" || item.type === filter
   );
 
+  const silhouetteImage = mockClient.gender === "homme" 
+    ? "/lovable-uploads/c41f5023-8d50-47f0-bab9-e9b90648d156.png"
+    : "/looks/look-0.png";
+
   return (
     <div className="flex min-h-screen bg-background">
       <ConsultantSidebar />
@@ -133,7 +138,7 @@ const OutfitCreator = () => {
                   <div className="flex flex-col items-center">
                     <div className="relative min-h-[400px] w-full bg-bibabop-lightgrey rounded-md flex items-center justify-center">
                       <img
-                        src={mockClient.silhouette}
+                        src={silhouetteImage}
                         alt="Silhouette du client"
                         className="max-h-[600px] w-auto object-contain"
                       />
