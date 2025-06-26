@@ -1,86 +1,221 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
-import { ClothingItem, UserProfile } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { ClothingItem } from "@/hooks/useClothingItems";
 
-// Données fictives pour la démo
-const mockClient: UserProfile = {
-  id: "client1",
-  gender: "femme",
-  age: 32,
-  height: 168,
-  weight: 62,
-  bustSize: 90,
-  silhouette: "/looks/look-0.png"
-};
-
-const mockClothes: ClothingItem[] = [
-  {
-    id: "item1",
-    userId: "client1",
-    image: "/clothes/cloth-1.png",
-    type: "haut",
-    color: "blanc"
-  },
-  {
-    id: "item2",
-    userId: "client1",
-    image: "/clothes/cloth-2.png",
-    type: "bas",
-    color: "bleu"
-  },
-  {
-    id: "item3",
-    userId: "client1",
-    image: "/clothes/cloth-4.png",
-    type: "haut",
-    color: "marron"
-  },
-  {
-    id: "item4",
-    userId: "client1",
-    image: "/clothes/cloth-5.png",
-    type: "chaussures",
-    color: "marron"
-  }
-];
+interface ClientData {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  profile_photo_url?: string;
+  age?: number;
+  height?: number;
+  weight?: number;
+  bust_size?: number;
+  gender?: string;
+}
 
 // Catalogue externe de vêtements
 const externalCatalog: ClothingItem[] = [
   {
     id: "ext1",
-    userId: "external",
-    image: "/clothes/cloth-3.png",
-    type: "bas",
-    color: "gris"
+    user_id: "external",
+    image_url: "/clothes/cloth-3.png",
+    enhanced_image_url: null,
+    category: "bottom",
+    color: "grey",
+    season: "all",
+    notes: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: "ext2",
-    userId: "external",
-    image: "/clothes/cloth-6.png",
-    type: "accessoire",
-    color: "marron"
+    user_id: "external",
+    image_url: "/clothes/cloth-6.png",
+    enhanced_image_url: null,
+    category: "accessory",
+    color: "brown",
+    season: "all",
+    notes: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: "ext3",
-    userId: "external",
-    image: "/clothes/cloth-7.png",
-    type: "accessoire",
-    color: "beige"
+    user_id: "external",
+    image_url: "/clothes/cloth-7.png",
+    enhanced_image_url: null,
+    category: "accessory",
+    color: "beige",
+    season: "all",
+    notes: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
 
+const categoryTranslations: { [key: string]: string } = {
+  top: "Haut",
+  bottom: "Bas",
+  one_piece: "Une pièce",
+  shoes: "Chaussures",
+  outerwear: "Veste/Manteau",
+  accessory: "Accessoire"
+};
+
+const colorTranslations: { [key: string]: string } = {
+  black: "Noir",
+  grey: "Gris",
+  white: "Blanc",
+  beige: "Beige",
+  brown: "Marron",
+  pink: "Rose",
+  red: "Rouge",
+  orange: "Orange",
+  yellow: "Jaune",
+  green: "Vert",
+  blue: "Bleu",
+  purple: "Violet",
+  other: "Autre"
+};
+
+const seasonTranslations: { [key: string]: string } = {
+  all: "Toute saison",
+  spring: "Printemps",
+  summer: "Été",
+  autumn: "Automne",
+  winter: "Hiver"
+};
+
 const OutfitCreator = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const clientId = searchParams.get('clientId');
+  
+  const [client, setClient] = useState<ClientData | null>(null);
+  const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
   const [comments, setComments] = useState("");
   const [activeTab, setActiveTab] = useState("wardrobe");
-  const [filter, setFilter] = useState("tous");
+  const [filter, setFilter] = useState("all");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!clientId) {
+      toast({
+        title: "Erreur",
+        description: "ID client manquant",
+        variant: "destructive",
+      });
+      navigate("/consultant/dashboard");
+      return;
+    }
+    
+    fetchClientData();
+    fetchClientClothes();
+  }, [clientId, user]);
+
+  const fetchClientData = async () => {
+    if (!clientId || !user) return;
+
+    try {
+      // First, verify that this client belongs to the current consultant
+      const { data: relationship, error: relationshipError } = await supabase
+        .from('consultant_clients')
+        .select('client_id')
+        .eq('consultant_id', user.id)
+        .eq('client_id', clientId)
+        .single();
+
+      if (relationshipError || !relationship) {
+        throw new Error("Client not found or unauthorized");
+      }
+
+      // Fetch client profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', clientId)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Fetch client personal data
+      const { data: clientProfileData, error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('user_id', clientId)
+        .maybeSingle();
+
+      if (clientProfileError) {
+        console.error('Error fetching client profile:', clientProfileError);
+      }
+
+      const clientData: ClientData = {
+        id: profileData.id,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        email: profileData.email,
+        profile_photo_url: profileData.profile_photo_url,
+        age: clientProfileData?.age,
+        height: clientProfileData?.height,
+        weight: clientProfileData?.weight,
+        bust_size: clientProfileData?.bust_size,
+        gender: clientProfileData?.gender,
+      };
+
+      setClient(clientData);
+    } catch (error) {
+      console.error('Error fetching client data:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données du client",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchClientClothes = async () => {
+    if (!clientId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('clothing_items')
+        .select('*')
+        .eq('user_id', clientId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setClientClothes((data || []) as ClothingItem[]);
+    } catch (error) {
+      console.error('Error fetching client clothes:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger la garde-robe du client",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleItemSelect = (itemId: string) => {
     if (selectedClothes.includes(itemId)) {
@@ -95,22 +230,48 @@ const OutfitCreator = () => {
     // Simuler la sauvegarde de la tenue
     setTimeout(() => {
       setIsSaving(false);
-      alert("Tenue enregistrée et partagée avec le client!");
+      toast({
+        title: "Succès",
+        description: "Tenue enregistrée et partagée avec le client!",
+      });
       // Réinitialiser
       setSelectedClothes([]);
       setComments("");
     }, 1500);
   };
 
-  const filteredWardrobe = mockClothes.filter(
-    item => filter === "tous" || item.type === filter
+  const getClientDisplayName = (client: ClientData) => {
+    if (client.first_name || client.last_name) {
+      return `${client.first_name || ''} ${client.last_name || ''}`.trim();
+    }
+    return client.email || 'Client sans nom';
+  };
+
+  const filteredWardrobe = clientClothes.filter(
+    item => filter === "all" || item.category === filter
   );
 
   const filteredCatalog = externalCatalog.filter(
-    item => filter === "tous" || item.type === filter
+    item => filter === "all" || item.category === filter
   );
 
-  const silhouetteImage = mockClient.gender === "homme"
+  if (isLoading || !client) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <ConsultantSidebar />
+        <div className="flex-1">
+          <ConsultantHeader />
+          <main className="p-6">
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy"></div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  const silhouetteImage = client.gender === "homme"
     ? "/looks/m-look-0.png"
     : "/looks/look-0.png";
 
@@ -124,7 +285,7 @@ const OutfitCreator = () => {
         <main className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-bibabop-navy">Création de Tenue</h1>
-            <p className="subtitle">Créez une tenue personnalisée pour votre client</p>
+            <p className="subtitle">Créez une tenue personnalisée pour {getClientDisplayName(client)}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -145,21 +306,25 @@ const OutfitCreator = () => {
 
                       {/* Vêtements sélectionnés qui seraient positionnés sur la silhouette */}
                       {selectedClothes.map(itemId => {
-                        const item = [...mockClothes, ...externalCatalog].find(i => i.id === itemId);
+                        const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
                         if (!item) return null;
 
                         let positionClass = "";
-                        if (item.type === "haut") positionClass = "top-1/4 -translate-y-[40px]";
-                        if (item.type === "bas") positionClass = "top-1/2 -translate-y-[50px]";
-                        if (item.type === "chaussures") positionClass = "bottom-0 translate-y-[15px]";
-                        if (item.type === "accessoire") positionClass = "top-10 right-10";
+                        if (item.category === "top") positionClass = "top-1/4 -translate-y-[40px]";
+                        if (item.category === "bottom") positionClass = "top-1/2 -translate-y-[50px]";
+                        if (item.category === "one_piece") positionClass = "top-1/3 -translate-y-[30px]";
+                        if (item.category === "shoes") positionClass = "bottom-0 translate-y-[15px]";
+                        if (item.category === "outerwear") positionClass = "top-1/5 -translate-y-[50px]";
+                        if (item.category === "accessory") positionClass = "top-10 right-10";
 
                         // 🎯 Taille spécifique par type
                         let tailleClass = "";
-                        if (item.type === "haut") tailleClass = "w-40 h-auto";         // haut → grand
-                        if (item.type === "bas") tailleClass = "w-28";          // bas → un peu plus petit
-                        if (item.type === "chaussures") tailleClass = "w-28 h-28";   // chaussures → plus petit
-                        if (item.type === "accessoire") tailleClass = "w-20 h-20";   // accessoire → encore plus petit
+                        if (item.category === "top") tailleClass = "w-40 h-auto";         
+                        if (item.category === "bottom") tailleClass = "w-28";          
+                        if (item.category === "one_piece") tailleClass = "w-40 h-auto";
+                        if (item.category === "shoes") tailleClass = "w-28 h-28";   
+                        if (item.category === "outerwear") tailleClass = "w-44 h-auto";
+                        if (item.category === "accessory") tailleClass = "w-20 h-20";   
 
                         return (
                           <div
@@ -168,8 +333,8 @@ const OutfitCreator = () => {
                             style={{ opacity: 0.8 }}
                           >
                             <img
-                              src={item.image}
-                              alt={item.type}
+                              src={item.enhanced_image_url || item.image_url}
+                              alt={item.category}
                               className="w-full h-full object-contain"
                             />
                           </div>
@@ -211,12 +376,14 @@ const OutfitCreator = () => {
                       <TabsTrigger value="catalog">Catalogue</TabsTrigger>
                     </TabsList>
                     <Tabs value={filter} onValueChange={setFilter}>
-                      <TabsList className="grid grid-cols-5 mb-4">
-                        <TabsTrigger value="tous">Tous</TabsTrigger>
-                        <TabsTrigger value="haut">Hauts</TabsTrigger>
-                        <TabsTrigger value="bas">Bas</TabsTrigger>
-                        <TabsTrigger value="chaussures">Chaussures</TabsTrigger>
-                        <TabsTrigger value="accessoire">Accessoires</TabsTrigger>
+                      <TabsList className="grid grid-cols-7 mb-4">
+                        <TabsTrigger value="all">Tous</TabsTrigger>
+                        <TabsTrigger value="top">Hauts</TabsTrigger>
+                        <TabsTrigger value="bottom">Bas</TabsTrigger>
+                        <TabsTrigger value="one_piece">Une pièce</TabsTrigger>
+                        <TabsTrigger value="shoes">Chaussures</TabsTrigger>
+                        <TabsTrigger value="outerwear">Vestes</TabsTrigger>
+                        <TabsTrigger value="accessory">Accessoires</TabsTrigger>
                       </TabsList>
                     </Tabs>
                   </CardHeader>
@@ -236,8 +403,8 @@ const OutfitCreator = () => {
                             >
                               <div className="aspect-square bg-bibabop-lightgrey relative flex items-center justify-center">
                                 <img
-                                  src={item.image}
-                                  alt={`${item.color} ${item.type}`}
+                                  src={item.enhanced_image_url || item.image_url}
+                                  alt={`${item.color} ${item.category}`}
                                   className="max-w-full max-h-full object-contain"
                                 />
 
@@ -248,7 +415,30 @@ const OutfitCreator = () => {
                                 )}
                               </div>
                               <div className="p-2">
-                                <p className="font-medium">{item.color} {item.type}</p>
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium text-sm">
+                                    {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                                  </p>
+                                  {item.notes && (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                          💭
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-80">
+                                        <div className="grid gap-4">
+                                          <div className="space-y-2">
+                                            <h4 className="font-medium leading-none">Notes</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                              {item.notes}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -270,8 +460,8 @@ const OutfitCreator = () => {
                             >
                               <div className="aspect-square bg-bibabop-lightgrey relative flex items-center justify-center">
                                 <img
-                                  src={item.image}
-                                  alt={`${item.color} ${item.type}`}
+                                  src={item.image_url}
+                                  alt={`${item.color} ${item.category}`}
                                   className="max-w-full max-h-full object-contain"
                                 />
 
@@ -282,7 +472,9 @@ const OutfitCreator = () => {
                                 )}
                               </div>
                               <div className="p-2">
-                                <p className="font-medium">{item.color} {item.type}</p>
+                                <p className="font-medium text-sm">
+                                  {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                                </p>
                                 <p className="text-xs text-muted-foreground">Catalogue externe</p>
                               </div>
                             </div>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -90,14 +89,9 @@ const App = () => {
                 }>
                   <Route index element={<ConsultantClientMain />} />
                   <Route path="outfits" element={<ConsultantClientOutfits />} />
+                  <Route path="outfits/create" element={<OutfitCreator />} />
                   <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
                 </Route>
-
-                <Route path="/consultant/outfit-creator" element={
-                  <ProtectedRoute requiredRole="consultant">
-                    <OutfitCreator />
-                  </ProtectedRoute>
-                } />
 
                 {/* Route 404 */}
                 <Route path="*" element={<NotFound />} />
