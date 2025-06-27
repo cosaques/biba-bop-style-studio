@@ -72,7 +72,7 @@ describe('useClothingItems', () => {
 
     // First mock the fetch call to return empty array for initial load
     const fetchMockChain = createChainableMock({ data: [], error: null })
-    vi.mocked(mockSupabaseClient.from).mockReturnValueOnce(fetchMockChain)
+    vi.mocked(mockSupabaseClient.from).mockReturnValue(fetchMockChain)
 
     const { result } = renderHook(() => useClothingItems())
 
@@ -89,20 +89,17 @@ describe('useClothingItems', () => {
     const createMockChain = createChainableMock({ data: createdItem, error: null })
     vi.mocked(mockSupabaseClient.from).mockReturnValue(createMockChain)
 
-    let createResult: any
+    // Perform the create operation
     await act(async () => {
-      createResult = await result.current.createItem(newItem)
+      const createResult = await result.current.createItem(newItem)
+      expect(createResult.data).toEqual(createdItem)
     })
 
-    expect(createResult.data).toEqual(createdItem)
     expect(mockSupabaseClient.from).toHaveBeenCalledWith('clothing_items')
     
-    // Wait for state to update after the create operation
-    await waitFor(() => {
-      expect(Array.isArray(result.current.items)).toBe(true)
-      expect(result.current.items).toHaveLength(1)
-    })
-    
+    // The state should be updated immediately after createItem resolves
+    expect(Array.isArray(result.current.items)).toBe(true)
+    expect(result.current.items).toHaveLength(1)
     expect(result.current.items[0]).toEqual(createdItem)
   })
 })

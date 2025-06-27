@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { render } from '@testing-library/react'
+import { render, act as rtlAct } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Re-export everything from @testing-library/react
@@ -19,11 +19,10 @@ const createTestQueryClient = () => new QueryClient({
 
 export const renderHook = (hook: () => any) => {
   const queryClient = createTestQueryClient()
+  let result: any = null
   
   const TestComponent = () => {
-    const result = hook()
-    // Store the result on the component for access
-    ;(TestComponent as any).result = result
+    result = hook()
     return null
   }
 
@@ -36,7 +35,7 @@ export const renderHook = (hook: () => any) => {
   return {
     result: {
       get current() {
-        return (TestComponent as any).result
+        return result
       }
     },
     rerender: () => {
@@ -69,5 +68,7 @@ export const waitFor = async (callback: () => void | Promise<void>, options?: { 
 }
 
 export const act = async (callback: () => Promise<void> | void) => {
-  await callback()
+  await rtlAct(async () => {
+    await callback()
+  })
 }
