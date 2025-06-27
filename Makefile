@@ -9,6 +9,10 @@ deploy: build
 clean:
 	rm -rf dist
 
+clean_install:
+	rm -rf node_modules
+	npm ci
+
 dev:
 	npm run dev
 
