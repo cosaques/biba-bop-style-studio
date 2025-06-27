@@ -1,6 +1,6 @@
 
 import { useState, useRef } from "react";
-import { Scale, Move } from "lucide-react";
+import { Move } from "lucide-react";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -8,9 +8,11 @@ interface DraggableClothingItemProps {
   category: string;
   initialPosition: { x: number; y: number };
   initialScale: number;
+  zIndex: number;
   onPositionChange: (id: string, position: { x: number; y: number }) => void;
   onScaleChange: (id: string, scale: number) => void;
   onRemove: (id: string) => void;
+  onSelect: (id: string) => void;
 }
 
 export function DraggableClothingItem({
@@ -19,21 +21,26 @@ export function DraggableClothingItem({
   category,
   initialPosition,
   initialScale,
+  zIndex,
   onPositionChange,
   onScaleChange,
-  onRemove
+  onRemove,
+  onSelect
 }: DraggableClothingItemProps) {
   const [position, setPosition] = useState(initialPosition);
   const [scale, setScale] = useState(initialScale);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, scale: 1 });
   const itemRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') {
       setIsDragging(true);
       setIsSelected(true);
+      onSelect(id);
       const rect = itemRef.current?.getBoundingClientRect();
       if (rect) {
         setDragStart({
@@ -43,6 +50,18 @@ export function DraggableClothingItem({
       }
       e.preventDefault();
     }
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsResizing(true);
+    setIsSelected(true);
+    onSelect(id);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      scale: scale
+    });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -65,20 +84,31 @@ export function DraggableClothingItem({
         setPosition(newPosition);
         onPositionChange(id, newPosition);
       }
+    } else if (isResizing) {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const scaleFactor = deltaX > 0 || deltaY > 0 ? 1 + delta / 200 : 1 - delta / 200;
+      const newScale = Math.max(0.3, Math.min(3, resizeStart.scale * scaleFactor));
+      
+      setScale(newScale);
+      onScaleChange(id, newScale);
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
-  };
-
-  const handleScaleChange = (newScale: number) => {
-    setScale(newScale);
-    onScaleChange(id, newScale);
+    setIsResizing(false);
   };
 
   const handleDoubleClick = () => {
     onRemove(id);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSelected(true);
+    onSelect(id);
   };
 
   // Get size based on category
@@ -98,72 +128,64 @@ export function DraggableClothingItem({
   const size = getSize();
 
   return (
-    <>
-      <div
-        ref={itemRef}
-        className={`absolute cursor-move select-none transition-all duration-150 ${
-          isSelected ? 'ring-2 ring-bibabop-pink shadow-lg' : ''
-        } ${isDragging ? 'z-50' : 'z-10'}`}
-        style={{
-          left: position.x,
-          top: position.y,
-          width: size.width * scale,
-          height: size.height * scale,
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsSelected(true);
-        }}
-      >
-        <img
-          src={imageUrl}
-          alt={category}
-          className="w-full h-full object-contain pointer-events-none"
-          style={{ opacity: isDragging ? 0.8 : 1 }}
-          draggable={false}
-        />
-        
-        {isSelected && !isDragging && (
-          <>
-            {/* Move handle */}
-            <div className="absolute -top-2 -left-2 w-6 h-6 bg-bibabop-pink rounded-full flex items-center justify-center text-white cursor-move shadow-lg">
-              <Move size={12} />
-            </div>
-            
-            {/* Scale handle */}
-            <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-bibabop-navy rounded-full flex items-center justify-center text-white cursor-pointer shadow-lg">
-              <Scale size={12} />
-            </div>
-            
-            {/* Remove hint */}
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-              Double-cliquez pour retirer
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Scale slider when selected */}
-      {isSelected && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg p-3 flex items-center gap-3 z-50">
-          <Scale size={16} className="text-bibabop-navy" />
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.1"
-            value={scale}
-            onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
-            className="w-32"
+    <div
+      ref={itemRef}
+      className={`absolute cursor-move select-none transition-all duration-150 ${
+        isSelected ? 'ring-2 ring-bibabop-pink shadow-lg' : ''
+      }`}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: size.width * scale,
+        height: size.height * scale,
+        zIndex: isDragging || isResizing ? 1000 : zIndex,
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
+    >
+      <img
+        src={imageUrl}
+        alt={category}
+        className="w-full h-full object-contain pointer-events-none"
+        style={{ opacity: isDragging ? 0.8 : 1 }}
+        draggable={false}
+      />
+      
+      {isSelected && !isDragging && !isResizing && (
+        <>
+          {/* Move handle */}
+          <div className="absolute -top-2 -left-2 w-6 h-6 bg-bibabop-pink rounded-full flex items-center justify-center text-white cursor-move shadow-lg">
+            <Move size={12} />
+          </div>
+          
+          {/* Corner resize handles */}
+          <div 
+            className="absolute -top-1 -left-1 w-3 h-3 bg-bibabop-navy border border-white cursor-nw-resize shadow-sm"
+            onMouseDown={handleResizeMouseDown}
           />
-          <span className="text-sm font-medium min-w-[3rem]">{Math.round(scale * 100)}%</span>
-        </div>
+          <div 
+            className="absolute -top-1 -right-1 w-3 h-3 bg-bibabop-navy border border-white cursor-ne-resize shadow-sm"
+            onMouseDown={handleResizeMouseDown}
+          />
+          <div 
+            className="absolute -bottom-1 -left-1 w-3 h-3 bg-bibabop-navy border border-white cursor-sw-resize shadow-sm"
+            onMouseDown={handleResizeMouseDown}
+          />
+          <div 
+            className="absolute -bottom-1 -right-1 w-3 h-3 bg-bibabop-navy border border-white cursor-se-resize shadow-sm"
+            onMouseDown={handleResizeMouseDown}
+          />
+          
+          {/* Remove hint */}
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+            Double-cliquez pour retirer
+          </div>
+        </>
       )}
-    </>
+    </div>
   );
 }

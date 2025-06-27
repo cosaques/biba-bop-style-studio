@@ -29,6 +29,7 @@ interface ClothingPosition {
   id: string;
   position: { x: number; y: number };
   scale: number;
+  zIndex?: number;
 }
 
 // Catalogue externe de vêtements
@@ -119,6 +120,7 @@ const OutfitCreator = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [nextZIndex, setNextZIndex] = useState(10);
 
   useEffect(() => {
     if (!clientId) {
@@ -199,11 +201,14 @@ const OutfitCreator = () => {
       if (item) {
         setSelectedClothes([...selectedClothes, itemId]);
         const position = getDefaultPosition(item.category, clothingPositions);
-        setClothingPositions([...clothingPositions, {
+        const newPosition = {
           id: itemId,
           position,
-          scale: 1
-        }]);
+          scale: 1,
+          zIndex: nextZIndex
+        };
+        setClothingPositions([...clothingPositions, newPosition]);
+        setNextZIndex(nextZIndex + 1);
       }
     }
   };
@@ -218,6 +223,15 @@ const OutfitCreator = () => {
     setClothingPositions(prev => 
       prev.map(pos => pos.id === itemId ? { ...pos, scale } : pos)
     );
+  };
+
+  const handleItemSelection = (itemId: string) => {
+    setSelectedItemId(itemId);
+    // Bring selected item to front
+    setClothingPositions(prev => 
+      prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
+    );
+    setNextZIndex(nextZIndex + 1);
   };
 
   const handleRemoveFromSilhouette = (itemId: string) => {
@@ -305,9 +319,11 @@ const OutfitCreator = () => {
                       category={item.category}
                       initialPosition={clothingPos.position}
                       initialScale={clothingPos.scale}
+                      zIndex={clothingPos.zIndex || 10}
                       onPositionChange={handlePositionChange}
                       onScaleChange={handleScaleChange}
                       onRemove={handleRemoveFromSilhouette}
+                      onSelect={handleItemSelection}
                     />
                   );
                 })}
@@ -346,8 +362,9 @@ const OutfitCreator = () => {
                   <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
                   <ul className="text-xs text-blue-600 mt-1 space-y-1">
                     <li>• Cliquez et glissez pour déplacer les vêtements</li>
-                    <li>• Utilisez la glissière pour redimensionner</li>
+                    <li>• Utilisez les carrés aux coins pour redimensionner</li>
                     <li>• Double-cliquez pour retirer un vêtement</li>
+                    <li>• Cliquez sur un vêtement pour le mettre au premier plan</li>
                   </ul>
                 </div>
               )}
