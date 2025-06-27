@@ -49,6 +49,29 @@ export function DraggableClothingItem({
 
   console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isDragging:', isDragging, 'isResizing:', isResizing);
 
+  // Memoize container bounds to avoid recalculation on every render
+  const containerBounds = useRef({ width: 800, height: 600 });
+
+  const updateContainerBounds = useCallback(() => {
+    const container = itemRef.current?.parentElement;
+    if (container) {
+      containerBounds.current = {
+        width: container.clientWidth,
+        height: container.clientHeight
+      };
+      console.log(`[${id}] Container bounds updated:`, containerBounds.current);
+    }
+  }, [id]);
+
+  // Update container bounds only when needed
+  useEffect(() => {
+    updateContainerBounds();
+    
+    const handleResize = () => updateContainerBounds();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateContainerBounds]);
+
   // Listen for clicks outside to deselect
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,20 +87,6 @@ export function DraggableClothingItem({
     }
   }, [isSelected, id]);
 
-  const getContainerBounds = useCallback(() => {
-    const container = itemRef.current?.parentElement;
-    if (!container) {
-      console.log(`[${id}] No container found`);
-      return { width: 800, height: 600 }; // Fallback
-    }
-    const bounds = {
-      width: container.clientWidth,
-      height: container.clientHeight
-    };
-    console.log(`[${id}] Container bounds:`, bounds);
-    return bounds;
-  }, [id]);
-
   const getSize = useCallback(() => {
     const baseSize = 200;
     switch (category) {
@@ -91,28 +100,34 @@ export function DraggableClothingItem({
     }
   }, [category]);
 
-  // Global mouse handlers
+  // Global mouse handlers - Fixed to prevent infinite loops
   useEffect(() => {
+    if (!isDragging && !isResizing) return;
+
     const handleGlobalMouseMove = (e: MouseEvent) => {
       const dragState = dragStateRef.current;
+      
+      console.log(`[${id}] Mouse move - clientX: ${e.clientX}, clientY: ${e.clientY}, isDragging: ${dragState.isDragging}, isResizing: ${dragState.isResizing}`);
       
       if (dragState.isDragging) {
         e.preventDefault();
         const deltaX = e.clientX - dragState.startX;
         const deltaY = e.clientY - dragState.startY;
         
+        console.log(`[${id}] Drag delta - deltaX: ${deltaX}, deltaY: ${deltaY}`);
+        
         const newPosition = {
           x: dragState.startPosition.x + deltaX,
           y: dragState.startPosition.y + deltaY
         };
 
-        const containerBounds = getContainerBounds();
         const size = getSize();
         const constrainedPosition = {
-          x: Math.max(0, Math.min(newPosition.x, containerBounds.width - (size.width * scale))),
-          y: Math.max(0, Math.min(newPosition.y, containerBounds.height - (size.height * scale)))
+          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - (size.width * scale))),
+          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - (size.height * scale)))
         };
 
+        console.log(`[${id}] Setting new position:`, constrainedPosition);
         setPosition(constrainedPosition);
         
       } else if (dragState.isResizing) {
@@ -149,10 +164,9 @@ export function DraggableClothingItem({
           y: dragState.itemCenterY - newHeight / 2
         };
         
-        const containerBounds = getContainerBounds();
         const constrainedPosition = {
-          x: Math.max(0, Math.min(newPosition.x, containerBounds.width - newWidth)),
-          y: Math.max(0, Math.min(newPosition.y, containerBounds.height - newHeight))
+          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - newWidth)),
+          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - newHeight))
         };
         
         setScale(newScale);
@@ -179,16 +193,14 @@ export function DraggableClothingItem({
       }
     };
 
-    if (isDragging || isResizing) {
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
-      };
-    }
-  }, [isDragging, isResizing, id, position, scale, onPositionChange, onScaleChange, getContainerBounds, getSize]);
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, getSize, scale, position]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
