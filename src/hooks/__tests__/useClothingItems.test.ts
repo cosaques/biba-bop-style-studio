@@ -1,8 +1,8 @@
 
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useClothingItems } from '../useClothingItems'
-import { supabase } from '@/integrations/supabase/client'
+import { mockSupabaseClient } from '@/test/setup'
 
 // Mock the auth context
 vi.mock('@/contexts/AuthContext', () => ({
@@ -37,11 +37,14 @@ describe('useClothingItems', () => {
       }
     ]
 
-    vi.mocked(supabase.from).mockReturnValue({
+    // Mock the Supabase chain
+    const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockItems, error: null })
-    } as any)
+    }
+    
+    vi.mocked(mockSupabaseClient.from).mockReturnValue(mockChain)
 
     const { result } = renderHook(() => useClothingItems())
 
@@ -70,17 +73,22 @@ describe('useClothingItems', () => {
       updated_at: '2023-01-02'
     }
 
-    vi.mocked(supabase.from).mockReturnValue({
+    // Mock the Supabase chain for creation
+    const mockChain = {
       insert: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: createdItem, error: null })
-    } as any)
+    }
+    
+    vi.mocked(mockSupabaseClient.from).mockReturnValue(mockChain)
 
     const { result } = renderHook(() => useClothingItems())
 
-    const createResult = await result.current.createItem(newItem)
+    await act(async () => {
+      const createResult = await result.current.createItem(newItem)
+      expect(createResult.data).toEqual(createdItem)
+    })
 
-    expect(createResult.data).toEqual(createdItem)
-    expect(supabase.from).toHaveBeenCalledWith('clothing_items')
+    expect(mockSupabaseClient.from).toHaveBeenCalledWith('clothing_items')
   })
 })

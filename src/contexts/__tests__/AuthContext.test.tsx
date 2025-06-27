@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../AuthContext'
-import { supabase } from '@/integrations/supabase/client'
+import { mockSupabaseClient } from '@/test/setup'
 
 describe('AuthContext', () => {
   beforeEach(() => {
@@ -13,19 +13,29 @@ describe('AuthContext', () => {
     <AuthProvider>{children}</AuthProvider>
   )
 
-  it('should provide initial auth state', () => {
+  it('should provide initial auth state', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
+
+    // Initial state should be loading
+    expect(result.current.loading).toBe(true)
+
+    // Wait for auth to initialize
+    await act(async () => {
+      // Simulate auth initialization
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
 
     expect(result.current.user).toBeNull()
     expect(result.current.session).toBeNull()
-    expect(result.current.loading).toBe(true)
   })
 
   it('should handle sign in', async () => {
-    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { user: null, session: null },
+    const mockSignInResponse = {
+      data: { user: { id: 'test-user' }, session: { access_token: 'token' } },
       error: null
-    })
+    }
+    
+    vi.mocked(mockSupabaseClient.auth.signInWithPassword).mockResolvedValue(mockSignInResponse)
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 
@@ -34,14 +44,14 @@ describe('AuthContext', () => {
       expect(response.error).toBeNull()
     })
 
-    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+    expect(mockSupabaseClient.auth.signInWithPassword).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password'
     })
   })
 
   it('should handle sign out', async () => {
-    vi.mocked(supabase.auth.signOut).mockResolvedValue({ error: null })
+    vi.mocked(mockSupabaseClient.auth.signOut).mockResolvedValue({ error: null })
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 
@@ -49,6 +59,6 @@ describe('AuthContext', () => {
       await result.current.signOut()
     })
 
-    expect(supabase.auth.signOut).toHaveBeenCalled()
+    expect(mockSupabaseClient.auth.signOut).toHaveBeenCalled()
   })
 })
