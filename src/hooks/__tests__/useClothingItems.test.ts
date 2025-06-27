@@ -70,9 +70,18 @@ describe('useClothingItems', () => {
       updated_at: '2023-01-02'
     }
 
-    // First mock the fetch call to return empty array for initial load
-    const fetchMockChain = createChainableMock({ data: [], error: null })
-    vi.mocked(mockSupabaseClient.from).mockReturnValue(fetchMockChain)
+    // First mock the fetch call that happens on mount
+    let callCount = 0
+    vi.mocked(mockSupabaseClient.from).mockImplementation(() => {
+      callCount++
+      if (callCount === 1) {
+        // First call - initial fetch returns empty array
+        return createChainableMock({ data: [], error: null })
+      } else {
+        // Subsequent calls - create item returns the created item
+        return createChainableMock({ data: createdItem, error: null })
+      }
+    })
 
     const { result } = renderHook(() => useClothingItems())
 
@@ -85,16 +94,13 @@ describe('useClothingItems', () => {
     expect(Array.isArray(result.current.items)).toBe(true)
     expect(result.current.items).toEqual([])
 
-    // Now mock the create call with the created item
-    const createMockChain = createChainableMock({ data: createdItem, error: null })
-    vi.mocked(mockSupabaseClient.from).mockReturnValue(createMockChain)
-
     // Perform the create operation
+    let createResult: any
     await act(async () => {
-      const createResult = await result.current.createItem(newItem)
-      expect(createResult.data).toEqual(createdItem)
+      createResult = await result.current.createItem(newItem)
     })
 
+    expect(createResult.data).toEqual(createdItem)
     expect(mockSupabaseClient.from).toHaveBeenCalledWith('clothing_items')
     
     // The state should be updated immediately after createItem resolves

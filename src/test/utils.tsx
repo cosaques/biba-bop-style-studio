@@ -1,10 +1,11 @@
 
 import React from 'react'
-import { render, act as rtlAct } from '@testing-library/react'
+import { render, act as rtlAct, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Re-export everything from @testing-library/react
 export * from '@testing-library/react'
+export { screen }
 
 const createTestQueryClient = () => new QueryClient({
   defaultOptions: {
