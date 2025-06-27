@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ClothingItem } from "@/hooks/useClothingItems";
 import { NotepadText } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
+import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
 interface ClientData {
   id: string;
@@ -201,19 +202,17 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelect = (itemId: string) => {
-    console.log(`[OutfitCreator] Item select called for:`, itemId, 'currently selected:', selectedClothes, 'currently selected item:', selectedItemId);
+    console.log(`[OutfitCreator] PERF Item select - ${performance.now().toFixed(2)}ms`, { itemId, currentSelection: selectedClothes });
     
     if (selectedClothes.includes(itemId)) {
-      // Remove from silhouette
-      console.log(`[OutfitCreator] Removing item from silhouette:`, itemId);
+      console.log(`[OutfitCreator] PERF Removing item from silhouette - ${performance.now().toFixed(2)}ms`);
       setSelectedClothes(selectedClothes.filter(id => id !== itemId));
       setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
       setSelectedItemId(null);
     } else {
-      // Add to silhouette
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
       if (item) {
-        console.log(`[OutfitCreator] Adding item to silhouette:`, itemId, 'item:', item);
+        console.log(`[OutfitCreator] PERF Adding item to silhouette - ${performance.now().toFixed(2)}ms`);
         setSelectedClothes([...selectedClothes, itemId]);
         const position = getDefaultPosition(item.category, clothingPositions);
         const newPosition = {
@@ -223,7 +222,7 @@ const OutfitCreator = () => {
           zIndex: nextZIndex
         };
         setClothingPositions([...clothingPositions, newPosition]);
-        setSelectedItemId(itemId); // Auto-select the newly added item
+        setSelectedItemId(itemId);
         setNextZIndex(nextZIndex + 1);
       }
     }
@@ -265,7 +264,7 @@ const OutfitCreator = () => {
   };
 
   const handleSilhouetteClick = () => {
-    console.log(`[OutfitCreator] Silhouette background clicked - deselecting current item:`, selectedItemId);
+    console.log(`[OutfitCreator] PERF Silhouette background clicked - ${performance.now().toFixed(2)}ms`);
     setSelectedItemId(null);
   };
 
@@ -331,16 +330,18 @@ const OutfitCreator = () => {
                   className="max-h-[600px] w-auto object-contain"
                 />
 
-                {/* Draggable clothing items */}
+                {/* Draggable clothing items with optimized images */}
                 {clothingPositions.map(clothingPos => {
                   const item = [...clientClothes, ...externalCatalog].find(i => i.id === clothingPos.id);
                   if (!item) return null;
 
+                  const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 200);
+                  
                   return (
                     <DraggableClothingItem
                       key={clothingPos.id}
                       id={clothingPos.id}
-                      imageUrl={item.enhanced_image_url || item.image_url}
+                      imageUrl={optimizedUrl}
                       category={item.category}
                       initialPosition={clothingPos.position}
                       initialScale={clothingPos.scale}
@@ -399,7 +400,7 @@ const OutfitCreator = () => {
         </Card>
       </div>
 
-      {/* Panel de droite: sélection des vêtements */}
+      {/* Panel de droite: sélection des vêtements avec images optimisées */}
       <div className="md:col-span-2">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Card>
@@ -433,6 +434,8 @@ const OutfitCreator = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {filteredWardrobe.map((item) => {
                         const isSelected = selectedClothes.includes(item.id);
+                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 200);
+                        
                         return (
                           <div key={item.id} className="space-y-2">
                             <div
@@ -442,14 +445,15 @@ const OutfitCreator = () => {
                                   : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                               }`}
                               onClick={() => {
-                                console.log(`[OutfitCreator] Wardrobe item clicked:`, item.id, 'current selection:', selectedItemId);
+                                console.log(`[OutfitCreator] PERF Wardrobe item clicked - ${performance.now().toFixed(2)}ms`, { itemId: item.id });
                                 handleItemSelect(item.id);
                               }}
                             >
                               <img
-                                src={item.enhanced_image_url || item.image_url}
+                                src={optimizedUrl}
                                 alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
                                 className="max-w-full max-h-full object-contain"
+                                loading="lazy"
                               />
                               {isSelected && (
                                 <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
@@ -490,6 +494,8 @@ const OutfitCreator = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredCatalog.map((item) => {
                       const isSelected = selectedClothes.includes(item.id);
+                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 200);
+                      
                       return (
                         <div key={item.id} className="space-y-2">
                           <div
@@ -499,14 +505,15 @@ const OutfitCreator = () => {
                                 : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                             }`}
                             onClick={() => {
-                              console.log(`[OutfitCreator] Catalog item clicked:`, item.id, 'current selection:', selectedItemId);
+                              console.log(`[OutfitCreator] PERF Catalog item clicked - ${performance.now().toFixed(2)}ms`, { itemId: item.id });
                               handleItemSelect(item.id);
                             }}
                           >
                             <img
-                              src={item.image_url}
+                              src={optimizedUrl}
                               alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
                               className="max-w-full max-h-full object-contain"
+                              loading="lazy"
                             />
                             {isSelected && (
                               <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
