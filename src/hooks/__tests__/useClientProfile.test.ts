@@ -2,7 +2,7 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useClientProfile } from '../useClientProfile'
-import { mockSupabaseClient } from '@/test/setup'
+import { mockSupabaseClient, createChainableMock } from '@/test/setup'
 
 // Mock the auth context
 vi.mock('@/contexts/AuthContext', () => ({
@@ -26,13 +26,8 @@ describe('useClientProfile', () => {
       gender: 'female'
     }
 
-    // Mock the Supabase chain
-    const mockChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-    }
-    
+    // Create mock with the profile data
+    const mockChain = createChainableMock({ data: mockProfile, error: null })
     vi.mocked(mockSupabaseClient.from).mockReturnValue(mockChain)
 
     const { result } = renderHook(() => useClientProfile())
@@ -60,13 +55,8 @@ describe('useClientProfile', () => {
       ...profileData
     }
 
-    // Mock the Supabase chain for creation
-    const mockChain = {
-      insert: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: createdProfile, error: null })
-    }
-    
+    // Create mock with the created profile data
+    const mockChain = createChainableMock({ data: createdProfile, error: null })
     vi.mocked(mockSupabaseClient.from).mockReturnValue(mockChain)
 
     const { result } = renderHook(() => useClientProfile())
