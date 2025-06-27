@@ -1,14 +1,11 @@
 
 import React from 'react'
-import { render, RenderOptions } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
+import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// Re-export everything from testing library
+// Re-export everything from @testing-library/react
 export * from '@testing-library/react'
-export { default as userEvent } from '@testing-library/user-event'
 
-// Create a test query client
 const createTestQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,21 +17,57 @@ const createTestQueryClient = () => new QueryClient({
   },
 })
 
-const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
+export const renderHook = (hook: () => any) => {
   const queryClient = createTestQueryClient()
   
-  return (
+  const TestComponent = () => {
+    const result = hook()
+    // Store the result on the component for access
+    ;(TestComponent as any).result = result
+    return null
+  }
+
+  const { rerender, unmount } = render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <TestComponent />
     </QueryClientProvider>
   )
+
+  return {
+    result: {
+      get current() {
+        return (TestComponent as any).result
+      }
+    },
+    rerender: () => {
+      const newQueryClient = createTestQueryClient()
+      rerender(
+        <QueryClientProvider client={newQueryClient}>
+          <TestComponent />
+        </QueryClientProvider>
+      )
+    },
+    unmount
+  }
 }
 
-const customRender = (
-  ui: React.ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => render(ui, { wrapper: AllTheProviders, ...options })
+export const waitFor = async (callback: () => void | Promise<void>, options?: { timeout?: number }) => {
+  const timeout = options?.timeout || 1000
+  const startTime = Date.now()
+  
+  while (Date.now() - startTime < timeout) {
+    try {
+      await callback()
+      return
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+  }
+  
+  // Final attempt
+  await callback()
+}
 
-export { customRender as render }
+export const act = async (callback: () => Promise<void> | void) => {
+  await callback()
+}

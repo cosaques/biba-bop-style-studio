@@ -82,9 +82,10 @@ describe('useClothingItems', () => {
     })
 
     // Verify items is initialized as empty array
+    expect(Array.isArray(result.current.items)).toBe(true)
     expect(result.current.items).toEqual([])
 
-    // Now mock the create call with the created item - use a fresh mock
+    // Now mock the create call with the created item
     const createMockChain = createChainableMock({ data: createdItem, error: null })
     vi.mocked(mockSupabaseClient.from).mockReturnValue(createMockChain)
 
@@ -95,7 +96,13 @@ describe('useClothingItems', () => {
 
     expect(createResult.data).toEqual(createdItem)
     expect(mockSupabaseClient.from).toHaveBeenCalledWith('clothing_items')
-    expect(result.current.items).toHaveLength(1)
+    
+    // Wait for state to update after the create operation
+    await waitFor(() => {
+      expect(Array.isArray(result.current.items)).toBe(true)
+      expect(result.current.items).toHaveLength(1)
+    })
+    
     expect(result.current.items[0]).toEqual(createdItem)
   })
 })
