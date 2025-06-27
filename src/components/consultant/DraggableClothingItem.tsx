@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -55,13 +56,13 @@ export function DraggableClothingItem({
   // Performance logging
   const logPerformance = useCallback((action: string, data?: any) => {
     const now = performance.now();
-    console.log(`[${id}] PERF ${action} - ${now.toFixed(2)}ms`, data);
+    console.log(`[PERF-${id.slice(-8)}] ${action} - ${now.toFixed(2)}ms`, data);
   }, [id]);
 
-  // Optimized image URL - memoized to prevent recalculation
+  // Optimized image URL - using optimized version for smoother dragging
   const optimizedImageUrl = useMemo(() => {
     const optimized = getOptimizedImageUrl(imageUrl, 400);
-    logPerformance('Image optimized', { original: imageUrl, optimized });
+    logPerformance('Image URL optimized', { original: imageUrl.slice(-30), optimized: optimized.slice(-30) });
     return optimized;
   }, [imageUrl, logPerformance]);
 
@@ -71,10 +72,11 @@ export function DraggableClothingItem({
   const updateContainerBounds = useCallback(() => {
     const container = itemRef.current?.parentElement;
     if (container) {
-      containerBounds.current = {
+      const newBounds = {
         width: container.clientWidth,
         height: container.clientHeight
       };
+      containerBounds.current = newBounds;
     }
   }, []);
 
@@ -87,21 +89,22 @@ export function DraggableClothingItem({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateContainerBounds]);
 
-  // Load and optimize image dimensions
+  // Load and calculate optimal image dimensions
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
       const maxSize = 150;
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
+      // Calculate dimensions that maintain aspect ratio
       const dimensions = aspectRatio > 1 
         ? { width: maxSize, height: maxSize / aspectRatio }
         : { width: maxSize * aspectRatio, height: maxSize };
       
-      logPerformance('Image loaded', { 
+      logPerformance('Image loaded & dimensions calculated', { 
         natural: `${img.naturalWidth}x${img.naturalHeight}`, 
-        calculated: `${dimensions.width}x${dimensions.height}`,
-        aspectRatio 
+        calculated: `${Math.round(dimensions.width)}x${Math.round(dimensions.height)}`,
+        aspectRatio: aspectRatio.toFixed(2)
       });
       
       setImageDimensions(dimensions);
@@ -110,12 +113,12 @@ export function DraggableClothingItem({
     img.src = optimizedImageUrl;
   }, [optimizedImageUrl, logPerformance]);
 
-  // Throttled position update for smooth dragging
+  // Throttled position update for smooth dragging (60fps)
   const throttledPositionUpdate = useCallback((newPosition: { x: number; y: number }) => {
     const now = performance.now();
     const dragState = dragStateRef.current;
     
-    // Throttle updates to 60fps max
+    // Throttle updates to 60fps max (16.67ms between updates)
     if (now - dragState.lastUpdateTime < 16) return;
     
     dragState.lastUpdateTime = now;
@@ -235,7 +238,7 @@ export function DraggableClothingItem({
     e.preventDefault();
     e.stopPropagation();
     
-    logPerformance('Drag started', { clientX: e.clientX, clientY: e.clientY, position });
+    logPerformance('Drag start', { clientX: e.clientX, clientY: e.clientY });
     
     onSelect(id);
     setIsDragging(true);
@@ -254,7 +257,7 @@ export function DraggableClothingItem({
     e.stopPropagation();
     e.preventDefault();
     
-    logPerformance('Resize started', { handle, clientX: e.clientX, clientY: e.clientY });
+    logPerformance('Resize start', { handle });
     
     onSelect(id);
     setIsResizing(true);
@@ -323,8 +326,8 @@ export function DraggableClothingItem({
         height: imageDimensions.height * scale,
         zIndex: isSelected ? 1000 : zIndex,
         // Use GPU acceleration for smoother animations
-        transform: isDragging ? 'translateZ(0)' : 'none',
-        willChange: isDragging ? 'transform' : 'auto'
+        transform: isDragging || isResizing ? 'translateZ(0)' : 'none',
+        willChange: isDragging || isResizing ? 'transform' : 'auto'
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
@@ -337,8 +340,8 @@ export function DraggableClothingItem({
         className="w-full h-full object-contain pointer-events-none"
         draggable={false}
         style={{
-          // Prevent image flickering during drag
-          imageRendering: isDragging ? 'optimizeSpeed' : 'auto'
+          // Use valid CSS image-rendering values - removed optimizeSpeed which isn't supported
+          imageRendering: isDragging ? 'pixelated' : 'auto'
         }}
       />
       
