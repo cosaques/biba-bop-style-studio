@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Draggable from 'react-draggable';
 
 interface DraggableClothingItemProps {
   id: string;
@@ -29,25 +30,25 @@ export function DraggableClothingItem({
 }: DraggableClothingItemProps) {
   const [position, setPosition] = useState(initialPosition);
   const [scale, setScale] = useState(initialScale);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ 
     x: 0, 
     y: 0, 
     scale: 1, 
     handle: 'se' as ResizeHandle,
-    centerX: 0,
-    centerY: 0
+    itemCenterX: 0,
+    itemCenterY: 0
   });
   const itemRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isResizing:', isResizing);
 
   // Listen for clicks outside to deselect
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
+        console.log(`[${id}] Deselecting item due to outside click`);
         setIsSelected(false);
       }
     };
@@ -56,160 +57,152 @@ export function DraggableClothingItem({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isSelected]);
+  }, [isSelected, id]);
 
-  // Get container bounds
-  const getContainerBounds = () => {
-    const container = itemRef.current?.parentElement;
-    if (!container) return { width: 0, height: 0 };
-    return {
-      width: container.clientWidth,
-      height: container.clientHeight
-    };
-  };
+  // Global mouse move and up handlers for resizing
+  useEffect(() => {
+    if (!isResizing) return;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') {
-      setIsDragging(true);
-      setIsSelected(true);
-      onSelect(id);
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      console.log(`[${id}] Global mouse move - clientX: ${e.clientX}, clientY: ${e.clientY}`);
       
-      const rect = itemRef.current?.getBoundingClientRect();
-      const container = itemRef.current?.parentElement?.getBoundingClientRect();
-      
-      if (rect && container) {
-        setDragStart({
-          x: e.clientX - (rect.left - container.left),
-          y: e.clientY - (rect.top - container.top)
-        });
-      }
-      e.preventDefault();
-    }
-  };
-
-  const handleResizeMouseDown = (e: React.MouseEvent, handle: ResizeHandle) => {
-    e.stopPropagation();
-    setIsResizing(true);
-    setIsSelected(true);
-    onSelect(id);
-    
-    const rect = itemRef.current?.getBoundingClientRect();
-    const container = itemRef.current?.parentElement?.getBoundingClientRect();
-    
-    if (rect && container) {
-      const centerX = position.x + (getSize().width * scale) / 2;
-      const centerY = position.y + (getSize().height * scale) / 2;
-      
-      setResizeStart({
-        x: e.clientX,
-        y: e.clientY,
-        scale: scale,
-        handle: handle,
-        centerX,
-        centerY
-      });
-    }
-    e.preventDefault();
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
       const containerBounds = getContainerBounds();
-      const size = getSize();
-      const itemWidth = size.width * scale;
-      const itemHeight = size.height * scale;
-      
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      
-      // Constrain to container bounds
-      const constrainedX = Math.max(0, Math.min(newX, containerBounds.width - itemWidth));
-      const constrainedY = Math.max(0, Math.min(newY, containerBounds.height - itemHeight));
-      
-      const newPosition = { x: constrainedX, y: constrainedY };
-      setPosition(newPosition);
-      onPositionChange(id, newPosition);
-      
-    } else if (isResizing) {
-      const containerBounds = getContainerBounds();
-      const { handle, centerX, centerY } = resizeStart;
+      const { handle, itemCenterX, itemCenterY } = resizeStart;
       
       const mouseDeltaX = e.clientX - resizeStart.x;
       const mouseDeltaY = e.clientY - resizeStart.y;
       
-      // Calculate scale based on distance from center
+      console.log(`[${id}] Mouse deltas - deltaX: ${mouseDeltaX}, deltaY: ${mouseDeltaY}`);
+      
+      // Calculate scale based on distance from center and handle direction
       let scaleFactor = 1;
-      const baseDistance = 100; // Base distance for scale calculation
+      const sensitivity = 0.01; // Reduced sensitivity for better control
       
       switch (handle) {
-        case 'se': // Bottom right
-          scaleFactor = 1 + Math.max(mouseDeltaX, mouseDeltaY) / baseDistance;
+        case 'se': // Bottom right - increase scale when moving away from center
+          scaleFactor = 1 + Math.max(mouseDeltaX, mouseDeltaY) * sensitivity;
           break;
-        case 'sw': // Bottom left
-          scaleFactor = 1 + Math.max(-mouseDeltaX, mouseDeltaY) / baseDistance;
+        case 'sw': // Bottom left - increase scale when moving left or down
+          scaleFactor = 1 + Math.max(-mouseDeltaX, mouseDeltaY) * sensitivity;
           break;
-        case 'ne': // Top right
-          scaleFactor = 1 + Math.max(mouseDeltaX, -mouseDeltaY) / baseDistance;
+        case 'ne': // Top right - increase scale when moving right or up
+          scaleFactor = 1 + Math.max(mouseDeltaX, -mouseDeltaY) * sensitivity;
           break;
-        case 'nw': // Top left
-          scaleFactor = 1 + Math.max(-mouseDeltaX, -mouseDeltaY) / baseDistance;
+        case 'nw': // Top left - increase scale when moving up or left
+          scaleFactor = 1 + Math.max(-mouseDeltaX, -mouseDeltaY) * sensitivity;
           break;
       }
       
-      const newScale = Math.max(0.3, Math.min(3, resizeStart.scale * scaleFactor));
+      const newScale = Math.max(0.2, Math.min(4, resizeStart.scale * scaleFactor));
+      console.log(`[${id}] Scale calculation - handle: ${handle}, scaleFactor: ${scaleFactor}, newScale: ${newScale}`);
+      
       const size = getSize();
       const newWidth = size.width * newScale;
       const newHeight = size.height * newScale;
       
-      // Calculate new position to keep the item centered during resize
-      let newPosition = { ...position };
-      
-      // Adjust position based on which corner is being dragged
-      switch (handle) {
-        case 'se': // Scale from top-left, no position change needed
-          break;
-        case 'sw': // Scale from top-right
-          newPosition.x = centerX - newWidth / 2;
-          break;
-        case 'ne': // Scale from bottom-left
-          newPosition.y = centerY - newHeight / 2;
-          break;
-        case 'nw': // Scale from bottom-right
-          newPosition.x = centerX - newWidth / 2;
-          newPosition.y = centerY - newHeight / 2;
-          break;
-      }
+      // Calculate new position to keep item centered around the original center
+      const newPosition = {
+        x: itemCenterX - newWidth / 2,
+        y: itemCenterY - newHeight / 2
+      };
       
       // Constrain to container bounds
-      newPosition.x = Math.max(0, Math.min(newPosition.x, containerBounds.width - newWidth));
-      newPosition.y = Math.max(0, Math.min(newPosition.y, containerBounds.height - newHeight));
+      const constrainedPosition = {
+        x: Math.max(0, Math.min(newPosition.x, containerBounds.width - newWidth)),
+        y: Math.max(0, Math.min(newPosition.y, containerBounds.height - newHeight))
+      };
+      
+      console.log(`[${id}] Position update - new: {x: ${constrainedPosition.x}, y: ${constrainedPosition.y}}`);
       
       setScale(newScale);
-      setPosition(newPosition);
+      setPosition(constrainedPosition);
       onScaleChange(id, newScale);
-      onPositionChange(id, newPosition);
+      onPositionChange(id, constrainedPosition);
+    };
+
+    const handleGlobalMouseUp = () => {
+      console.log(`[${id}] Global mouse up - ending resize`);
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isResizing, resizeStart, id, onScaleChange, onPositionChange]);
+
+  const getContainerBounds = () => {
+    const container = itemRef.current?.parentElement;
+    if (!container) {
+      console.log(`[${id}] No container found`);
+      return { width: 800, height: 600 }; // Fallback
     }
+    const bounds = {
+      width: container.clientWidth,
+      height: container.clientHeight
+    };
+    console.log(`[${id}] Container bounds:`, bounds);
+    return bounds;
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setIsResizing(false);
+  const handleResizeMouseDown = (e: React.MouseEvent, handle: ResizeHandle) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    console.log(`[${id}] Resize mouse down - handle: ${handle}, clientX: ${e.clientX}, clientY: ${e.clientY}`);
+    
+    setIsResizing(true);
+    setIsSelected(true);
+    onSelect(id);
+    
+    const size = getSize();
+    const itemCenterX = position.x + (size.width * scale) / 2;
+    const itemCenterY = position.y + (size.height * scale) / 2;
+    
+    console.log(`[${id}] Resize start - itemCenter: {x: ${itemCenterX}, y: ${itemCenterY}}, current scale: ${scale}`);
+    
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      scale: scale,
+      handle: handle,
+      itemCenterX,
+      itemCenterY
+    });
+  };
+
+  const handleDragStart = () => {
+    console.log(`[${id}] Drag start`);
+    setIsSelected(true);
+    onSelect(id);
+  };
+
+  const handleDrag = (e: any, data: any) => {
+    const newPosition = { x: data.x, y: data.y };
+    console.log(`[${id}] Drag - new position:`, newPosition);
+    setPosition(newPosition);
+    onPositionChange(id, newPosition);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[${id}] Double click - removing item`);
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[${id}] Click - selecting item`);
     setIsSelected(true);
     onSelect(id);
   };
 
-  // Get size based on category - doubled the base sizes
+  // Get size based on category - increased base sizes
   const getSize = () => {
-    const baseSize = 240; // Doubled from 120
+    const baseSize = 480; // Doubled again for better visibility
     switch (category) {
       case "top": return { width: baseSize * 1.2, height: baseSize };
       case "bottom": return { width: baseSize * 0.8, height: baseSize };
@@ -222,28 +215,31 @@ export function DraggableClothingItem({
   };
 
   const size = getSize();
+  const containerBounds = getContainerBounds();
 
   return (
-    <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      className="absolute inset-0 pointer-events-none"
+    <Draggable
+      position={position}
+      onStart={handleDragStart}
+      onDrag={handleDrag}
+      disabled={isResizing}
+      bounds={{
+        left: 0,
+        top: 0,
+        right: containerBounds.width - (size.width * scale),
+        bottom: containerBounds.height - (size.height * scale)
+      }}
     >
       <div
         ref={itemRef}
-        className={`absolute cursor-move select-none transition-all duration-150 pointer-events-auto ${
+        className={`absolute cursor-move select-none transition-all duration-150 ${
           isSelected ? 'ring-2 ring-bibabop-navy shadow-lg' : ''
         }`}
         style={{
-          left: position.x,
-          top: position.y,
           width: size.width * scale,
           height: size.height * scale,
-          zIndex: isDragging || isResizing ? 1000 : zIndex,
+          zIndex: isSelected ? 1000 : zIndex,
         }}
-        onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
         onClick={handleClick}
       >
@@ -251,11 +247,10 @@ export function DraggableClothingItem({
           src={imageUrl}
           alt={category}
           className="w-full h-full object-contain pointer-events-none"
-          style={{ opacity: isDragging ? 0.8 : 1 }}
           draggable={false}
         />
         
-        {isSelected && !isDragging && !isResizing && (
+        {isSelected && !isResizing && (
           <>
             {/* Corner resize handles */}
             <div 
@@ -282,6 +277,6 @@ export function DraggableClothingItem({
           </>
         )}
       </div>
-    </div>
+    </Draggable>
   );
 }
