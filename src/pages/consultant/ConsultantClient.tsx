@@ -1,11 +1,9 @@
-
 import { useState, useEffect } from "react";
-import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { useParams, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
 import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
-import { ArrowLeft } from "lucide-react";
+import { ConsultantClientHeader } from "@/components/consultant/ConsultantClientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -158,9 +156,6 @@ const ClientDetail = () => {
           <ConsultantHeader />
           <main className="p-6">
             <h1 className="text-2xl font-bold">Client non trouvé</h1>
-            <Button asChild className="mt-4">
-              <Link to="/consultant/dashboard">Retour au tableau de bord</Link>
-            </Button>
           </main>
         </div>
       </div>
@@ -173,31 +168,7 @@ const ClientDetail = () => {
       <div className="flex-1">
         <ConsultantHeader />
         <main className="p-6">
-          <div className="flex items-center mb-6">
-            <Button asChild variant="ghost" className="mr-4">
-              <Link to="/consultant/dashboard">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Retour
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-bibabop-navy flex items-center">
-                {client.profile_photo_url ? (
-                  <img
-                    src={client.profile_photo_url}
-                    alt={getClientDisplayName(client)}
-                    className="w-12 h-12 rounded-full mr-4 object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full mr-4 bg-bibabop-lightpink flex items-center justify-center font-medium">
-                    {getClientInitials(client)}
-                  </div>
-                )}
-                {getClientDisplayName(client)}
-              </h1>
-              <p className="subtitle">Fiche client détaillée</p>
-            </div>
-          </div>
+          <ConsultantClientHeader client={client} title="Fiche client détaillée" />
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid grid-cols-3 mb-6">
