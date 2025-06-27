@@ -21,6 +21,8 @@ vi.mock('@/hooks/use-toast', () => ({
 describe('useClothingItems', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset the mock implementation
+    vi.mocked(mockSupabaseClient.from).mockReset()
   })
 
   it('should fetch clothing items on mount', async () => {
@@ -79,15 +81,19 @@ describe('useClothingItems', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    // Now mock the create call with the created item
-    const createMockChain = createChainableMock({ data: createdItem, error: null })
-    vi.mocked(mockSupabaseClient.from).mockReturnValueOnce(createMockChain)
+    // Verify items is initialized as empty array
+    expect(result.current.items).toEqual([])
 
+    // Now mock the create call with the created item - use a fresh mock
+    const createMockChain = createChainableMock({ data: createdItem, error: null })
+    vi.mocked(mockSupabaseClient.from).mockReturnValue(createMockChain)
+
+    let createResult: any
     await act(async () => {
-      const createResult = await result.current.createItem(newItem)
-      expect(createResult.data).toEqual(createdItem)
+      createResult = await result.current.createItem(newItem)
     })
 
+    expect(createResult.data).toEqual(createdItem)
     expect(mockSupabaseClient.from).toHaveBeenCalledWith('clothing_items')
     expect(result.current.items).toHaveLength(1)
     expect(result.current.items[0]).toEqual(createdItem)
