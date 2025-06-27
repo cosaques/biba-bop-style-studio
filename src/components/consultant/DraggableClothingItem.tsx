@@ -40,6 +40,7 @@ export function DraggableClothingItem({
   
   const itemRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const animationFrameRef = useRef<number>();
   const dragStateRef = useRef({
     isDragging: false,
     isResizing: false,
@@ -50,21 +51,24 @@ export function DraggableClothingItem({
     resizeHandle: 'se' as ResizeHandle,
     resizeAnchorX: 0,
     resizeAnchorY: 0,
-    lastUpdateTime: 0
+    lastUpdateTime: 0,
+    pendingPosition: null as { x: number; y: number } | null
   });
 
-  // Performance logging
+  // Simplified performance logging - only for major events
   const logPerformance = useCallback((action: string, data?: any) => {
-    const now = performance.now();
-    console.log(`[PERF-${id.slice(-8)}] ${action} - ${now.toFixed(2)}ms`, data);
+    console.log(`[PERF-${id.slice(-8)}] ${action}`, data);
   }, [id]);
 
-  // Optimized image URL - using optimized version for smoother dragging
-  const optimizedImageUrl = useMemo(() => {
-    const optimized = getOptimizedImageUrl(imageUrl, 400);
-    logPerformance('Image URL optimized', { original: imageUrl.slice(-30), optimized: optimized.slice(-30) });
-    return optimized;
-  }, [imageUrl, logPerformance]);
+  // Optimized image URLs - smaller for dragging, larger for display
+  const { dragImageUrl, displayImageUrl } = useMemo(() => {
+    const dragUrl = getOptimizedImageUrl(imageUrl, 200); // Smaller for smooth dragging
+    const displayUrl = getOptimizedImageUrl(imageUrl, 300); // Larger for better quality when not dragging
+    return {
+      dragImageUrl: dragUrl,
+      displayImageUrl: displayUrl
+    };
+  }, [imageUrl]);
 
   // Memoize container bounds to avoid recalculation
   const containerBounds = useRef({ width: 800, height: 600 });
@@ -101,28 +105,35 @@ export function DraggableClothingItem({
         ? { width: maxSize, height: maxSize / aspectRatio }
         : { width: maxSize * aspectRatio, height: maxSize };
       
-      logPerformance('Image loaded & dimensions calculated', { 
-        natural: `${img.naturalWidth}x${img.naturalHeight}`, 
-        calculated: `${Math.round(dimensions.width)}x${Math.round(dimensions.height)}`,
-        aspectRatio: aspectRatio.toFixed(2)
-      });
-      
       setImageDimensions(dimensions);
       setImageLoaded(true);
     };
-    img.src = optimizedImageUrl;
-  }, [optimizedImageUrl, logPerformance]);
+    img.src = displayImageUrl;
+  }, [displayImageUrl]);
 
-  // Throttled position update for smooth dragging (60fps)
-  const throttledPositionUpdate = useCallback((newPosition: { x: number; y: number }) => {
-    const now = performance.now();
-    const dragState = dragStateRef.current;
+  // RAF-based position update for ultra-smooth dragging
+  const schedulePositionUpdate = useCallback((newPosition: { x: number; y: number }) => {
+    dragStateRef.current.pendingPosition = newPosition;
     
-    // Throttle updates to 60fps max (16.67ms between updates)
-    if (now - dragState.lastUpdateTime < 16) return;
-    
-    dragState.lastUpdateTime = now;
-    setPosition(newPosition);
+    if (!animationFrameRef.current) {
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const pendingPos = dragStateRef.current.pendingPosition;
+        if (pendingPos) {
+          setPosition(pendingPos);
+          dragStateRef.current.pendingPosition = null;
+        }
+        animationFrameRef.current = undefined;
+      });
+    }
+  }, []);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
 
   // Global mouse handlers with performance optimizations
@@ -147,8 +158,8 @@ export function DraggableClothingItem({
           y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - (imageDimensions.height * scale)))
         };
 
-        // Use throttled update for smooth dragging
-        throttledPositionUpdate(constrainedPosition);
+        // Use RAF for ultra-smooth updates
+        schedulePositionUpdate(constrainedPosition);
         
       } else if (dragState.isResizing) {
         e.preventDefault();
@@ -202,7 +213,7 @@ export function DraggableClothingItem({
         };
         
         setScale(newScale);
-        throttledPositionUpdate(constrainedPosition);
+        schedulePositionUpdate(constrainedPosition);
       }
     };
 
@@ -210,18 +221,18 @@ export function DraggableClothingItem({
       const dragState = dragStateRef.current;
       
       if (dragState.isDragging) {
-        logPerformance('Drag completed', { finalPosition: position });
         onPositionChange(id, position);
         dragState.isDragging = false;
         setIsDragging(false);
+        logPerformance('Drag completed');
       }
       
       if (dragState.isResizing) {
-        logPerformance('Resize completed', { finalScale: scale, finalPosition: position });
         onScaleChange(id, scale);
         onPositionChange(id, position);
         dragState.isResizing = false;
         setIsResizing(false);
+        logPerformance('Resize completed');
       }
     };
 
@@ -232,13 +243,11 @@ export function DraggableClothingItem({
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, imageDimensions, scale, position, throttledPositionUpdate, logPerformance]);
+  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, imageDimensions, scale, position, schedulePositionUpdate, logPerformance]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    logPerformance('Drag start', { clientX: e.clientX, clientY: e.clientY });
     
     onSelect(id);
     setIsDragging(true);
@@ -256,8 +265,6 @@ export function DraggableClothingItem({
   const handleResizeMouseDown = (e: React.MouseEvent, handle: ResizeHandle) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    logPerformance('Resize start', { handle });
     
     onSelect(id);
     setIsResizing(true);
@@ -298,20 +305,28 @@ export function DraggableClothingItem({
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    logPerformance('Double click - removing item');
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    logPerformance('Click - selecting item');
     onSelect(id);
   };
 
   // Don't render until image is loaded to avoid layout shifts
   if (!imageLoaded) {
-    return null;
+    return (
+      <div className="absolute animate-pulse bg-gray-200 rounded" style={{
+        left: initialPosition.x,
+        top: initialPosition.y,
+        width: 150,
+        height: 150
+      }} />
+    );
   }
+
+  // Use drag-optimized image during dragging for better performance
+  const currentImageUrl = isDragging ? dragImageUrl : displayImageUrl;
 
   return (
     <div
@@ -335,12 +350,12 @@ export function DraggableClothingItem({
     >
       <img
         ref={imageRef}
-        src={optimizedImageUrl}
+        src={currentImageUrl}
         alt={category}
         className="w-full h-full object-contain pointer-events-none"
         draggable={false}
         style={{
-          // Use valid CSS image-rendering values - removed optimizeSpeed which isn't supported
+          // Use pixelated rendering during drag for better performance
           imageRendering: isDragging ? 'pixelated' : 'auto'
         }}
       />

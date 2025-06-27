@@ -202,17 +202,17 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelect = (itemId: string) => {
-    console.log(`[OutfitCreator] PERF Item select - ${performance.now().toFixed(2)}ms`, { itemId, currentSelection: selectedClothes });
+    console.log(`[OutfitCreator] Item select:`, itemId);
     
     if (selectedClothes.includes(itemId)) {
-      console.log(`[OutfitCreator] PERF Removing item from silhouette - ${performance.now().toFixed(2)}ms`);
+      console.log(`[OutfitCreator] Removing from silhouette`);
       setSelectedClothes(selectedClothes.filter(id => id !== itemId));
       setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
       setSelectedItemId(null);
     } else {
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
       if (item) {
-        console.log(`[OutfitCreator] PERF Adding item to silhouette - ${performance.now().toFixed(2)}ms`);
+        console.log(`[OutfitCreator] Adding to silhouette`);
         setSelectedClothes([...selectedClothes, itemId]);
         const position = getDefaultPosition(item.category, clothingPositions);
         const newPosition = {
@@ -241,19 +241,13 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelection = (itemId: string) => {
-    console.log(`[OutfitCreator] Item selection changed to:`, itemId, 'previous:', selectedItemId);
-    
-    // Only change selection if it's different
     if (selectedItemId !== itemId) {
-      console.log(`[OutfitCreator] Actually changing selection from ${selectedItemId} to ${itemId}`);
       setSelectedItemId(itemId);
       // Bring selected item to front
       setClothingPositions(prev => 
         prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
       );
       setNextZIndex(nextZIndex + 1);
-    } else {
-      console.log(`[OutfitCreator] Selection unchanged - same item clicked`);
     }
   };
 
@@ -264,7 +258,6 @@ const OutfitCreator = () => {
   };
 
   const handleSilhouetteClick = () => {
-    console.log(`[OutfitCreator] PERF Silhouette background clicked - ${performance.now().toFixed(2)}ms`);
     setSelectedItemId(null);
   };
 
@@ -330,18 +323,19 @@ const OutfitCreator = () => {
                   className="max-h-[600px] w-auto object-contain"
                 />
 
-                {/* Draggable clothing items with optimized images */}
+                {/* Draggable clothing items with high quality images for dragging */}
                 {clothingPositions.map(clothingPos => {
                   const item = [...clientClothes, ...externalCatalog].find(i => i.id === clothingPos.id);
                   if (!item) return null;
 
-                  const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 200);
+                  // Use high quality image URL for draggable items
+                  const imageUrl = item.enhanced_image_url || item.image_url;
                   
                   return (
                     <DraggableClothingItem
                       key={clothingPos.id}
                       id={clothingPos.id}
-                      imageUrl={optimizedUrl}
+                      imageUrl={imageUrl}
                       category={item.category}
                       initialPosition={clothingPos.position}
                       initialScale={clothingPos.scale}
@@ -400,7 +394,7 @@ const OutfitCreator = () => {
         </Card>
       </div>
 
-      {/* Panel de droite: sélection des vêtements avec images optimisées */}
+      {/* Panel de droite: sélection des vêtements */}
       <div className="md:col-span-2">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <Card>
@@ -434,7 +428,8 @@ const OutfitCreator = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {filteredWardrobe.map((item) => {
                         const isSelected = selectedClothes.includes(item.id);
-                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 200);
+                        // Use smaller optimized images for the selection grid
+                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 150);
                         
                         return (
                           <div key={item.id} className="space-y-2">
@@ -444,10 +439,7 @@ const OutfitCreator = () => {
                                   ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                   : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                               }`}
-                              onClick={() => {
-                                console.log(`[OutfitCreator] PERF Wardrobe item clicked - ${performance.now().toFixed(2)}ms`, { itemId: item.id });
-                                handleItemSelect(item.id);
-                              }}
+                              onClick={() => handleItemSelect(item.id)}
                             >
                               <img
                                 src={optimizedUrl}
@@ -461,6 +453,7 @@ const OutfitCreator = () => {
                                 </div>
                               )}
                             </div>
+                            {/* ... keep existing code (item details and notes) */}
                             <div className="flex items-center justify-between">
                               <div className="text-xs text-muted-foreground">
                                 {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
@@ -494,7 +487,8 @@ const OutfitCreator = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredCatalog.map((item) => {
                       const isSelected = selectedClothes.includes(item.id);
-                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 200);
+                      // Use smaller optimized images for the selection grid
+                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 150);
                       
                       return (
                         <div key={item.id} className="space-y-2">
@@ -504,10 +498,7 @@ const OutfitCreator = () => {
                                 ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                 : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                             }`}
-                            onClick={() => {
-                              console.log(`[OutfitCreator] PERF Catalog item clicked - ${performance.now().toFixed(2)}ms`, { itemId: item.id });
-                              handleItemSelect(item.id);
-                            }}
+                            onClick={() => handleItemSelect(item.id)}
                           >
                             <img
                               src={optimizedUrl}
@@ -521,6 +512,7 @@ const OutfitCreator = () => {
                               </div>
                             )}
                           </div>
+                          {/* ... keep existing code (item details and notes) */}
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">
                               {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
@@ -545,7 +537,7 @@ const OutfitCreator = () => {
                       );
                     })}
 
-                    {/* Option pour ajouter un vêtement au catalogue */}
+                    {/* ... keep existing code (add to catalog card) */}
                     <Card className="card-hover flex flex-col bg-white">
                       <CardHeader className="p-0 flex-shrink-0">
                         <div className="aspect-square border-2 border-dashed rounded-t-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all flex flex-col items-center justify-center">
