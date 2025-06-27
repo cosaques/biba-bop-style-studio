@@ -33,8 +33,11 @@ export function DraggableClothingItem({
   const [scale, setScale] = useState(initialScale);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState({ width: 200, height: 200 });
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const itemRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const dragStateRef = useRef({
     isDragging: false,
     isResizing: false,
@@ -49,7 +52,7 @@ export function DraggableClothingItem({
     resizeAnchorY: 0
   });
 
-  console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isDragging:', isDragging, 'isResizing:', isResizing, 'isSelected:', isSelected);
+  console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isDragging:', isDragging, 'isResizing:', isResizing, 'isSelected:', isSelected, 'imageDimensions:', imageDimensions);
 
   // Memoize container bounds to avoid recalculation on every render
   const containerBounds = useRef({ width: 800, height: 600 });
@@ -74,18 +77,31 @@ export function DraggableClothingItem({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateContainerBounds]);
 
-  const getSize = useCallback(() => {
-    const baseSize = 200;
-    switch (category) {
-      case "top": return { width: baseSize * 1.2, height: baseSize };
-      case "bottom": return { width: baseSize * 0.8, height: baseSize };
-      case "one_piece": return { width: baseSize * 1.2, height: baseSize * 1.5 };
-      case "shoes": return { width: baseSize * 0.7, height: baseSize * 0.5 };
-      case "outerwear": return { width: baseSize * 1.3, height: baseSize * 1.1 };
-      case "accessory": return { width: baseSize * 0.5, height: baseSize * 0.5 };
-      default: return { width: baseSize, height: baseSize };
-    }
-  }, [category]);
+  // Load image and get its natural dimensions
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 150; // Base size for scaling
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      
+      let width, height;
+      if (aspectRatio > 1) {
+        // Wide image
+        width = maxSize;
+        height = maxSize / aspectRatio;
+      } else {
+        // Tall image
+        height = maxSize;
+        width = maxSize * aspectRatio;
+      }
+      
+      console.log(`[${id}] Image loaded - natural: ${img.naturalWidth}x${img.naturalHeight}, calculated: ${width}x${height}, aspect ratio: ${aspectRatio}`);
+      
+      setImageDimensions({ width, height });
+      setImageLoaded(true);
+    };
+    img.src = imageUrl;
+  }, [imageUrl, id]);
 
   // Global mouse handlers
   useEffect(() => {
@@ -108,10 +124,9 @@ export function DraggableClothingItem({
           y: dragState.startPosition.y + deltaY
         };
 
-        const size = getSize();
         const constrainedPosition = {
-          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - (size.width * scale))),
-          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - (size.height * scale)))
+          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - (imageDimensions.width * scale))),
+          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - (imageDimensions.height * scale)))
         };
 
         console.log(`[${id}] Setting new position:`, constrainedPosition);
@@ -146,9 +161,8 @@ export function DraggableClothingItem({
         const newScale = Math.max(0.2, Math.min(4, dragState.startScale * scaleFactor));
         console.log(`[${id}] New scale calculated:`, newScale, 'from factor:', scaleFactor);
         
-        const size = getSize();
-        const newWidth = size.width * newScale;
-        const newHeight = size.height * newScale;
+        const newWidth = imageDimensions.width * newScale;
+        const newHeight = imageDimensions.height * newScale;
         
         // Calculate new position to keep the opposite corner fixed
         let newPosition = { x: position.x, y: position.y };
@@ -222,7 +236,7 @@ export function DraggableClothingItem({
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, getSize, scale, position]);
+  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, imageDimensions, scale, position]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -252,8 +266,6 @@ export function DraggableClothingItem({
     onSelect(id);
     setIsResizing(true);
     
-    const size = getSize();
-    
     // Calculate the anchor point (opposite corner that should stay fixed)
     let anchorX, anchorY;
     switch (handle) {
@@ -264,18 +276,18 @@ export function DraggableClothingItem({
         break;
       case 'sw':
         // Anchor at top-right
-        anchorX = position.x + size.width * scale;
+        anchorX = position.x + imageDimensions.width * scale;
         anchorY = position.y;
         break;
       case 'ne':
         // Anchor at bottom-left
         anchorX = position.x;
-        anchorY = position.y + size.height * scale;
+        anchorY = position.y + imageDimensions.height * scale;
         break;
       case 'nw':
         // Anchor at bottom-right
-        anchorX = position.x + size.width * scale;
-        anchorY = position.y + size.height * scale;
+        anchorX = position.x + imageDimensions.width * scale;
+        anchorY = position.y + imageDimensions.height * scale;
         break;
     }
     
@@ -305,7 +317,10 @@ export function DraggableClothingItem({
     onSelect(id);
   };
 
-  const size = getSize();
+  // Don't render until image is loaded to avoid layout shifts
+  if (!imageLoaded) {
+    return null;
+  }
 
   return (
     <div
@@ -316,8 +331,8 @@ export function DraggableClothingItem({
       style={{
         left: position.x,
         top: position.y,
-        width: size.width * scale,
-        height: size.height * scale,
+        width: imageDimensions.width * scale,
+        height: imageDimensions.height * scale,
         zIndex: isSelected ? 1000 : zIndex,
       }}
       onMouseDown={handleMouseDown}
@@ -325,6 +340,7 @@ export function DraggableClothingItem({
       onClick={handleClick}
     >
       <img
+        ref={imageRef}
         src={imageUrl}
         alt={category}
         className="w-full h-full object-contain pointer-events-none"
