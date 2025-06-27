@@ -1,5 +1,5 @@
 
-import { renderHook, waitFor, act } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@/test/utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useClothingItems } from '../useClothingItems'
 import { mockSupabaseClient, createChainableMock } from '@/test/setup'
