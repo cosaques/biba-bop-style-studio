@@ -242,6 +242,8 @@ const OutfitCreator = () => {
 
   const handleSilhouetteClick = () => {
     setSelectedItemId(null);
+    // Deselect all items by updating their selected state
+    setClothingPositions(prev => prev.map(pos => ({ ...pos })));
   };
 
   const handleSaveOutfit = () => {

@@ -1,6 +1,5 @@
 
 import { useState, useRef } from "react";
-import { Move } from "lucide-react";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -14,6 +13,8 @@ interface DraggableClothingItemProps {
   onRemove: (id: string) => void;
   onSelect: (id: string) => void;
 }
+
+type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';
 
 export function DraggableClothingItem({
   id,
@@ -33,7 +34,13 @@ export function DraggableClothingItem({
   const [isResizing, setIsResizing] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, scale: 1 });
+  const [resizeStart, setResizeStart] = useState({ 
+    x: 0, 
+    y: 0, 
+    scale: 1, 
+    handle: 'se' as ResizeHandle,
+    itemRect: { x: 0, y: 0, width: 0, height: 0 }
+  });
   const itemRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -52,16 +59,27 @@ export function DraggableClothingItem({
     }
   };
 
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
+  const handleResizeMouseDown = (e: React.MouseEvent, handle: ResizeHandle) => {
     e.stopPropagation();
     setIsResizing(true);
     setIsSelected(true);
     onSelect(id);
-    setResizeStart({
-      x: e.clientX,
-      y: e.clientY,
-      scale: scale
-    });
+    
+    const rect = itemRef.current?.getBoundingClientRect();
+    if (rect) {
+      setResizeStart({
+        x: e.clientX,
+        y: e.clientY,
+        scale: scale,
+        handle: handle,
+        itemRect: {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height
+        }
+      });
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -75,8 +93,10 @@ export function DraggableClothingItem({
         };
         
         // Constrain to container bounds
-        const maxX = containerRect.width - (itemRef.current.offsetWidth * scale);
-        const maxY = containerRect.height - (itemRef.current.offsetHeight * scale);
+        const itemWidth = itemRef.current.offsetWidth;
+        const itemHeight = itemRef.current.offsetHeight;
+        const maxX = containerRect.width - itemWidth;
+        const maxY = containerRect.height - itemHeight;
         
         newPosition.x = Math.max(0, Math.min(newPosition.x, maxX));
         newPosition.y = Math.max(0, Math.min(newPosition.y, maxY));
@@ -84,15 +104,57 @@ export function DraggableClothingItem({
         setPosition(newPosition);
         onPositionChange(id, newPosition);
       }
-    } else if (isResizing) {
-      const deltaX = e.clientX - resizeStart.x;
-      const deltaY = e.clientY - resizeStart.y;
-      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const scaleFactor = deltaX > 0 || deltaY > 0 ? 1 + delta / 200 : 1 - delta / 200;
-      const newScale = Math.max(0.3, Math.min(3, resizeStart.scale * scaleFactor));
-      
-      setScale(newScale);
-      onScaleChange(id, newScale);
+    } else if (isResizing && itemRef.current) {
+      const container = itemRef.current.parentElement;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const { handle, itemRect } = resizeStart;
+        
+        // Calculate new scale based on handle and mouse position
+        let newScale = scale;
+        let newPosition = { ...position };
+        
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        
+        // Calculate scale factor based on the handle being dragged
+        let scaleFactor = 1;
+        
+        switch (handle) {
+          case 'se': // Bottom right - scale from top-left
+            scaleFactor = 1 + Math.max(deltaX, deltaY) / 100;
+            break;
+          case 'sw': // Bottom left - scale from top-right
+            scaleFactor = 1 + Math.max(-deltaX, deltaY) / 100;
+            newPosition.x = position.x + deltaX * 0.5;
+            break;
+          case 'ne': // Top right - scale from bottom-left
+            scaleFactor = 1 + Math.max(deltaX, -deltaY) / 100;
+            newPosition.y = position.y + deltaY * 0.5;
+            break;
+          case 'nw': // Top left - scale from bottom-right
+            scaleFactor = 1 + Math.max(-deltaX, -deltaY) / 100;
+            newPosition.x = position.x + deltaX * 0.5;
+            newPosition.y = position.y + deltaY * 0.5;
+            break;
+        }
+        
+        newScale = Math.max(0.3, Math.min(3, resizeStart.scale * scaleFactor));
+        
+        // Constrain position to container
+        const newWidth = getSize().width * newScale;
+        const newHeight = getSize().height * newScale;
+        const maxX = containerRect.width - newWidth;
+        const maxY = containerRect.height - newHeight;
+        
+        newPosition.x = Math.max(0, Math.min(newPosition.x, maxX));
+        newPosition.y = Math.max(0, Math.min(newPosition.y, maxY));
+        
+        setScale(newScale);
+        setPosition(newPosition);
+        onScaleChange(id, newScale);
+        onPositionChange(id, newPosition);
+      }
     }
   };
 
@@ -111,9 +173,9 @@ export function DraggableClothingItem({
     onSelect(id);
   };
 
-  // Get size based on category
+  // Get size based on category - increased base sizes
   const getSize = () => {
-    const baseSize = 80;
+    const baseSize = 120; // Increased from 80
     switch (category) {
       case "top": return { width: baseSize * 1.2, height: baseSize };
       case "bottom": return { width: baseSize * 0.8, height: baseSize };
@@ -131,7 +193,7 @@ export function DraggableClothingItem({
     <div
       ref={itemRef}
       className={`absolute cursor-move select-none transition-all duration-150 ${
-        isSelected ? 'ring-2 ring-bibabop-pink shadow-lg' : ''
+        isSelected ? 'ring-2 ring-bibabop-navy shadow-lg' : ''
       }`}
       style={{
         left: position.x,
@@ -157,27 +219,22 @@ export function DraggableClothingItem({
       
       {isSelected && !isDragging && !isResizing && (
         <>
-          {/* Move handle */}
-          <div className="absolute -top-2 -left-2 w-6 h-6 bg-bibabop-pink rounded-full flex items-center justify-center text-white cursor-move shadow-lg">
-            <Move size={12} />
-          </div>
-          
           {/* Corner resize handles */}
           <div 
             className="absolute -top-1 -left-1 w-3 h-3 bg-bibabop-navy border border-white cursor-nw-resize shadow-sm"
-            onMouseDown={handleResizeMouseDown}
+            onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
           />
           <div 
             className="absolute -top-1 -right-1 w-3 h-3 bg-bibabop-navy border border-white cursor-ne-resize shadow-sm"
-            onMouseDown={handleResizeMouseDown}
+            onMouseDown={(e) => handleResizeMouseDown(e, 'ne')}
           />
           <div 
             className="absolute -bottom-1 -left-1 w-3 h-3 bg-bibabop-navy border border-white cursor-sw-resize shadow-sm"
-            onMouseDown={handleResizeMouseDown}
+            onMouseDown={(e) => handleResizeMouseDown(e, 'sw')}
           />
           <div 
             className="absolute -bottom-1 -right-1 w-3 h-3 bg-bibabop-navy border border-white cursor-se-resize shadow-sm"
-            onMouseDown={handleResizeMouseDown}
+            onMouseDown={(e) => handleResizeMouseDown(e, 'se')}
           />
           
           {/* Remove hint */}
