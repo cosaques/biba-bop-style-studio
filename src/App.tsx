@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ import ClientOnboarding from "./pages/client/ClientOnboarding";
 import ConsultantDashboard from "./pages/consultant/ConsultantDashboard";
 import ConsultantMain from "./pages/consultant/ConsultantMain";
 import ConsultantSettings from "./pages/consultant/ConsultantSettings";
+import ConsultantClientLayout from "./pages/consultant/ConsultantClientLayout";
 import ConsultantClient from "./pages/consultant/ConsultantClient";
 import ConsultantClientMain from "./pages/consultant/ClientMain";
 import ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
@@ -82,15 +84,21 @@ const App = () => {
                   <Route path="settings" element={<ConsultantSettings />} />
                 </Route>
 
+                {/* Consultant Client Layout - handles shared header and client data */}
                 <Route path="/consultant/client/:clientId" element={
                   <ProtectedRoute requiredRole="consultant">
-                    <ConsultantClient />
+                    <ConsultantClientLayout />
                   </ProtectedRoute>
                 }>
-                  <Route index element={<ConsultantClientMain />} />
-                  <Route path="outfits" element={<ConsultantClientOutfits />} />
+                  {/* Client pages with tabs */}
+                  <Route path="" element={<ConsultantClient />}>
+                    <Route index element={<ConsultantClientMain />} />
+                    <Route path="outfits" element={<ConsultantClientOutfits />} />
+                    <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
+                  </Route>
+                  
+                  {/* Outfit creator - standalone without tabs */}
                   <Route path="outfits/create" element={<OutfitCreator />} />
-                  <Route path="wardrobe" element={<ConsultantClientWardrobe />} />
                 </Route>
 
                 {/* Route 404 */}

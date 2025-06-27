@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -99,10 +99,10 @@ const seasonTranslations: { [key: string]: string } = {
 
 const OutfitCreator = () => {
   const { clientId } = useParams();
+  const { client } = useOutletContext<{ client: ClientData }>();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [client, setClient] = useState<ClientData | null>(null);
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
   const [comments, setComments] = useState("");
@@ -125,71 +125,8 @@ const OutfitCreator = () => {
       return;
     }
 
-    fetchClientData();
     fetchClientClothes();
   }, [clientId, user]);
-
-  const fetchClientData = async () => {
-    if (!clientId || !user) return;
-
-    try {
-      // First, verify that this client belongs to the current consultant
-      const { data: relationship, error: relationshipError } = await supabase
-        .from('consultant_clients')
-        .select('client_id')
-        .eq('consultant_id', user.id)
-        .eq('client_id', clientId)
-        .single();
-
-      if (relationshipError || !relationship) {
-        throw new Error("Client not found or unauthorized");
-      }
-
-      // Fetch client profile data
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', clientId)
-        .single();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      // Fetch client personal data
-      const { data: clientProfileData, error: clientProfileError } = await supabase
-        .from('client_profiles')
-        .select('*')
-        .eq('user_id', clientId)
-        .maybeSingle();
-
-      if (clientProfileError) {
-        console.error('Error fetching client profile:', clientProfileError);
-      }
-
-      const clientData: ClientData = {
-        id: profileData.id,
-        first_name: profileData.first_name,
-        last_name: profileData.last_name,
-        email: profileData.email,
-        profile_photo_url: profileData.profile_photo_url,
-        age: clientProfileData?.age,
-        height: clientProfileData?.height,
-        weight: clientProfileData?.weight,
-        bust_size: clientProfileData?.bust_size,
-        gender: clientProfileData?.gender,
-      };
-
-      setClient(clientData);
-    } catch (error) {
-      console.error('Error fetching client data:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données du client",
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -254,7 +191,7 @@ const OutfitCreator = () => {
     return `Aucun vêtement de type "${categoryTranslations[filter]}" trouvé`;
   };
 
-  if (isLoading || !client) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy"></div>
