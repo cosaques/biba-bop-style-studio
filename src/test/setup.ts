@@ -15,9 +15,9 @@ const createChainableMock = (finalResult = { data: null, error: null }) => {
     order: vi.fn(() => Promise.resolve(finalResult)),
   }
   
-  // Make sure all methods return the same chainable object
+  // Make sure all methods return the same chainable object, except for the terminal methods
   Object.keys(chainable).forEach(key => {
-    if (typeof chainable[key] === 'function' && key !== 'single' && key !== 'maybeSingle' && key !== 'order') {
+    if (typeof chainable[key] === 'function' && !['single', 'maybeSingle', 'order'].includes(key)) {
       chainable[key].mockReturnValue(chainable)
     }
   })

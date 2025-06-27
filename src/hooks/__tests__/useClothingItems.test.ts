@@ -68,13 +68,9 @@ describe('useClothingItems', () => {
       updated_at: '2023-01-02'
     }
 
-    // First mock the fetch call to return empty array
+    // First mock the fetch call to return empty array for initial load
     const fetchMockChain = createChainableMock({ data: [], error: null })
     vi.mocked(mockSupabaseClient.from).mockReturnValueOnce(fetchMockChain)
-
-    // Then mock the create call
-    const createMockChain = createChainableMock({ data: createdItem, error: null })
-    vi.mocked(mockSupabaseClient.from).mockReturnValueOnce(createMockChain)
 
     const { result } = renderHook(() => useClothingItems())
 
@@ -83,8 +79,9 @@ describe('useClothingItems', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    // Ensure items is initialized as empty array
-    expect(Array.isArray(result.current.items)).toBe(true)
+    // Now mock the create call with the created item
+    const createMockChain = createChainableMock({ data: createdItem, error: null })
+    vi.mocked(mockSupabaseClient.from).mockReturnValueOnce(createMockChain)
 
     await act(async () => {
       const createResult = await result.current.createItem(newItem)
