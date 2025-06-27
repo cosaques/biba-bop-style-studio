@@ -5,14 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ConsultantSidebar } from "@/components/consultant/ConsultantSidebar";
-import { ConsultantHeader } from "@/components/consultant/ConsultantHeader";
-import { ConsultantClientHeader } from "@/components/consultant/ConsultantClientHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClothingItem } from "@/hooks/useClothingItems";
-import { StickyNote } from "lucide-react";
+import { NotepadText } from "lucide-react";
 
 interface ClientData {
   id: string;
@@ -381,10 +378,10 @@ const OutfitCreator = () => {
                         const isSelected = selectedClothes.includes(item.id);
                         return (
                           <div key={item.id} className="space-y-2">
-                            <div 
-                              className={`aspect-square rounded-md border-2 p-2 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
+                            <div
+                              className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
                                 isSelected
-                                  ? 'border-bibabop-gold shadow-lg ring-2 ring-bibabop-gold/20'
+                                  ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                   : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                               }`}
                               onClick={() => handleItemSelect(item.id)}
@@ -395,26 +392,26 @@ const OutfitCreator = () => {
                                 className="max-w-full max-h-full object-contain"
                               />
                               {isSelected && (
-                                <div className="absolute top-1 right-1 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                   ✓
                                 </div>
                               )}
                             </div>
                             <div className="flex items-center justify-between">
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-xs text-muted-foreground">
                                 {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
                               </div>
                               {item.notes && (
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                      <StickyNote className="h-4 w-4 text-muted-foreground" />
+                                      <NotepadText className="h-4 w-4 text-muted-foreground" />
                                     </button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-80">
                                     <div className="space-y-2">
-                                      <h4 className="font-medium text-sm">Notes</h4>
-                                      <p className="text-sm text-muted-foreground leading-relaxed">{item.notes}</p>
+                                      <h4 className="font-medium text-xs">Notes</h4>
+                                      <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
                                     </div>
                                   </PopoverContent>
                                 </Popover>
@@ -435,10 +432,10 @@ const OutfitCreator = () => {
                       const isSelected = selectedClothes.includes(item.id);
                       return (
                         <div key={item.id} className="space-y-2">
-                          <div 
-                            className={`aspect-square rounded-md border-2 p-2 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
+                          <div
+                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
                               isSelected
-                                ? 'border-bibabop-gold shadow-lg ring-2 ring-bibabop-gold/20'
+                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                 : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                             }`}
                             onClick={() => handleItemSelect(item.id)}
@@ -449,26 +446,26 @@ const OutfitCreator = () => {
                               className="max-w-full max-h-full object-contain"
                             />
                             {isSelected && (
-                              <div className="absolute top-1 right-1 bg-bibabop-gold text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                              <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                 ✓
                               </div>
                             )}
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
                             </div>
                             {item.notes && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                    <StickyNote className="h-4 w-4 text-muted-foreground" />
+                                    <NotepadText className="h-4 w-4 text-muted-foreground" />
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80">
                                   <div className="space-y-2">
-                                    <h4 className="font-medium text-sm">Notes</h4>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">{item.notes}</p>
+                                    <h4 className="font-medium text-xs">Notes</h4>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
                                   </div>
                                 </PopoverContent>
                               </Popover>
