@@ -201,7 +201,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelect = (itemId: string) => {
-    console.log(`[OutfitCreator] Item select called for:`, itemId, 'currently selected:', selectedClothes);
+    console.log(`[OutfitCreator] Item select called for:`, itemId, 'currently selected:', selectedClothes, 'currently selected item:', selectedItemId);
     
     if (selectedClothes.includes(itemId)) {
       // Remove from silhouette
@@ -243,12 +243,19 @@ const OutfitCreator = () => {
 
   const handleItemSelection = (itemId: string) => {
     console.log(`[OutfitCreator] Item selection changed to:`, itemId, 'previous:', selectedItemId);
-    setSelectedItemId(itemId);
-    // Bring selected item to front
-    setClothingPositions(prev => 
-      prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
-    );
-    setNextZIndex(nextZIndex + 1);
+    
+    // Only change selection if it's different
+    if (selectedItemId !== itemId) {
+      console.log(`[OutfitCreator] Actually changing selection from ${selectedItemId} to ${itemId}`);
+      setSelectedItemId(itemId);
+      // Bring selected item to front
+      setClothingPositions(prev => 
+        prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
+      );
+      setNextZIndex(nextZIndex + 1);
+    } else {
+      console.log(`[OutfitCreator] Selection unchanged - same item clicked`);
+    }
   };
 
   const handleRemoveFromSilhouette = (itemId: string) => {
@@ -258,9 +265,8 @@ const OutfitCreator = () => {
   };
 
   const handleSilhouetteClick = () => {
+    console.log(`[OutfitCreator] Silhouette background clicked - deselecting current item:`, selectedItemId);
     setSelectedItemId(null);
-    // Deselect all items by updating their selected state
-    setClothingPositions(prev => prev.map(pos => ({ ...pos })));
   };
 
   const handleSaveOutfit = () => {
@@ -435,7 +441,10 @@ const OutfitCreator = () => {
                                   ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                   : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                               }`}
-                              onClick={() => handleItemSelect(item.id)}
+                              onClick={() => {
+                                console.log(`[OutfitCreator] Wardrobe item clicked:`, item.id, 'current selection:', selectedItemId);
+                                handleItemSelect(item.id);
+                              }}
                             >
                               <img
                                 src={item.enhanced_image_url || item.image_url}
@@ -489,7 +498,10 @@ const OutfitCreator = () => {
                                 ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
                                 : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                             }`}
-                            onClick={() => handleItemSelect(item.id)}
+                            onClick={() => {
+                              console.log(`[OutfitCreator] Catalog item clicked:`, item.id, 'current selection:', selectedItemId);
+                              handleItemSelect(item.id);
+                            }}
                           >
                             <img
                               src={item.image_url}
