@@ -165,16 +165,25 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, existingPositions: ClothingPosition[]) => {
+    const containerWidth = 337; // Based on your logs
+    const containerHeight = 600;
+    
+    // Calculate center position for the container
+    const centerX = containerWidth / 2;
+    const centerY = containerHeight / 2;
+    
     const basePositions: { [key: string]: { x: number; y: number } } = {
-      top: { x: 150, y: 120 },
-      bottom: { x: 170, y: 250 },
-      one_piece: { x: 140, y: 150 },
-      shoes: { x: 170, y: 350 },
-      outerwear: { x: 130, y: 100 },
-      accessory: { x: 250, y: 80 }
+      top: { x: centerX - 120, y: centerY - 150 }, // Centered horizontally, upper body
+      bottom: { x: centerX - 80, y: centerY - 50 }, // Centered horizontally, lower body
+      one_piece: { x: centerX - 120, y: centerY - 100 }, // Centered horizontally, full body
+      shoes: { x: centerX - 70, y: centerY + 100 }, // Centered horizontally, feet area
+      outerwear: { x: centerX - 130, y: centerY - 160 }, // Centered horizontally, outer layer
+      accessory: { x: centerX + 50, y: centerY - 200 } // Slightly offset, head/neck area
     };
 
-    let position = basePositions[category] || { x: 150, y: 150 };
+    let position = basePositions[category] || { x: centerX - 100, y: centerY - 100 };
+    
+    console.log(`[OutfitCreator] Default position for ${category}:`, position, 'container center:', { centerX, centerY });
     
     // Offset if there are already items of the same category
     const sameCategory = existingPositions.filter(pos => {
@@ -185,20 +194,26 @@ const OutfitCreator = () => {
     if (sameCategory.length > 0) {
       position.x += sameCategory.length * 20;
       position.y += sameCategory.length * 20;
+      console.log(`[OutfitCreator] Offset position due to ${sameCategory.length} existing items:`, position);
     }
 
     return position;
   };
 
   const handleItemSelect = (itemId: string) => {
+    console.log(`[OutfitCreator] Item select called for:`, itemId, 'currently selected:', selectedClothes);
+    
     if (selectedClothes.includes(itemId)) {
       // Remove from silhouette
+      console.log(`[OutfitCreator] Removing item from silhouette:`, itemId);
       setSelectedClothes(selectedClothes.filter(id => id !== itemId));
       setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
+      setSelectedItemId(null);
     } else {
       // Add to silhouette
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
       if (item) {
+        console.log(`[OutfitCreator] Adding item to silhouette:`, itemId, 'item:', item);
         setSelectedClothes([...selectedClothes, itemId]);
         const position = getDefaultPosition(item.category, clothingPositions);
         const newPosition = {
@@ -208,6 +223,7 @@ const OutfitCreator = () => {
           zIndex: nextZIndex
         };
         setClothingPositions([...clothingPositions, newPosition]);
+        setSelectedItemId(itemId); // Auto-select the newly added item
         setNextZIndex(nextZIndex + 1);
       }
     }
@@ -226,6 +242,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelection = (itemId: string) => {
+    console.log(`[OutfitCreator] Item selection changed to:`, itemId, 'previous:', selectedItemId);
     setSelectedItemId(itemId);
     // Bring selected item to front
     setClothingPositions(prev => 
@@ -326,6 +343,7 @@ const OutfitCreator = () => {
                       onScaleChange={handleScaleChange}
                       onRemove={handleRemoveFromSilhouette}
                       onSelect={handleItemSelection}
+                      isSelected={selectedItemId === clothingPos.id}
                     />
                   );
                 })}

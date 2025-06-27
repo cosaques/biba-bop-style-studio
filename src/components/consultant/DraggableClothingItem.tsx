@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface DraggableClothingItemProps {
@@ -12,6 +11,7 @@ interface DraggableClothingItemProps {
   onScaleChange: (id: string, scale: number) => void;
   onRemove: (id: string) => void;
   onSelect: (id: string) => void;
+  isSelected?: boolean;
 }
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';
@@ -26,11 +26,11 @@ export function DraggableClothingItem({
   onPositionChange,
   onScaleChange,
   onRemove,
-  onSelect
+  onSelect,
+  isSelected = false
 }: DraggableClothingItemProps) {
   const [position, setPosition] = useState(initialPosition);
   const [scale, setScale] = useState(initialScale);
-  const [isSelected, setIsSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   
@@ -44,10 +44,12 @@ export function DraggableClothingItem({
     startScale: 1,
     resizeHandle: 'se' as ResizeHandle,
     itemCenterX: 0,
-    itemCenterY: 0
+    itemCenterY: 0,
+    resizeAnchorX: 0,
+    resizeAnchorY: 0
   });
 
-  console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isDragging:', isDragging, 'isResizing:', isResizing);
+  console.log(`[${id}] Component render - position:`, position, 'scale:', scale, 'isDragging:', isDragging, 'isResizing:', isResizing, 'isSelected:', isSelected);
 
   // Memoize container bounds to avoid recalculation on every render
   const containerBounds = useRef({ width: 800, height: 600 });
@@ -72,21 +74,6 @@ export function DraggableClothingItem({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateContainerBounds]);
 
-  // Listen for clicks outside to deselect
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
-        console.log(`[${id}] Deselecting item due to outside click`);
-        setIsSelected(false);
-      }
-    };
-
-    if (isSelected) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isSelected, id]);
-
   const getSize = useCallback(() => {
     const baseSize = 200;
     switch (category) {
@@ -100,7 +87,7 @@ export function DraggableClothingItem({
     }
   }, [category]);
 
-  // Global mouse handlers - Fixed to prevent infinite loops
+  // Global mouse handlers
   useEffect(() => {
     if (!isDragging && !isResizing) return;
 
@@ -135,9 +122,12 @@ export function DraggableClothingItem({
         const mouseDeltaX = e.clientX - dragState.startX;
         const mouseDeltaY = e.clientY - dragState.startY;
         
+        console.log(`[${id}] Resize deltas - deltaX: ${mouseDeltaX}, deltaY: ${mouseDeltaY}, handle: ${dragState.resizeHandle}`);
+        
         let scaleFactor = 1;
         const sensitivity = 0.01;
         
+        // Calculate scale based on handle and mouse movement
         switch (dragState.resizeHandle) {
           case 'se':
             scaleFactor = 1 + Math.max(mouseDeltaX, mouseDeltaY) * sensitivity;
@@ -154,15 +144,47 @@ export function DraggableClothingItem({
         }
         
         const newScale = Math.max(0.2, Math.min(4, dragState.startScale * scaleFactor));
+        console.log(`[${id}] New scale calculated:`, newScale, 'from factor:', scaleFactor);
         
         const size = getSize();
         const newWidth = size.width * newScale;
         const newHeight = size.height * newScale;
         
-        const newPosition = {
-          x: dragState.itemCenterX - newWidth / 2,
-          y: dragState.itemCenterY - newHeight / 2
-        };
+        // Calculate new position to keep the opposite corner fixed
+        let newPosition = { x: position.x, y: position.y };
+        
+        switch (dragState.resizeHandle) {
+          case 'se':
+            // Keep top-left corner fixed
+            newPosition = {
+              x: dragState.resizeAnchorX,
+              y: dragState.resizeAnchorY
+            };
+            break;
+          case 'sw':
+            // Keep top-right corner fixed
+            newPosition = {
+              x: dragState.resizeAnchorX - newWidth,
+              y: dragState.resizeAnchorY
+            };
+            break;
+          case 'ne':
+            // Keep bottom-left corner fixed
+            newPosition = {
+              x: dragState.resizeAnchorX,
+              y: dragState.resizeAnchorY - newHeight
+            };
+            break;
+          case 'nw':
+            // Keep bottom-right corner fixed
+            newPosition = {
+              x: dragState.resizeAnchorX - newWidth,
+              y: dragState.resizeAnchorY - newHeight
+            };
+            break;
+        }
+        
+        console.log(`[${id}] Resize - new position:`, newPosition, 'anchor:', { x: dragState.resizeAnchorX, y: dragState.resizeAnchorY });
         
         const constrainedPosition = {
           x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - newWidth)),
@@ -185,7 +207,7 @@ export function DraggableClothingItem({
       }
       
       if (dragState.isResizing) {
-        console.log(`[${id}] Resize end - final scale:`, scale);
+        console.log(`[${id}] Resize end - final scale:`, scale, 'final position:', position);
         onScaleChange(id, scale);
         onPositionChange(id, position);
         dragState.isResizing = false;
@@ -206,11 +228,11 @@ export function DraggableClothingItem({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log(`[${id}] Drag start - clientX: ${e.clientX}, clientY: ${e.clientY}`);
+    console.log(`[${id}] Drag start - clientX: ${e.clientX}, clientY: ${e.clientY}, current position:`, position);
     
-    setIsSelected(true);
-    setIsDragging(true);
+    // Always select on drag start
     onSelect(id);
+    setIsDragging(true);
     
     dragStateRef.current = {
       ...dragStateRef.current,
@@ -225,15 +247,39 @@ export function DraggableClothingItem({
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`[${id}] Resize start - handle: ${handle}, clientX: ${e.clientX}, clientY: ${e.clientY}`);
+    console.log(`[${id}] Resize start - handle: ${handle}, clientX: ${e.clientX}, clientY: ${e.clientY}, current position:`, position, 'scale:', scale);
     
-    setIsSelected(true);
-    setIsResizing(true);
     onSelect(id);
+    setIsResizing(true);
     
     const size = getSize();
-    const itemCenterX = position.x + (size.width * scale) / 2;
-    const itemCenterY = position.y + (size.height * scale) / 2;
+    
+    // Calculate the anchor point (opposite corner that should stay fixed)
+    let anchorX, anchorY;
+    switch (handle) {
+      case 'se':
+        // Anchor at top-left
+        anchorX = position.x;
+        anchorY = position.y;
+        break;
+      case 'sw':
+        // Anchor at top-right
+        anchorX = position.x + size.width * scale;
+        anchorY = position.y;
+        break;
+      case 'ne':
+        // Anchor at bottom-left
+        anchorX = position.x;
+        anchorY = position.y + size.height * scale;
+        break;
+      case 'nw':
+        // Anchor at bottom-right
+        anchorX = position.x + size.width * scale;
+        anchorY = position.y + size.height * scale;
+        break;
+    }
+    
+    console.log(`[${id}] Resize anchor point set:`, { anchorX, anchorY });
     
     dragStateRef.current = {
       ...dragStateRef.current,
@@ -242,8 +288,8 @@ export function DraggableClothingItem({
       startY: e.clientY,
       startScale: scale,
       resizeHandle: handle,
-      itemCenterX,
-      itemCenterY
+      resizeAnchorX: anchorX,
+      resizeAnchorY: anchorY
     };
   };
 
@@ -256,7 +302,6 @@ export function DraggableClothingItem({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log(`[${id}] Click - selecting item`);
-    setIsSelected(true);
     onSelect(id);
   };
 
