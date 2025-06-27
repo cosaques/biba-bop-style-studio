@@ -1,10 +1,28 @@
 
-import { useLocation, useNavigate, Outlet } from "react-router-dom";
+import { useLocation, useNavigate, Outlet, useOutletContext } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface ClientData {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  profile_photo_url?: string;
+  age?: number;
+  height?: number;
+  weight?: number;
+  bust_size?: number;
+  gender?: string;
+}
+
+interface ContextType {
+  client: ClientData;
+}
 
 const ConsultantClient = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { client } = useOutletContext<ContextType>();
 
   // Determine active tab based on current path
   const getActiveTab = () => {
@@ -33,7 +51,7 @@ const ConsultantClient = () => {
         <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
       </TabsList>
 
-      <Outlet />
+      <Outlet context={{ client }} />
     </Tabs>
   );
 };
