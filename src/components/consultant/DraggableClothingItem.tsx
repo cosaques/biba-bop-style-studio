@@ -200,9 +200,9 @@ export function DraggableClothingItem({
     onSelect(id);
   };
 
-  // Get size based on category - increased base sizes
+  // Get size based on category - using more reasonable base sizes
   const getSize = () => {
-    const baseSize = 480; // Doubled again for better visibility
+    const baseSize = 200; // Reduced from 480 to 200 for better usability
     switch (category) {
       case "top": return { width: baseSize * 1.2, height: baseSize };
       case "bottom": return { width: baseSize * 0.8, height: baseSize };
