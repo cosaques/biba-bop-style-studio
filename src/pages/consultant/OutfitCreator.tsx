@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClothingItem } from "@/hooks/useClothingItems";
 import { NotepadText } from "lucide-react";
+import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
 
 interface ClientData {
   id: string;
@@ -22,6 +23,12 @@ interface ClientData {
   weight?: number;
   bust_size?: number;
   gender?: string;
+}
+
+interface ClothingPosition {
+  id: string;
+  position: { x: number; y: number };
+  scale: number;
 }
 
 // Catalogue externe de vêtements
@@ -105,11 +112,13 @@ const OutfitCreator = () => {
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
+  const [clothingPositions, setClothingPositions] = useState<ClothingPosition[]>([]);
   const [comments, setComments] = useState("");
   const [activeTab, setActiveTab] = useState("wardrobe");
   const [filter, setFilter] = useState("all");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clientId) {
@@ -153,12 +162,72 @@ const OutfitCreator = () => {
     }
   };
 
+  const getDefaultPosition = (category: string, existingPositions: ClothingPosition[]) => {
+    const basePositions: { [key: string]: { x: number; y: number } } = {
+      top: { x: 150, y: 120 },
+      bottom: { x: 170, y: 250 },
+      one_piece: { x: 140, y: 150 },
+      shoes: { x: 170, y: 350 },
+      outerwear: { x: 130, y: 100 },
+      accessory: { x: 250, y: 80 }
+    };
+
+    let position = basePositions[category] || { x: 150, y: 150 };
+    
+    // Offset if there are already items of the same category
+    const sameCategory = existingPositions.filter(pos => {
+      const item = [...clientClothes, ...externalCatalog].find(i => i.id === pos.id);
+      return item?.category === category;
+    });
+    
+    if (sameCategory.length > 0) {
+      position.x += sameCategory.length * 20;
+      position.y += sameCategory.length * 20;
+    }
+
+    return position;
+  };
+
   const handleItemSelect = (itemId: string) => {
     if (selectedClothes.includes(itemId)) {
+      // Remove from silhouette
       setSelectedClothes(selectedClothes.filter(id => id !== itemId));
+      setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
     } else {
-      setSelectedClothes([...selectedClothes, itemId]);
+      // Add to silhouette
+      const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
+      if (item) {
+        setSelectedClothes([...selectedClothes, itemId]);
+        const position = getDefaultPosition(item.category, clothingPositions);
+        setClothingPositions([...clothingPositions, {
+          id: itemId,
+          position,
+          scale: 1
+        }]);
+      }
     }
+  };
+
+  const handlePositionChange = (itemId: string, position: { x: number; y: number }) => {
+    setClothingPositions(prev => 
+      prev.map(pos => pos.id === itemId ? { ...pos, position } : pos)
+    );
+  };
+
+  const handleScaleChange = (itemId: string, scale: number) => {
+    setClothingPositions(prev => 
+      prev.map(pos => pos.id === itemId ? { ...pos, scale } : pos)
+    );
+  };
+
+  const handleRemoveFromSilhouette = (itemId: string) => {
+    setSelectedClothes(selectedClothes.filter(id => id !== itemId));
+    setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
+    setSelectedItemId(null);
+  };
+
+  const handleSilhouetteClick = () => {
+    setSelectedItemId(null);
   };
 
   const handleSaveOutfit = () => {
@@ -213,48 +282,45 @@ const OutfitCreator = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center">
-              <div className="relative min-h-[400px] w-full bg-bibabop-lightgrey rounded-md flex items-center justify-center">
+              <div 
+                className="relative min-h-[400px] w-full bg-bibabop-lightgrey rounded-md flex items-center justify-center overflow-hidden cursor-default"
+                onClick={handleSilhouetteClick}
+              >
                 <img
                   src={silhouetteImage}
                   alt="Silhouette du client"
                   className="max-h-[600px] w-auto object-contain"
                 />
 
-                {/* Vêtements sélectionnés qui seraient positionnés sur la silhouette */}
-                {selectedClothes.map(itemId => {
-                  const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
+                {/* Draggable clothing items */}
+                {clothingPositions.map(clothingPos => {
+                  const item = [...clientClothes, ...externalCatalog].find(i => i.id === clothingPos.id);
                   if (!item) return null;
 
-                  let positionClass = "";
-                  if (item.category === "top") positionClass = "top-1/4 -translate-y-[40px]";
-                  if (item.category === "bottom") positionClass = "top-1/2 -translate-y-[50px]";
-                  if (item.category === "one_piece") positionClass = "top-1/3 -translate-y-[30px]";
-                  if (item.category === "shoes") positionClass = "bottom-0 translate-y-[15px]";
-                  if (item.category === "outerwear") positionClass = "top-1/5 -translate-y-[50px]";
-                  if (item.category === "accessory") positionClass = "top-10 right-10";
-
-                  let tailleClass = "";
-                  if (item.category === "top") tailleClass = "w-40 h-auto";
-                  if (item.category === "bottom") tailleClass = "w-28";
-                  if (item.category === "one_piece") tailleClass = "w-40 h-auto";
-                  if (item.category === "shoes") tailleClass = "w-28 h-28";
-                  if (item.category === "outerwear") tailleClass = "w-44 h-auto";
-                  if (item.category === "accessory") tailleClass = "w-20 h-20";
-
                   return (
-                    <div
-                      key={itemId}
-                      className={`absolute ${tailleClass} ${positionClass} cursor-move`}
-                      style={{ opacity: 0.8 }}
-                    >
-                      <img
-                        src={item.enhanced_image_url || item.image_url}
-                        alt={item.category}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
+                    <DraggableClothingItem
+                      key={clothingPos.id}
+                      id={clothingPos.id}
+                      imageUrl={item.enhanced_image_url || item.image_url}
+                      category={item.category}
+                      initialPosition={clothingPos.position}
+                      initialScale={clothingPos.scale}
+                      onPositionChange={handlePositionChange}
+                      onScaleChange={handleScaleChange}
+                      onRemove={handleRemoveFromSilhouette}
+                    />
                   );
                 })}
+
+                {/* Instructions overlay */}
+                {selectedClothes.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                      <p className="text-sm">Sélectionnez des vêtements</p>
+                      <p className="text-sm">pour les ajouter à la silhouette</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 w-full">
@@ -274,6 +340,17 @@ const OutfitCreator = () => {
               >
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
+
+              {selectedClothes.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-md w-full">
+                  <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
+                  <ul className="text-xs text-blue-600 mt-1 space-y-1">
+                    <li>• Cliquez et glissez pour déplacer les vêtements</li>
+                    <li>• Utilisez la glissière pour redimensionner</li>
+                    <li>• Double-cliquez pour retirer un vêtement</li>
+                  </ul>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
