@@ -1,5 +1,4 @@
-
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
 interface DraggableClothingItemProps {
@@ -55,20 +54,8 @@ export function DraggableClothingItem({
     pendingPosition: null as { x: number; y: number } | null
   });
 
-  // Simplified performance logging - only for major events
-  const logPerformance = useCallback((action: string, data?: any) => {
-    console.log(`[PERF-${id.slice(-8)}] ${action}`, data);
-  }, [id]);
-
-  // Optimized image URLs - smaller for dragging, larger for display
-  const { dragImageUrl, displayImageUrl } = useMemo(() => {
-    const dragUrl = getOptimizedImageUrl(imageUrl, 200); // Smaller for smooth dragging
-    const displayUrl = getOptimizedImageUrl(imageUrl, 300); // Larger for better quality when not dragging
-    return {
-      dragImageUrl: dragUrl,
-      displayImageUrl: displayUrl
-    };
-  }, [imageUrl]);
+  // Single optimized image URL for all use cases (400px for browser cache efficiency)
+  const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
 
   // Memoize container bounds to avoid recalculation
   const containerBounds = useRef({ width: 800, height: 600 });
@@ -108,8 +95,8 @@ export function DraggableClothingItem({
       setImageDimensions(dimensions);
       setImageLoaded(true);
     };
-    img.src = displayImageUrl;
-  }, [displayImageUrl]);
+    img.src = optimizedImageUrl;
+  }, [optimizedImageUrl]);
 
   // RAF-based position update for ultra-smooth dragging
   const schedulePositionUpdate = useCallback((newPosition: { x: number; y: number }) => {
@@ -224,7 +211,6 @@ export function DraggableClothingItem({
         onPositionChange(id, position);
         dragState.isDragging = false;
         setIsDragging(false);
-        logPerformance('Drag completed');
       }
       
       if (dragState.isResizing) {
@@ -232,7 +218,6 @@ export function DraggableClothingItem({
         onPositionChange(id, position);
         dragState.isResizing = false;
         setIsResizing(false);
-        logPerformance('Resize completed');
       }
     };
 
@@ -243,7 +228,7 @@ export function DraggableClothingItem({
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, imageDimensions, scale, position, schedulePositionUpdate, logPerformance]);
+  }, [isDragging, isResizing, id, onPositionChange, onScaleChange, imageDimensions, scale, position, schedulePositionUpdate]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -325,9 +310,6 @@ export function DraggableClothingItem({
     );
   }
 
-  // Use drag-optimized image during dragging for better performance
-  const currentImageUrl = isDragging ? dragImageUrl : displayImageUrl;
-
   return (
     <div
       ref={itemRef}
@@ -350,14 +332,10 @@ export function DraggableClothingItem({
     >
       <img
         ref={imageRef}
-        src={currentImageUrl}
+        src={optimizedImageUrl}
         alt={category}
         className="w-full h-full object-contain pointer-events-none"
         draggable={false}
-        style={{
-          // Use pixelated rendering during drag for better performance
-          imageRendering: isDragging ? 'pixelated' : 'auto'
-        }}
       />
       
       {isSelected && !isResizing && !isDragging && (

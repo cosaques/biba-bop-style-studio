@@ -166,27 +166,23 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, existingPositions: ClothingPosition[]) => {
-    const containerWidth = 337; // Based on your logs
+    const containerWidth = 337;
     const containerHeight = 600;
     
-    // Calculate center position for the container
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
     
     const basePositions: { [key: string]: { x: number; y: number } } = {
-      top: { x: centerX - 120, y: centerY - 150 }, // Centered horizontally, upper body
-      bottom: { x: centerX - 80, y: centerY - 50 }, // Centered horizontally, lower body
-      one_piece: { x: centerX - 120, y: centerY - 100 }, // Centered horizontally, full body
-      shoes: { x: centerX - 70, y: centerY + 100 }, // Centered horizontally, feet area
-      outerwear: { x: centerX - 130, y: centerY - 160 }, // Centered horizontally, outer layer
-      accessory: { x: centerX + 50, y: centerY - 200 } // Slightly offset, head/neck area
+      top: { x: centerX - 120, y: centerY - 150 },
+      bottom: { x: centerX - 80, y: centerY - 50 },
+      one_piece: { x: centerX - 120, y: centerY - 100 },
+      shoes: { x: centerX - 70, y: centerY + 100 },
+      outerwear: { x: centerX - 130, y: centerY - 160 },
+      accessory: { x: centerX + 50, y: centerY - 200 }
     };
 
     let position = basePositions[category] || { x: centerX - 100, y: centerY - 100 };
     
-    console.log(`[OutfitCreator] Default position for ${category}:`, position, 'container center:', { centerX, centerY });
-    
-    // Offset if there are already items of the same category
     const sameCategory = existingPositions.filter(pos => {
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === pos.id);
       return item?.category === category;
@@ -195,24 +191,19 @@ const OutfitCreator = () => {
     if (sameCategory.length > 0) {
       position.x += sameCategory.length * 20;
       position.y += sameCategory.length * 20;
-      console.log(`[OutfitCreator] Offset position due to ${sameCategory.length} existing items:`, position);
     }
 
     return position;
   };
 
   const handleItemSelect = (itemId: string) => {
-    console.log(`[OutfitCreator] Item select:`, itemId);
-    
     if (selectedClothes.includes(itemId)) {
-      console.log(`[OutfitCreator] Removing from silhouette`);
       setSelectedClothes(selectedClothes.filter(id => id !== itemId));
       setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
       setSelectedItemId(null);
     } else {
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
       if (item) {
-        console.log(`[OutfitCreator] Adding to silhouette`);
         setSelectedClothes([...selectedClothes, itemId]);
         const position = getDefaultPosition(item.category, clothingPositions);
         const newPosition = {
@@ -243,7 +234,6 @@ const OutfitCreator = () => {
   const handleItemSelection = (itemId: string) => {
     if (selectedItemId !== itemId) {
       setSelectedItemId(itemId);
-      // Bring selected item to front
       setClothingPositions(prev => 
         prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
       );
@@ -263,14 +253,12 @@ const OutfitCreator = () => {
 
   const handleSaveOutfit = () => {
     setIsSaving(true);
-    // Simuler la sauvegarde de la tenue
     setTimeout(() => {
       setIsSaving(false);
       toast({
         title: "Succès",
         description: "Tenue enregistrée et partagée avec le client!",
       });
-      // Réinitialiser
       setSelectedClothes([]);
       setComments("");
     }, 1500);
@@ -323,13 +311,13 @@ const OutfitCreator = () => {
                   className="max-h-[600px] w-auto object-contain"
                 />
 
-                {/* Draggable clothing items with high quality images for dragging */}
+                {/* Draggable clothing items with standardized 400px images */}
                 {clothingPositions.map(clothingPos => {
                   const item = [...clientClothes, ...externalCatalog].find(i => i.id === clothingPos.id);
                   if (!item) return null;
 
-                  // Use high quality image URL for draggable items
-                  const imageUrl = item.enhanced_image_url || item.image_url;
+                  // Use standardized 400px image URL for all clothing items
+                  const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
                   
                   return (
                     <DraggableClothingItem
@@ -428,8 +416,8 @@ const OutfitCreator = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {filteredWardrobe.map((item) => {
                         const isSelected = selectedClothes.includes(item.id);
-                        // Use smaller optimized images for the selection grid
-                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 150);
+                        // Use standardized 400px optimized images for consistent caching
+                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
                         
                         return (
                           <div key={item.id} className="space-y-2">
@@ -487,8 +475,8 @@ const OutfitCreator = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredCatalog.map((item) => {
                       const isSelected = selectedClothes.includes(item.id);
-                      // Use smaller optimized images for the selection grid
-                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 150);
+                      // Use standardized 400px optimized images for consistent caching
+                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 400);
                       
                       return (
                         <div key={item.id} className="space-y-2">

@@ -71,7 +71,6 @@ const ClientWardrobe = () => {
     try {
       setLoading(true);
 
-      // Verify that this client belongs to the current consultant
       const { data: relationship, error: relationshipError } = await supabase
         .from('consultant_clients')
         .select('client_id')
@@ -83,7 +82,6 @@ const ClientWardrobe = () => {
         throw new Error("Client not found or unauthorized");
       }
 
-      // Fetch client's clothing items
       const { data, error } = await supabase
         .from('clothing_items')
         .select('*')
