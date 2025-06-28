@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -54,8 +53,7 @@ export function DraggableClothingItem({
     lastUpdateTime: 0,
     pendingPosition: null as { x: number; y: number } | null,
     lastMouseX: 0,
-    lastMouseY: 0,
-    accumulatedDelta: 0
+    lastMouseY: 0
   });
 
   const shortId = id.slice(-8);
@@ -73,7 +71,6 @@ export function DraggableClothingItem({
     // Find the gray container that holds the silhouette
     const grayContainer = itemRef.current?.closest('.bg-bibabop-lightgrey');
     if (grayContainer) {
-      const rect = grayContainer.getBoundingClientRect();
       const newBounds = {
         width: grayContainer.clientWidth,
         height: grayContainer.clientHeight
@@ -96,7 +93,7 @@ export function DraggableClothingItem({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateContainerBounds]);
 
-  // Load and calculate optimal image dimensions with 75% silhouette width
+  // Load and calculate optimal image dimensions with consistent 75% silhouette width
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
@@ -105,21 +102,22 @@ export function DraggableClothingItem({
         url: optimizedImageUrl 
       });
       
-      // Calculate 75% of silhouette width (assuming silhouette is ~250px wide in 337px container)
-      const silhouetteWidth = containerBounds.current.width * 0.74; // ~250px in 337px container
-      const targetWidth = silhouetteWidth * 0.75; // 75% of silhouette width
+      // Fixed target width: 75% of silhouette width (249px * 0.75 = 187px)
+      const targetWidth = 187; // Consistent width for all items
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
-      // Calculate dimensions that maintain aspect ratio
-      const dimensions = aspectRatio > 1 
-        ? { width: targetWidth, height: targetWidth / aspectRatio }
-        : { width: targetWidth * aspectRatio, height: targetWidth };
+      // Calculate height based on aspect ratio
+      const targetHeight = targetWidth / aspectRatio;
       
-      perfLog('Image dimensions calculated (75% silhouette)', { 
+      const dimensions = {
+        width: targetWidth,
+        height: targetHeight
+      };
+      
+      perfLog('Image dimensions calculated (fixed 75% silhouette)', { 
         calculated: `${Math.round(dimensions.width)}x${Math.round(dimensions.height)}`,
         aspectRatio: aspectRatio.toFixed(2),
-        targetWidth: Math.round(targetWidth),
-        silhouetteWidth: Math.round(silhouetteWidth)
+        targetWidth: targetWidth
       });
       
       setImageDimensions(dimensions);
@@ -161,9 +159,8 @@ export function DraggableClothingItem({
       const dragState = dragStateRef.current;
       const now = performance.now();
       
-      // Throttle updates to 60fps max for dragging, 30fps for resizing
-      const throttleInterval = dragState.isDragging ? 16 : 33;
-      if (now - dragState.lastUpdateTime < throttleInterval) return;
+      // Throttle updates to 60fps for both dragging and resizing
+      if (now - dragState.lastUpdateTime < 16) return;
       
       if (dragState.isDragging) {
         e.preventDefault();
@@ -175,7 +172,7 @@ export function DraggableClothingItem({
           y: dragState.startPosition.y + deltaY
         };
 
-        // Constrain to gray container bounds
+        // Constrain to FULL container bounds (not silhouette)
         const itemWidth = imageDimensions.width * scale;
         const itemHeight = imageDimensions.height * scale;
         const constrainedPosition = {
@@ -188,43 +185,29 @@ export function DraggableClothingItem({
         
       } else if (dragState.isResizing) {
         e.preventDefault();
-        const mouseDeltaX = e.clientX - dragState.lastMouseX;
-        const mouseDeltaY = e.clientY - dragState.lastMouseY;
         
-        // Accumulate small movements to prevent jitter
-        dragState.accumulatedDelta += Math.max(Math.abs(mouseDeltaX), Math.abs(mouseDeltaY));
+        // Simple and predictable scaling based on mouse distance from start
+        const mouseDeltaX = e.clientX - dragState.startX;
+        const mouseDeltaY = e.clientY - dragState.startY;
         
-        // Only process resize if accumulated movement is significant enough
-        if (dragState.accumulatedDelta < 3) {
-          dragState.lastMouseX = e.clientX;
-          dragState.lastMouseY = e.clientY;
-          return;
-        }
-        
-        // Reset accumulated delta
-        dragState.accumulatedDelta = 0;
-        
-        // Improved scaling with better sensitivity
-        const sensitivity = 0.008; // Better sensitivity for smoother scaling
+        // Use consistent scaling based on primary axis movement
         let scaleDelta = 0;
-        
-        // Calculate scale based on handle and mouse movement
         switch (dragState.resizeHandle) {
           case 'se':
-            scaleDelta = Math.max(mouseDeltaX, mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(mouseDeltaX, mouseDeltaY) * 0.005;
             break;
           case 'sw':
-            scaleDelta = Math.max(-mouseDeltaX, mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(-mouseDeltaX, mouseDeltaY) * 0.005;
             break;
           case 'ne':
-            scaleDelta = Math.max(mouseDeltaX, -mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(mouseDeltaX, -mouseDeltaY) * 0.005;
             break;
           case 'nw':
-            scaleDelta = Math.max(-mouseDeltaX, -mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(-mouseDeltaX, -mouseDeltaY) * 0.005;
             break;
         }
         
-        const newScale = Math.max(0.3, Math.min(3, dragState.startScale + (scaleDelta * 15)));
+        const newScale = Math.max(0.3, Math.min(3, dragState.startScale + scaleDelta));
         const newWidth = imageDimensions.width * newScale;
         const newHeight = imageDimensions.height * newScale;
         
@@ -246,7 +229,7 @@ export function DraggableClothingItem({
             break;
         }
         
-        // Constrain to gray container bounds
+        // Constrain to FULL container bounds (not silhouette)
         const constrainedPosition = {
           x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - newWidth)),
           y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - newHeight))
@@ -255,16 +238,13 @@ export function DraggableClothingItem({
         setScale(newScale);
         schedulePositionUpdate(constrainedPosition);
         
-        // Update mouse tracking
-        dragState.lastMouseX = e.clientX;
-        dragState.lastMouseY = e.clientY;
         dragState.lastUpdateTime = now;
         
         perfLog('Resize update', { 
           scale: newScale.toFixed(2), 
           delta: scaleDelta.toFixed(4),
           mouseDelta: `${mouseDeltaX},${mouseDeltaY}`,
-          accumulated: dragState.accumulatedDelta
+          handle: dragState.resizeHandle
         });
       }
     };
@@ -285,7 +265,6 @@ export function DraggableClothingItem({
         onPositionChange(id, position);
         dragState.isResizing = false;
         setIsResizing(false);
-        dragState.accumulatedDelta = 0;
       }
     };
 
@@ -313,10 +292,7 @@ export function DraggableClothingItem({
       startX: e.clientX,
       startY: e.clientY,
       startPosition: { ...position },
-      lastUpdateTime: performance.now(),
-      lastMouseX: e.clientX,
-      lastMouseY: e.clientY,
-      accumulatedDelta: 0
+      lastUpdateTime: performance.now()
     };
   };
 
@@ -359,10 +335,7 @@ export function DraggableClothingItem({
       resizeHandle: handle,
       resizeAnchorX: anchorX,
       resizeAnchorY: anchorY,
-      lastUpdateTime: performance.now(),
-      lastMouseX: e.clientX,
-      lastMouseY: e.clientY,
-      accumulatedDelta: 0
+      lastUpdateTime: performance.now()
     };
   };
 
@@ -384,7 +357,7 @@ export function DraggableClothingItem({
       <div className="absolute animate-pulse bg-gray-200 rounded" style={{
         left: initialPosition.x,
         top: initialPosition.y,
-        width: 150,
+        width: 187, // Fixed width for loading state
         height: 150
       }} />
     );
