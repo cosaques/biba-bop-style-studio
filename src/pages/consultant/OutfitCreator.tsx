@@ -123,14 +123,15 @@ const OutfitCreator = () => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
 
-  // Add container bounds reference
+  // Add container bounds reference with better logging
   const containerBounds = useRef({ width: 337, height: 600 });
 
   useEffect(() => {
     // Update container bounds when component mounts
     const updateBounds = () => {
-      // These are the typical dimensions of the silhouette container
+      // These are the typical dimensions of the gray silhouette container
       containerBounds.current = { width: 337, height: 600 };
+      console.log('[OutfitCreator] Container bounds set:', containerBounds.current);
     };
     updateBounds();
   }, []);
@@ -185,24 +186,25 @@ const OutfitCreator = () => {
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
     
-    console.log(`[OutfitCreator] Default position for ${category}:`, { 
+    console.log(`[OutfitCreator] Default position calculation for ${category}:`, { 
       centerX, 
       centerY, 
       containerWidth, 
       containerHeight 
     });
     
-    // Better positioning relative to silhouette center (assuming silhouette is ~250px wide)
+    // Better positioning relative to silhouette center (silhouette is ~250px wide in 337px container)
+    const silhouetteWidth = containerWidth * 0.74; // ~250px 
     const basePositions: { [key: string]: { x: number; y: number } } = {
-      top: { x: centerX - 100, y: centerY - 120 },        // Upper torso
-      bottom: { x: centerX - 75, y: centerY - 20 },       // Lower torso  
-      one_piece: { x: centerX - 100, y: centerY - 80 },   // Full body
-      shoes: { x: centerX - 60, y: centerY + 80 },        // Bottom
-      outerwear: { x: centerX - 110, y: centerY - 130 },  // Over everything
-      accessory: { x: centerX - 50, y: centerY - 150 }    // Top area
+      top: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 120 },        // 75% width centered
+      bottom: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 20 },     // 75% width centered 
+      one_piece: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 80 },  // 75% width centered
+      shoes: { x: centerX - (silhouetteWidth * 0.3), y: centerY + 80 },        // Smaller for shoes
+      outerwear: { x: centerX - (silhouetteWidth * 0.4), y: centerY - 130 },   // Slightly wider
+      accessory: { x: centerX - (silhouetteWidth * 0.25), y: centerY - 150 }   // Smaller accessories
     };
 
-    let position = basePositions[category] || { x: centerX - 75, y: centerY - 75 };
+    let position = basePositions[category] || { x: centerX - (silhouetteWidth * 0.375), y: centerY - 75 };
     
     // Offset for multiple items of same category
     const sameCategory = existingPositions.filter(pos => {
@@ -215,7 +217,11 @@ const OutfitCreator = () => {
       position.y += sameCategory.length * 15;
     }
 
-    console.log(`[OutfitCreator] Final position for ${category}:`, position);
+    console.log(`[OutfitCreator] Final position for ${category}:`, {
+      ...position,
+      silhouetteWidth: Math.round(silhouetteWidth),
+      offsetCount: sameCategory.length
+    });
     return position;
   };
 

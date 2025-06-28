@@ -54,7 +54,8 @@ export function DraggableClothingItem({
     lastUpdateTime: 0,
     pendingPosition: null as { x: number; y: number } | null,
     lastMouseX: 0,
-    lastMouseY: 0
+    lastMouseY: 0,
+    accumulatedDelta: 0
   });
 
   const shortId = id.slice(-8);
@@ -65,23 +66,28 @@ export function DraggableClothingItem({
   // Single optimized image URL (400px for consistent caching)
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
 
-  // Memoize container bounds to avoid recalculation
+  // Container bounds for the gray area containing silhouette
   const containerBounds = useRef({ width: 337, height: 600 });
 
   const updateContainerBounds = useCallback(() => {
-    const container = itemRef.current?.parentElement;
-    if (container) {
-      const rect = container.getBoundingClientRect();
+    // Find the gray container that holds the silhouette
+    const grayContainer = itemRef.current?.closest('.bg-bibabop-lightgrey');
+    if (grayContainer) {
+      const rect = grayContainer.getBoundingClientRect();
       const newBounds = {
-        width: container.clientWidth,
-        height: container.clientHeight
+        width: grayContainer.clientWidth,
+        height: grayContainer.clientHeight
       };
       containerBounds.current = newBounds;
-      perfLog('Container bounds updated', newBounds);
+      perfLog('Gray container bounds updated', newBounds);
+    } else {
+      // Fallback to default values
+      containerBounds.current = { width: 337, height: 600 };
+      perfLog('Using default container bounds', containerBounds.current);
     }
   }, []);
 
-  // Update container bounds only when needed
+  // Update container bounds when component mounts and on resize
   useEffect(() => {
     updateContainerBounds();
     
@@ -99,8 +105,9 @@ export function DraggableClothingItem({
         url: optimizedImageUrl 
       });
       
-      // Target width is 75% of silhouette width (assuming silhouette is ~250px wide)
-      const targetWidth = Math.min(containerBounds.current.width * 0.6, 200);
+      // Calculate 75% of silhouette width (assuming silhouette is ~250px wide in 337px container)
+      const silhouetteWidth = containerBounds.current.width * 0.74; // ~250px in 337px container
+      const targetWidth = silhouetteWidth * 0.75; // 75% of silhouette width
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
       // Calculate dimensions that maintain aspect ratio
@@ -108,9 +115,11 @@ export function DraggableClothingItem({
         ? { width: targetWidth, height: targetWidth / aspectRatio }
         : { width: targetWidth * aspectRatio, height: targetWidth };
       
-      perfLog('Image dimensions calculated', { 
+      perfLog('Image dimensions calculated (75% silhouette)', { 
         calculated: `${Math.round(dimensions.width)}x${Math.round(dimensions.height)}`,
-        aspectRatio: aspectRatio.toFixed(2)
+        aspectRatio: aspectRatio.toFixed(2),
+        targetWidth: Math.round(targetWidth),
+        silhouetteWidth: Math.round(silhouetteWidth)
       });
       
       setImageDimensions(dimensions);
@@ -144,7 +153,7 @@ export function DraggableClothingItem({
     };
   }, []);
 
-  // Global mouse handlers with performance optimizations
+  // Global mouse handlers with improved performance optimizations
   useEffect(() => {
     if (!isDragging && !isResizing) return;
 
@@ -152,8 +161,9 @@ export function DraggableClothingItem({
       const dragState = dragStateRef.current;
       const now = performance.now();
       
-      // Throttle updates to 60fps max
-      if (now - dragState.lastUpdateTime < 16) return;
+      // Throttle updates to 60fps max for dragging, 30fps for resizing
+      const throttleInterval = dragState.isDragging ? 16 : 33;
+      if (now - dragState.lastUpdateTime < throttleInterval) return;
       
       if (dragState.isDragging) {
         e.preventDefault();
@@ -165,7 +175,7 @@ export function DraggableClothingItem({
           y: dragState.startPosition.y + deltaY
         };
 
-        // Strict boundary constraints
+        // Constrain to gray container bounds
         const itemWidth = imageDimensions.width * scale;
         const itemHeight = imageDimensions.height * scale;
         const constrainedPosition = {
@@ -181,8 +191,21 @@ export function DraggableClothingItem({
         const mouseDeltaX = e.clientX - dragState.lastMouseX;
         const mouseDeltaY = e.clientY - dragState.lastMouseY;
         
-        // Much more responsive scaling with reduced sensitivity
-        const sensitivity = 0.005; // Reduced from 0.01 for better control
+        // Accumulate small movements to prevent jitter
+        dragState.accumulatedDelta += Math.max(Math.abs(mouseDeltaX), Math.abs(mouseDeltaY));
+        
+        // Only process resize if accumulated movement is significant enough
+        if (dragState.accumulatedDelta < 3) {
+          dragState.lastMouseX = e.clientX;
+          dragState.lastMouseY = e.clientY;
+          return;
+        }
+        
+        // Reset accumulated delta
+        dragState.accumulatedDelta = 0;
+        
+        // Improved scaling with better sensitivity
+        const sensitivity = 0.008; // Better sensitivity for smoother scaling
         let scaleDelta = 0;
         
         // Calculate scale based on handle and mouse movement
@@ -201,7 +224,7 @@ export function DraggableClothingItem({
             break;
         }
         
-        const newScale = Math.max(0.3, Math.min(3, dragState.startScale + (scaleDelta * 10)));
+        const newScale = Math.max(0.3, Math.min(3, dragState.startScale + (scaleDelta * 15)));
         const newWidth = imageDimensions.width * newScale;
         const newHeight = imageDimensions.height * newScale;
         
@@ -223,7 +246,7 @@ export function DraggableClothingItem({
             break;
         }
         
-        // Strict boundary constraints for resizing
+        // Constrain to gray container bounds
         const constrainedPosition = {
           x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - newWidth)),
           y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - newHeight))
@@ -240,7 +263,8 @@ export function DraggableClothingItem({
         perfLog('Resize update', { 
           scale: newScale.toFixed(2), 
           delta: scaleDelta.toFixed(4),
-          mouseDelta: `${mouseDeltaX},${mouseDeltaY}` 
+          mouseDelta: `${mouseDeltaX},${mouseDeltaY}`,
+          accumulated: dragState.accumulatedDelta
         });
       }
     };
@@ -261,6 +285,7 @@ export function DraggableClothingItem({
         onPositionChange(id, position);
         dragState.isResizing = false;
         setIsResizing(false);
+        dragState.accumulatedDelta = 0;
       }
     };
 
@@ -290,7 +315,8 @@ export function DraggableClothingItem({
       startPosition: { ...position },
       lastUpdateTime: performance.now(),
       lastMouseX: e.clientX,
-      lastMouseY: e.clientY
+      lastMouseY: e.clientY,
+      accumulatedDelta: 0
     };
   };
 
@@ -298,7 +324,7 @@ export function DraggableClothingItem({
     e.stopPropagation();
     e.preventDefault();
     
-    perfLog('Resize start', { handle });
+    perfLog('Resize start', { handle, currentScale: scale });
     
     onSelect(id);
     setIsResizing(true);
@@ -335,7 +361,8 @@ export function DraggableClothingItem({
       resizeAnchorY: anchorY,
       lastUpdateTime: performance.now(),
       lastMouseX: e.clientX,
-      lastMouseY: e.clientY
+      lastMouseY: e.clientY,
+      accumulatedDelta: 0
     };
   };
 
