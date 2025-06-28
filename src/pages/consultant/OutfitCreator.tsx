@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,6 +123,18 @@ const OutfitCreator = () => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
 
+  // Add container bounds reference
+  const containerBounds = useRef({ width: 337, height: 600 });
+
+  useEffect(() => {
+    // Update container bounds when component mounts
+    const updateBounds = () => {
+      // These are the typical dimensions of the silhouette container
+      containerBounds.current = { width: 337, height: 600 };
+    };
+    updateBounds();
+  }, []);
+
   useEffect(() => {
     if (!clientId) {
       toast({
@@ -166,33 +178,44 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, existingPositions: ClothingPosition[]) => {
-    const containerWidth = 337;
-    const containerHeight = 600;
+    const containerWidth = containerBounds.current.width;
+    const containerHeight = containerBounds.current.height;
     
+    // Center coordinates for the silhouette area
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
     
+    console.log(`[OutfitCreator] Default position for ${category}:`, { 
+      centerX, 
+      centerY, 
+      containerWidth, 
+      containerHeight 
+    });
+    
+    // Better positioning relative to silhouette center (assuming silhouette is ~250px wide)
     const basePositions: { [key: string]: { x: number; y: number } } = {
-      top: { x: centerX - 120, y: centerY - 150 },
-      bottom: { x: centerX - 80, y: centerY - 50 },
-      one_piece: { x: centerX - 120, y: centerY - 100 },
-      shoes: { x: centerX - 70, y: centerY + 100 },
-      outerwear: { x: centerX - 130, y: centerY - 160 },
-      accessory: { x: centerX + 50, y: centerY - 200 }
+      top: { x: centerX - 100, y: centerY - 120 },        // Upper torso
+      bottom: { x: centerX - 75, y: centerY - 20 },       // Lower torso  
+      one_piece: { x: centerX - 100, y: centerY - 80 },   // Full body
+      shoes: { x: centerX - 60, y: centerY + 80 },        // Bottom
+      outerwear: { x: centerX - 110, y: centerY - 130 },  // Over everything
+      accessory: { x: centerX - 50, y: centerY - 150 }    // Top area
     };
 
-    let position = basePositions[category] || { x: centerX - 100, y: centerY - 100 };
+    let position = basePositions[category] || { x: centerX - 75, y: centerY - 75 };
     
+    // Offset for multiple items of same category
     const sameCategory = existingPositions.filter(pos => {
       const item = [...clientClothes, ...externalCatalog].find(i => i.id === pos.id);
       return item?.category === category;
     });
     
     if (sameCategory.length > 0) {
-      position.x += sameCategory.length * 20;
-      position.y += sameCategory.length * 20;
+      position.x += sameCategory.length * 15;
+      position.y += sameCategory.length * 15;
     }
 
+    console.log(`[OutfitCreator] Final position for ${category}:`, position);
     return position;
   };
 
@@ -441,7 +464,6 @@ const OutfitCreator = () => {
                                 </div>
                               )}
                             </div>
-                            {/* ... keep existing code (item details and notes) */}
                             <div className="flex items-center justify-between">
                               <div className="text-xs text-muted-foreground">
                                 {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
@@ -500,7 +522,6 @@ const OutfitCreator = () => {
                               </div>
                             )}
                           </div>
-                          {/* ... keep existing code (item details and notes) */}
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">
                               {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
@@ -525,7 +546,6 @@ const OutfitCreator = () => {
                       );
                     })}
 
-                    {/* ... keep existing code (add to catalog card) */}
                     <Card className="card-hover flex flex-col bg-white">
                       <CardHeader className="p-0 flex-shrink-0">
                         <div className="aspect-square border-2 border-dashed rounded-t-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all flex flex-col items-center justify-center">

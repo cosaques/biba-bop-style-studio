@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -51,23 +52,32 @@ export function DraggableClothingItem({
     resizeAnchorX: 0,
     resizeAnchorY: 0,
     lastUpdateTime: 0,
-    pendingPosition: null as { x: number; y: number } | null
+    pendingPosition: null as { x: number; y: number } | null,
+    lastMouseX: 0,
+    lastMouseY: 0
   });
 
-  // Single optimized image URL for all use cases (400px for browser cache efficiency)
+  const shortId = id.slice(-8);
+  const perfLog = (action: string, data?: any) => {
+    console.log(`[PERF-${shortId}] ${action} - ${performance.now().toFixed(2)}ms`, data);
+  };
+
+  // Single optimized image URL (400px for consistent caching)
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
 
   // Memoize container bounds to avoid recalculation
-  const containerBounds = useRef({ width: 800, height: 600 });
+  const containerBounds = useRef({ width: 337, height: 600 });
 
   const updateContainerBounds = useCallback(() => {
     const container = itemRef.current?.parentElement;
     if (container) {
+      const rect = container.getBoundingClientRect();
       const newBounds = {
         width: container.clientWidth,
         height: container.clientHeight
       };
       containerBounds.current = newBounds;
+      perfLog('Container bounds updated', newBounds);
     }
   }, []);
 
@@ -80,17 +90,28 @@ export function DraggableClothingItem({
     return () => window.removeEventListener('resize', handleResize);
   }, [updateContainerBounds]);
 
-  // Load and calculate optimal image dimensions
+  // Load and calculate optimal image dimensions with 75% silhouette width
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      const maxSize = 150;
+      perfLog('Image loaded', { 
+        natural: `${img.naturalWidth}x${img.naturalHeight}`,
+        url: optimizedImageUrl 
+      });
+      
+      // Target width is 75% of silhouette width (assuming silhouette is ~250px wide)
+      const targetWidth = Math.min(containerBounds.current.width * 0.6, 200);
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
       // Calculate dimensions that maintain aspect ratio
       const dimensions = aspectRatio > 1 
-        ? { width: maxSize, height: maxSize / aspectRatio }
-        : { width: maxSize * aspectRatio, height: maxSize };
+        ? { width: targetWidth, height: targetWidth / aspectRatio }
+        : { width: targetWidth * aspectRatio, height: targetWidth };
+      
+      perfLog('Image dimensions calculated', { 
+        calculated: `${Math.round(dimensions.width)}x${Math.round(dimensions.height)}`,
+        aspectRatio: aspectRatio.toFixed(2)
+      });
       
       setImageDimensions(dimensions);
       setImageLoaded(true);
@@ -129,6 +150,10 @@ export function DraggableClothingItem({
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
       const dragState = dragStateRef.current;
+      const now = performance.now();
+      
+      // Throttle updates to 60fps max
+      if (now - dragState.lastUpdateTime < 16) return;
       
       if (dragState.isDragging) {
         e.preventDefault();
@@ -140,39 +165,43 @@ export function DraggableClothingItem({
           y: dragState.startPosition.y + deltaY
         };
 
+        // Strict boundary constraints
+        const itemWidth = imageDimensions.width * scale;
+        const itemHeight = imageDimensions.height * scale;
         const constrainedPosition = {
-          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - (imageDimensions.width * scale))),
-          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - (imageDimensions.height * scale)))
+          x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - itemWidth)),
+          y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - itemHeight))
         };
 
-        // Use RAF for ultra-smooth updates
         schedulePositionUpdate(constrainedPosition);
+        dragState.lastUpdateTime = now;
         
       } else if (dragState.isResizing) {
         e.preventDefault();
-        const mouseDeltaX = e.clientX - dragState.startX;
-        const mouseDeltaY = e.clientY - dragState.startY;
+        const mouseDeltaX = e.clientX - dragState.lastMouseX;
+        const mouseDeltaY = e.clientY - dragState.lastMouseY;
         
-        let scaleFactor = 1;
-        const sensitivity = 0.01;
+        // Much more responsive scaling with reduced sensitivity
+        const sensitivity = 0.005; // Reduced from 0.01 for better control
+        let scaleDelta = 0;
         
         // Calculate scale based on handle and mouse movement
         switch (dragState.resizeHandle) {
           case 'se':
-            scaleFactor = 1 + Math.max(mouseDeltaX, mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(mouseDeltaX, mouseDeltaY) * sensitivity;
             break;
           case 'sw':
-            scaleFactor = 1 + Math.max(-mouseDeltaX, mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(-mouseDeltaX, mouseDeltaY) * sensitivity;
             break;
           case 'ne':
-            scaleFactor = 1 + Math.max(mouseDeltaX, -mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(mouseDeltaX, -mouseDeltaY) * sensitivity;
             break;
           case 'nw':
-            scaleFactor = 1 + Math.max(-mouseDeltaX, -mouseDeltaY) * sensitivity;
+            scaleDelta = Math.max(-mouseDeltaX, -mouseDeltaY) * sensitivity;
             break;
         }
         
-        const newScale = Math.max(0.2, Math.min(4, dragState.startScale * scaleFactor));
+        const newScale = Math.max(0.3, Math.min(3, dragState.startScale + (scaleDelta * 10)));
         const newWidth = imageDimensions.width * newScale;
         const newHeight = imageDimensions.height * newScale;
         
@@ -194,6 +223,7 @@ export function DraggableClothingItem({
             break;
         }
         
+        // Strict boundary constraints for resizing
         const constrainedPosition = {
           x: Math.max(0, Math.min(newPosition.x, containerBounds.current.width - newWidth)),
           y: Math.max(0, Math.min(newPosition.y, containerBounds.current.height - newHeight))
@@ -201,6 +231,17 @@ export function DraggableClothingItem({
         
         setScale(newScale);
         schedulePositionUpdate(constrainedPosition);
+        
+        // Update mouse tracking
+        dragState.lastMouseX = e.clientX;
+        dragState.lastMouseY = e.clientY;
+        dragState.lastUpdateTime = now;
+        
+        perfLog('Resize update', { 
+          scale: newScale.toFixed(2), 
+          delta: scaleDelta.toFixed(4),
+          mouseDelta: `${mouseDeltaX},${mouseDeltaY}` 
+        });
       }
     };
 
@@ -208,12 +249,14 @@ export function DraggableClothingItem({
       const dragState = dragStateRef.current;
       
       if (dragState.isDragging) {
+        perfLog('Drag completed', { finalPosition: position });
         onPositionChange(id, position);
         dragState.isDragging = false;
         setIsDragging(false);
       }
       
       if (dragState.isResizing) {
+        perfLog('Resize completed', { finalScale: scale, finalPosition: position });
         onScaleChange(id, scale);
         onPositionChange(id, position);
         dragState.isResizing = false;
@@ -234,6 +277,8 @@ export function DraggableClothingItem({
     e.preventDefault();
     e.stopPropagation();
     
+    perfLog('Drag start', { clientX: e.clientX, clientY: e.clientY });
+    
     onSelect(id);
     setIsDragging(true);
     
@@ -243,13 +288,17 @@ export function DraggableClothingItem({
       startX: e.clientX,
       startY: e.clientY,
       startPosition: { ...position },
-      lastUpdateTime: performance.now()
+      lastUpdateTime: performance.now(),
+      lastMouseX: e.clientX,
+      lastMouseY: e.clientY
     };
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent, handle: ResizeHandle) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    perfLog('Resize start', { handle });
     
     onSelect(id);
     setIsResizing(true);
@@ -284,17 +333,21 @@ export function DraggableClothingItem({
       resizeHandle: handle,
       resizeAnchorX: anchorX,
       resizeAnchorY: anchorY,
-      lastUpdateTime: performance.now()
+      lastUpdateTime: performance.now(),
+      lastMouseX: e.clientX,
+      lastMouseY: e.clientY
     };
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    perfLog('Double click - removing item');
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    perfLog('Click - selecting item');
     onSelect(id);
   };
 
