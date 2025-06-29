@@ -1,3 +1,4 @@
+
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
@@ -216,8 +217,7 @@ export function DraggableClothingItem({
       enableResizing={isSelected}
       disableDragging={false}
       style={{
-        zIndex: isSelected ? 1000 : zIndex,
-        border: isSelected ? '2px dashed #3B82F6' : 'none',
+        zIndex: isSelected ? 1000 : zIndex
       }}
       resizeHandleStyles={{
         topLeft: { 
@@ -251,7 +251,7 @@ export function DraggableClothingItem({
       }}
     >
       <div
-        className="w-full h-full cursor-move"
+        className="w-full h-full cursor-move relative"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         style={{
@@ -259,6 +259,19 @@ export function DraggableClothingItem({
           height: '100%'
         }}
       >
+        {/* Selection border overlay - positioned absolutely to not affect image dimensions */}
+        {isSelected && (
+          <div 
+            className="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"
+            style={{
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0
+            }}
+          />
+        )}
+        
         <img
           src={optimizedImageUrl}
           alt={category}
