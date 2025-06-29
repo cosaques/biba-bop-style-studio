@@ -122,7 +122,8 @@ const OutfitCreator = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
-  const [containerBounds, setContainerBounds] = useState({ width: 400, height: 500 });
+  const [containerBounds, setContainerBounds] = useState({ width: 0, height: 0 });
+  const [containerReady, setContainerReady] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -133,11 +134,24 @@ const OutfitCreator = () => {
 
   useEffect(() => {
     // Update container bounds when canvas is ready
-    if (canvasRef.current) {
-      const bounds = canvasRef.current.getBoundingClientRect();
-      setContainerBounds({ width: bounds.width, height: bounds.height });
-      console.log('[CANVAS] Container bounds updated:', JSON.stringify({ width: bounds.width, height: bounds.height }));
-    }
+    const updateBounds = () => {
+      if (canvasRef.current) {
+        const bounds = canvasRef.current.getBoundingClientRect();
+        const newBounds = { width: bounds.width, height: bounds.height };
+        setContainerBounds(newBounds);
+        setContainerReady(true);
+        console.log('[CANVAS] Container bounds updated:', JSON.stringify(newBounds));
+      }
+    };
+
+    // Initial update
+    updateBounds();
+    
+    // Update on resize
+    window.addEventListener('resize', updateBounds);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', updateBounds);
   }, [canvasRef.current]);
 
   const fetchClientClothes = async () => {
@@ -165,12 +179,23 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }): { x: number; y: number } => {
+    // Don't calculate position if container isn't ready
+    if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
+      console.log(`[POSITION-DEBUG] Container not ready, using fallback position for ${category}:`, JSON.stringify({
+        containerReady,
+        containerBounds,
+        fallbackPosition: { x: 100, y: 100 }
+      }));
+      return { x: 100, y: 100 };
+    }
+
     const silhouetteWidth = Math.min(containerBounds.width * 0.4, 200);
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
     
     console.log(`[POSITION-DEBUG] Calculating position for ${category}:`, JSON.stringify({
       containerBounds,
+      containerReady,
       silhouetteWidth,
       centerX,
       centerY
@@ -219,7 +244,8 @@ const OutfitCreator = () => {
         category: item.category,
         position: newPlacedItem.position,
         size: newPlacedItem.size,
-        containerBounds
+        containerBounds,
+        containerReady
       }));
       
       setPlacedItems(prev => [...prev, newPlacedItem]);

@@ -1,3 +1,4 @@
+
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -116,6 +117,27 @@ export function DraggableClothingItem({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const clickPosition = { x: e.clientX, y: e.clientY };
+    const relativeClick = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
+    const currentBounds = e.currentTarget.getBoundingClientRect();
+    
+    console.log(`[CLICK-DEBUG-${shortId}] Click details:`, JSON.stringify({
+      category,
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      relativeClick,
+      currentBounds: { 
+        width: currentBounds.width, 
+        height: currentBounds.height,
+        x: currentBounds.x,
+        y: currentBounds.y
+      },
+      elementSize: {
+        offsetWidth: (e.currentTarget as HTMLElement).offsetWidth,
+        offsetHeight: (e.currentTarget as HTMLElement).offsetHeight
+      },
+      isCurrentlySelected: isSelected
+    }));
+    
     console.log(`[SELECT-${shortId}] Item selected:`, JSON.stringify({ 
       category,
       currentBoundingBox: { ...position, ...size },
@@ -179,6 +201,10 @@ export function DraggableClothingItem({
         className="w-full h-full cursor-move"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        style={{
+          width: '100%',
+          height: '100%'
+        }}
       >
         <img
           src={optimizedImageUrl}
