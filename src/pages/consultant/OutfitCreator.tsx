@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -119,11 +118,10 @@ const OutfitCreator = () => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [comments, setComments] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("wardrobe");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
-  const [containerBounds, setContainerBounds] = useState({ width: 500, height: 500 });
+  const [containerBounds, setContainerBounds] = useState({ width: 400, height: 600 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -133,34 +131,13 @@ const OutfitCreator = () => {
   }, [clientId, user]);
 
   useEffect(() => {
-    const updateContainerBounds = () => {
-      if (canvasRef.current) {
-        const bounds = canvasRef.current.getBoundingClientRect();
-        const newBounds = { width: bounds.width, height: bounds.height };
-        setContainerBounds(newBounds);
-        console.log('[CANVAS] Container bounds updated:', newBounds);
-      }
-    };
-
-    // Initial bounds setup
-    updateContainerBounds();
-    
-    // Update bounds on window resize
-    window.addEventListener('resize', updateContainerBounds);
-    
-    // Use ResizeObserver if available for more precise updates
-    if (canvasRef.current && window.ResizeObserver) {
-      const resizeObserver = new ResizeObserver(updateContainerBounds);
-      resizeObserver.observe(canvasRef.current);
-      
-      return () => {
-        window.removeEventListener('resize', updateContainerBounds);
-        resizeObserver.disconnect();
-      };
+    // Update container bounds when canvas is ready
+    if (canvasRef.current) {
+      const bounds = canvasRef.current.getBoundingClientRect();
+      setContainerBounds({ width: bounds.width, height: bounds.height });
+      console.log('[CANVAS] Container bounds updated:', { width: bounds.width, height: bounds.height });
     }
-    
-    return () => window.removeEventListener('resize', updateContainerBounds);
-  }, []);
+  }, [canvasRef.current]);
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -187,47 +164,45 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string): { x: number; y: number } => {
-    // Wait for container bounds to be properly set
-    if (containerBounds.width <= 100 || containerBounds.height <= 100) {
-      console.log('[POSITION] Using fallback bounds, container not ready yet');
-      return { x: 200, y: 150 }; // Fallback position
-    }
-
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
     
-    console.log('[POSITION] Calculating position for category:', category, 'with bounds:', containerBounds);
-    
+    // Silhouette is roughly in the center, so we position items relative to that
     const positions: { [key: string]: { x: number; y: number } } = {
       top: { x: centerX - 60, y: centerY - 150 },
       bottom: { x: centerX - 60, y: centerY - 20 },
       one_piece: { x: centerX - 60, y: centerY - 120 },
-      shoes: { x: centerX - 60, y: centerY + 120 },
-      outerwear: { x: centerX - 120, y: centerY },
-      accessory: { x: centerX + 40, y: centerY - 50 }
+      shoes: { x: centerX - 50, y: centerY + 120 },
+      outerwear: { x: centerX - 120, y: centerY - 100 },
+      accessory: { x: centerX + 40, y: centerY - 100 }
     };
     
-    const position = positions[category] || { x: centerX - 60, y: centerY };
-    console.log('[POSITION] Final position for', category, ':', position);
-    return position;
+    return positions[category] || { x: centerX - 60, y: centerY - 60 };
+  };
+
+  const getDefaultSize = (): { width: number; height: number } => {
+    // Default size for clothing items
+    return { width: 120, height: 120 };
   };
 
   const handleItemSelect = (itemId: string) => {
-    const currentItems = activeTab === "wardrobe" ? clientClothes : externalCatalog;
-    const item = currentItems.find(i => i.id === itemId);
+    const allItems = [...clientClothes, ...externalCatalog];
+    const item = allItems.find(i => i.id === itemId);
     if (!item) return;
 
     const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
     
     if (isAlreadyPlaced) {
-      console.log(`[REMOVE-${itemId.slice(-8)}] Item removed from canvas`, { category: item.category });
+      // Remove item if already placed
+      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, { category: item.category });
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
+      // Add item to canvas
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
         position: getDefaultPosition(item.category),
-        size: { width: 120, height: 120 },
+        size: getDefaultSize(),
         zIndex: nextZIndex
       };
       
@@ -252,7 +227,6 @@ const OutfitCreator = () => {
   };
 
   const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
-    console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] Updating item size in state`, { newSize: size });
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, size } : item
@@ -261,8 +235,8 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelection = (itemId: string) => {
-    console.log(`[SELECT-${itemId.slice(-8)}] Item selected`);
     setSelectedItemId(itemId);
+    // Bring selected item to front
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, zIndex: nextZIndex } : item
@@ -272,7 +246,6 @@ const OutfitCreator = () => {
   };
 
   const handleItemRemove = (itemId: string) => {
-    console.log(`[REMOVE-${itemId.slice(-8)}] Item removed from canvas`);
     setPlacedItems(prev => prev.filter(item => item.id !== itemId));
     setSelectedItemId(null);
   };
@@ -296,11 +269,8 @@ const OutfitCreator = () => {
     }, 1500);
   };
 
-  const getCurrentItems = () => {
-    return activeTab === "wardrobe" ? clientClothes : externalCatalog;
-  };
-
-  const filteredItems = getCurrentItems().filter(
+  const allItems = [...clientClothes, ...externalCatalog];
+  const filteredItems = allItems.filter(
     item => categoryFilter === "all" || item.category === categoryFilter
   );
 
@@ -316,8 +286,6 @@ const OutfitCreator = () => {
     ? "/looks/m-look-0.png"
     : "/looks/look-0.png";
 
-  const allItems = [...clientClothes, ...externalCatalog];
-
   return (
     <div className="grid grid-cols-2 gap-6 h-screen">
       {/* Left Panel: Silhouette */}
@@ -329,7 +297,7 @@ const OutfitCreator = () => {
           <CardContent className="flex-1 flex flex-col">
             <div 
               ref={canvasRef}
-              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden cursor-default"
+              className="relative flex-1 bg-bibabop-lightgrey rounded-md flex items-center justify-center overflow-hidden"
               onClick={handleCanvasClick}
               style={{ minHeight: '500px' }}
             >
@@ -337,14 +305,8 @@ const OutfitCreator = () => {
               <img
                 src={silhouetteImage}
                 alt="Silhouette du client"
-                className="absolute opacity-30 h-[80%] w-auto object-contain pointer-events-none select-none"
-                style={{ 
-                  maxWidth: '33%',
-                  height: 'auto',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)'
-                }}
+                className="absolute opacity-30 max-h-[80%] w-auto object-contain"
+                style={{ pointerEvents: 'none' }}
               />
 
               {/* Placed clothing items */}
@@ -426,12 +388,6 @@ const OutfitCreator = () => {
           <CardHeader>
             <CardTitle>Sélection des Vêtements</CardTitle>
             <div className="flex gap-4 items-center">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
-                  <TabsTrigger value="catalog">Catalogue</TabsTrigger>
-                </TabsList>
-              </Tabs>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filtrer par type" />
@@ -448,127 +404,63 @@ const OutfitCreator = () => {
           </CardHeader>
 
           <CardContent className="flex-1 overflow-y-auto">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsContent value="wardrobe" className="mt-0">
-                {filteredItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans la garde-robe</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-4">
-                    {filteredItems.map((item) => {
-                      const isPlaced = placedItems.some(p => p.id === item.id);
-                      const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                      
-                      return (
-                        <div key={item.id} className="space-y-2">
-                          <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                              isPlaced
-                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <img
-                              src={optimizedUrl}
-                              alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
-                              className="max-w-full max-h-full object-contain"
-                              loading="lazy"
-                            />
-                            {isPlaced && (
-                              <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                ✓
-                              </div>
-                            )}
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Aucun vêtement trouvé</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {filteredItems.map((item) => {
+                  const isPlaced = placedItems.some(p => p.id === item.id);
+                  const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                  
+                  return (
+                    <div key={item.id} className="space-y-2">
+                      <div
+                        className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
+                          isPlaced
+                            ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
+                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        }`}
+                        onClick={() => handleItemSelect(item.id)}
+                      >
+                        <img
+                          src={optimizedUrl}
+                          alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
+                          className="max-w-full max-h-full object-contain"
+                          loading="lazy"
+                        />
+                        {isPlaced && (
+                          <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                            ✓
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">
-                              {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
-                            </div>
-                            {item.notes && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                    <NotepadText className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-xs">Notes</h4>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                          {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="catalog" className="mt-0">
-                {filteredItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans le catalogue</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-4">
-                    {filteredItems.map((item) => {
-                      const isPlaced = placedItems.some(p => p.id === item.id);
-                      const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                      
-                      return (
-                        <div key={item.id} className="space-y-2">
-                          <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                              isPlaced
-                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <img
-                              src={optimizedUrl}
-                              alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
-                              className="max-w-full max-h-full object-contain"
-                              loading="lazy"
-                            />
-                            {isPlaced && (
-                              <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                ✓
+                        {item.notes && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
+                                <NotepadText className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-xs">Notes</h4>
+                                <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">
-                              {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
-                            </div>
-                            {item.notes && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                    <NotepadText className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-xs">Notes</h4>
-                                    <p className="text-xs text-muted-foregor leading-relaxed">{item.notes}</p>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
