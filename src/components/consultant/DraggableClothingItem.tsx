@@ -34,8 +34,21 @@ export function DraggableClothingItem({
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
   const shortId = id.slice(-8);
 
+  console.log(`[BOUNDS-${shortId}] Component render`, {
+    position,
+    size,
+    isSelected,
+    containerBounds,
+    category
+  });
+
   const handleDragStart = () => {
-    console.log(`[DRAG-${shortId}] Drag started`, { position, category });
+    console.log(`[DRAG-${shortId}] Drag started`, { 
+      position, 
+      category,
+      boundingBox: { ...position, ...size },
+      isSelected
+    });
     onSelect(id);
   };
 
@@ -44,13 +57,21 @@ export function DraggableClothingItem({
     console.log(`[DRAG-${shortId}] Drag completed`, { 
       oldPosition: position, 
       newPosition,
-      category 
+      category,
+      boundingBoxBefore: { ...position, ...size },
+      boundingBoxAfter: { ...newPosition, ...size }
     });
     onPositionChange(id, newPosition);
   };
 
   const handleResizeStart = () => {
-    console.log(`[RESIZE-${shortId}] Resize started`, { size, category });
+    console.log(`[RESIZE-${shortId}] Resize started`, { 
+      size, 
+      category,
+      position,
+      boundingBox: { ...position, ...size },
+      isSelected
+    });
     onSelect(id);
   };
 
@@ -66,22 +87,42 @@ export function DraggableClothingItem({
       newSize,
       oldPosition: position,
       newPosition: finalPosition,
-      category 
+      category,
+      oldBoundingBox: { ...position, ...size },
+      newBoundingBox: { ...finalPosition, ...newSize },
+      direction,
+      delta: { width: delta.width, height: delta.height }
     });
     
+    // Update size first, then position
     onSizeChange(id, newSize);
     onPositionChange(id, finalPosition);
+    
+    console.log(`[RESIZE-${shortId}] State updates sent`, {
+      sizeUpdate: newSize,
+      positionUpdate: finalPosition,
+      expectedBoundingBox: { ...finalPosition, ...newSize }
+    });
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[DELETE-${shortId}] Double-click remove`, { category });
+    console.log(`[DELETE-${shortId}] Double-click remove`, { 
+      category,
+      finalBoundingBox: { ...position, ...size }
+    });
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[SELECT-${shortId}] Item selected`, { category });
+    const clickPosition = { x: e.clientX, y: e.clientY };
+    console.log(`[SELECT-${shortId}] Item selected`, { 
+      category,
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      isCurrentlySelected: isSelected
+    });
     onSelect(id);
   };
 
