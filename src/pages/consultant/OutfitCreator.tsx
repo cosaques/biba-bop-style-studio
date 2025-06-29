@@ -136,7 +136,7 @@ const OutfitCreator = () => {
     if (canvasRef.current) {
       const bounds = canvasRef.current.getBoundingClientRect();
       setContainerBounds({ width: bounds.width, height: bounds.height });
-      console.log('[CANVAS] Container bounds updated:', { width: bounds.width, height: bounds.height });
+      console.log('[CANVAS] Container bounds updated:', JSON.stringify({ width: bounds.width, height: bounds.height }));
     }
   }, [canvasRef.current]);
 
@@ -165,16 +165,16 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }): { x: number; y: number } => {
-    const silhouetteWidth = Math.min(containerBounds.width * 0.4, 200); // Silhouette takes about 40% of width, max 200px
+    const silhouetteWidth = Math.min(containerBounds.width * 0.4, 200);
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
     
-    console.log(`[POSITION-DEBUG] Calculating position for ${category}`, {
+    console.log(`[POSITION-DEBUG] Calculating position for ${category}:`, JSON.stringify({
       containerBounds,
       silhouetteWidth,
       centerX,
       centerY
-    });
+    }));
 
     const positions: { [key: string]: { x: number; y: number } } = {
       top: { x: centerX - 60, y: centerY - 150 },
@@ -186,7 +186,7 @@ const OutfitCreator = () => {
     };
     
     const finalPosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
-    console.log(`[POSITION-DEBUG] Final position for ${category}:`, finalPosition);
+    console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
     
     return finalPosition;
   };
@@ -204,7 +204,7 @@ const OutfitCreator = () => {
     const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
     
     if (isAlreadyPlaced) {
-      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, { category: item.category });
+      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, JSON.stringify({ category: item.category }));
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
@@ -215,12 +215,12 @@ const OutfitCreator = () => {
         zIndex: nextZIndex
       };
       
-      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, { 
+      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, JSON.stringify({ 
         category: item.category,
         position: newPlacedItem.position,
         size: newPlacedItem.size,
         containerBounds
-      });
+      }));
       
       setPlacedItems(prev => [...prev, newPlacedItem]);
       setSelectedItemId(itemId);
@@ -229,6 +229,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemPositionChange = (itemId: string, position: { x: number; y: number }) => {
+    console.log(`[POSITION-UPDATE-${itemId.slice(-8)}] Position changed to:`, JSON.stringify(position));
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, position } : item
@@ -237,6 +238,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
+    console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] Size changed to:`, JSON.stringify(size));
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, size } : item
@@ -245,6 +247,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelection = (itemId: string) => {
+    console.log(`[SELECTION-${itemId.slice(-8)}] Item selected`);
     setSelectedItemId(itemId);
     // Bring selected item to front
     setPlacedItems(prev => 
@@ -256,6 +259,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemRemove = (itemId: string) => {
+    console.log(`[REMOVE-${itemId.slice(-8)}] Item removed from canvas`);
     setPlacedItems(prev => prev.filter(item => item.id !== itemId));
     setSelectedItemId(null);
   };

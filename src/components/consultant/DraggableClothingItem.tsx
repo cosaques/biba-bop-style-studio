@@ -1,4 +1,3 @@
-
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -34,44 +33,44 @@ export function DraggableClothingItem({
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
   const shortId = id.slice(-8);
 
-  console.log(`[BOUNDS-${shortId}] Component render`, {
+  console.log(`[BOUNDS-${shortId}] Component render:`, JSON.stringify({
     position,
     size,
     isSelected,
     containerBounds,
     category
-  });
+  }));
 
   const handleDragStart = () => {
-    console.log(`[DRAG-${shortId}] Drag started`, { 
+    console.log(`[DRAG-${shortId}] Drag started:`, JSON.stringify({ 
       position, 
       category,
       boundingBox: { ...position, ...size },
       isSelected
-    });
+    }));
     onSelect(id);
   };
 
   const handleDragStop = (e: any, data: any) => {
     const newPosition = { x: data.x, y: data.y };
-    console.log(`[DRAG-${shortId}] Drag completed`, { 
+    console.log(`[DRAG-${shortId}] Drag completed:`, JSON.stringify({ 
       oldPosition: position, 
       newPosition,
       category,
       boundingBoxBefore: { ...position, ...size },
       boundingBoxAfter: { ...newPosition, ...size }
-    });
+    }));
     onPositionChange(id, newPosition);
   };
 
   const handleResizeStart = () => {
-    console.log(`[RESIZE-${shortId}] Resize started`, { 
+    console.log(`[RESIZE-${shortId}] Resize started:`, JSON.stringify({ 
       size, 
       category,
       position,
       boundingBox: { ...position, ...size },
       isSelected
-    });
+    }));
     onSelect(id);
   };
 
@@ -82,7 +81,7 @@ export function DraggableClothingItem({
     };
     const finalPosition = { x: newPosition.x, y: newPosition.y };
     
-    console.log(`[RESIZE-${shortId}] Resize completed`, { 
+    console.log(`[RESIZE-${shortId}] Resize completed:`, JSON.stringify({ 
       oldSize: size, 
       newSize,
       oldPosition: position,
@@ -92,37 +91,37 @@ export function DraggableClothingItem({
       newBoundingBox: { ...finalPosition, ...newSize },
       direction,
       delta: { width: delta.width, height: delta.height }
-    });
+    }));
     
     // Update size first, then position
     onSizeChange(id, newSize);
     onPositionChange(id, finalPosition);
     
-    console.log(`[RESIZE-${shortId}] State updates sent`, {
+    console.log(`[RESIZE-${shortId}] State updates sent:`, JSON.stringify({
       sizeUpdate: newSize,
       positionUpdate: finalPosition,
       expectedBoundingBox: { ...finalPosition, ...newSize }
-    });
+    }));
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[DELETE-${shortId}] Double-click remove`, { 
+    console.log(`[DELETE-${shortId}] Double-click remove:`, JSON.stringify({ 
       category,
       finalBoundingBox: { ...position, ...size }
-    });
+    }));
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const clickPosition = { x: e.clientX, y: e.clientY };
-    console.log(`[SELECT-${shortId}] Item selected`, { 
+    console.log(`[SELECT-${shortId}] Item selected:`, JSON.stringify({ 
       category,
       currentBoundingBox: { ...position, ...size },
       clickPosition,
       isCurrentlySelected: isSelected
-    });
+    }));
     onSelect(id);
   };
 
