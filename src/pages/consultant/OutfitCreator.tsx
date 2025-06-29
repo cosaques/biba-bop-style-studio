@@ -13,6 +13,7 @@ import { ClothingItem } from "@/hooks/useClothingItems";
 import { NotepadText } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
+import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
 
 interface ClientData {
   id: string;
@@ -219,12 +220,22 @@ const OutfitCreator = () => {
     return finalPosition;
   };
 
-  const getDefaultSize = (): { width: number; height: number } => {
-    // Default size for clothing items
-    return { width: 120, height: 120 };
+  const getDefaultSize = async (imageUrl: string): Promise<{ width: number; height: number }> => {
+    try {
+      const dimensions = await getImageDimensions(imageUrl);
+      console.log(`[IMAGE-DIMENSIONS] Natural dimensions:`, JSON.stringify(dimensions));
+      
+      const optimalSize = calculateOptimalSize(dimensions.width, dimensions.height, 120);
+      console.log(`[IMAGE-DIMENSIONS] Calculated optimal size:`, JSON.stringify(optimalSize));
+      
+      return optimalSize;
+    } catch (error) {
+      console.error('Failed to get image dimensions:', error);
+      return { width: 120, height: 120 }; // Fallback
+    }
   };
 
-  const handleItemSelect = (itemId: string) => {
+  const handleItemSelect = async (itemId: string) => {
     const allItems = [...clientClothes, ...externalCatalog];
     const item = allItems.find(i => i.id === itemId);
     if (!item) return;
@@ -244,10 +255,13 @@ const OutfitCreator = () => {
         return;
       }
 
+      const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+      const size = await getDefaultSize(imageUrl);
+
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
         position: getDefaultPosition(item.category, containerBounds),
-        size: getDefaultSize(),
+        size,
         zIndex: nextZIndex
       };
       
