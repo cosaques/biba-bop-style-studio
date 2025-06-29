@@ -1,4 +1,5 @@
 
+
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -76,32 +77,34 @@ export function DraggableClothingItem({
   };
 
   const handleResizeStop = (e: any, direction: any, ref: any, delta: any, newPosition: any) => {
-    const newSize = {
+    // Get the actual DOM dimensions after resize
+    const actualSize = {
       width: ref.offsetWidth,
       height: ref.offsetHeight
     };
-    const finalPosition = { x: newPosition.x, y: newPosition.y };
+    const actualPosition = { x: newPosition.x, y: newPosition.y };
     
     console.log(`[RESIZE-${shortId}] Resize completed:`, JSON.stringify({ 
       oldSize: size, 
-      newSize,
+      newSize: actualSize,
       oldPosition: position,
-      newPosition: finalPosition,
+      newPosition: actualPosition,
       category,
       oldBoundingBox: { ...position, ...size },
-      newBoundingBox: { ...finalPosition, ...newSize },
+      newBoundingBox: { ...actualPosition, ...actualSize },
       direction,
-      delta: { width: delta.width, height: delta.height }
+      delta: { width: delta.width, height: delta.height },
+      refDimensions: { width: ref.offsetWidth, height: ref.offsetHeight }
     }));
     
-    // Update size first, then position
-    onSizeChange(id, newSize);
-    onPositionChange(id, finalPosition);
+    // Update with actual DOM dimensions
+    onSizeChange(id, actualSize);
+    onPositionChange(id, actualPosition);
     
     console.log(`[RESIZE-${shortId}] State updates sent:`, JSON.stringify({
-      sizeUpdate: newSize,
-      positionUpdate: finalPosition,
-      expectedBoundingBox: { ...finalPosition, ...newSize }
+      sizeUpdate: actualSize,
+      positionUpdate: actualPosition,
+      expectedBoundingBox: { ...actualPosition, ...actualSize }
     }));
   };
 

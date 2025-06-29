@@ -144,15 +144,18 @@ const OutfitCreator = () => {
       }
     };
 
-    // Initial update
-    updateBounds();
+    // Use timeout to ensure DOM is fully rendered
+    const timeoutId = setTimeout(updateBounds, 100);
     
     // Update on resize
     window.addEventListener('resize', updateBounds);
     
     // Cleanup
-    return () => window.removeEventListener('resize', updateBounds);
-  }, [canvasRef.current]);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateBounds);
+    };
+  }, []);
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -179,7 +182,7 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }): { x: number; y: number } => {
-    // Don't calculate position if container isn't ready
+    // Wait for container to be ready
     if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
       console.log(`[POSITION-DEBUG] Container not ready, using fallback position for ${category}:`, JSON.stringify({
         containerReady,
@@ -233,6 +236,14 @@ const OutfitCreator = () => {
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
+      // Wait for container to be ready before adding items
+      if (!containerReady) {
+        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`);
+        // Try again after a short delay
+        setTimeout(() => handleItemSelect(itemId), 200);
+        return;
+      }
+
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
         position: getDefaultPosition(item.category, containerBounds),
