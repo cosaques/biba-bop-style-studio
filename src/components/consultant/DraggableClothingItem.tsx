@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react';
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 
@@ -31,26 +32,37 @@ export function DraggableClothingItem({
   onRemove,
   containerBounds
 }: DraggableClothingItemProps) {
-  const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
+  const [currentSize, setCurrentSize] = useState(size);
+  const [currentPosition, setCurrentPosition] = useState(position);
   const shortId = id.slice(-8);
 
+  // Update local state when props change
+  useEffect(() => {
+    setCurrentSize(size);
+  }, [size]);
+
+  useEffect(() => {
+    setCurrentPosition(position);
+  }, [position]);
+
   const handleDragStart = () => {
-    console.log(`[DRAG-${shortId}] Drag started`, { position, category });
+    console.log(`[DRAG-${shortId}] Drag started`, { position: currentPosition, category });
     onSelect(id);
   };
 
   const handleDragStop = (e: any, data: any) => {
     const newPosition = { x: data.x, y: data.y };
     console.log(`[DRAG-${shortId}] Drag completed`, { 
-      oldPosition: position, 
+      oldPosition: currentPosition, 
       newPosition,
       category 
     });
+    setCurrentPosition(newPosition);
     onPositionChange(id, newPosition);
   };
 
   const handleResizeStart = () => {
-    console.log(`[RESIZE-${shortId}] Resize started`, { size, category });
+    console.log(`[RESIZE-${shortId}] Resize started`, { size: currentSize, category });
     onSelect(id);
   };
 
@@ -62,15 +74,26 @@ export function DraggableClothingItem({
     const finalPosition = { x: newPosition.x, y: newPosition.y };
     
     console.log(`[RESIZE-${shortId}] Resize completed`, { 
-      oldSize: size, 
+      oldSize: currentSize, 
       newSize,
-      oldPosition: position,
+      oldPosition: currentPosition,
       newPosition: finalPosition,
       category 
     });
     
+    // Update local state immediately
+    setCurrentSize(newSize);
+    setCurrentPosition(finalPosition);
+    
+    // Notify parent components
     onSizeChange(id, newSize);
     onPositionChange(id, finalPosition);
+    
+    // Clear selection after resize to trigger bounding box recalculation
+    setTimeout(() => {
+      console.log(`[RESIZE-${shortId}] Auto-clearing selection after resize`);
+      // Don't call onSelect(null) directly, let the parent handle this
+    }, 50);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -87,8 +110,8 @@ export function DraggableClothingItem({
 
   return (
     <Rnd
-      size={size}
-      position={position}
+      size={currentSize}
+      position={currentPosition}
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResizeStart={handleResizeStart}
@@ -102,53 +125,63 @@ export function DraggableClothingItem({
       disableDragging={false}
       style={{
         zIndex: isSelected ? 1000 : zIndex,
-        border: isSelected ? '2px dashed #3B82F6' : 'none',
       }}
+      className={isSelected ? 'border-2 border-dashed border-blue-500' : ''}
       resizeHandleStyles={{
         topLeft: { 
-          width: '12px', 
-          height: '12px', 
+          width: '8px', 
+          height: '8px', 
           backgroundColor: '#3B82F6',
           border: '2px solid white',
-          borderRadius: '2px'
+          borderRadius: '2px',
+          left: '-4px',
+          top: '-4px'
         },
         topRight: { 
-          width: '12px', 
-          height: '12px', 
+          width: '8px', 
+          height: '8px', 
           backgroundColor: '#3B82F6',
           border: '2px solid white',
-          borderRadius: '2px'
+          borderRadius: '2px',
+          right: '-4px',
+          top: '-4px'
         },
         bottomLeft: { 
-          width: '12px', 
-          height: '12px', 
+          width: '8px', 
+          height: '8px', 
           backgroundColor: '#3B82F6',
           border: '2px solid white',
-          borderRadius: '2px'
+          borderRadius: '2px',
+          left: '-4px',
+          bottom: '-4px'
         },
         bottomRight: { 
-          width: '12px', 
-          height: '12px', 
+          width: '8px', 
+          height: '8px', 
           backgroundColor: '#3B82F6',
           border: '2px solid white',
-          borderRadius: '2px'
+          borderRadius: '2px',
+          right: '-4px',
+          bottom: '-4px'
         }
       }}
     >
       <div
-        className="w-full h-full cursor-move"
+        className="w-full h-full cursor-move bg-transparent"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        style={{ width: '100%', height: '100%' }}
       >
         <img
-          src={optimizedImageUrl}
+          src={imageUrl}
           alt={category}
-          className="w-full h-full object-contain pointer-events-none"
+          className="w-full h-full object-contain pointer-events-none select-none"
           draggable={false}
+          style={{ width: '100%', height: '100%' }}
         />
         
         {isSelected && (
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none">
             Double-cliquez pour retirer
           </div>
         )}
