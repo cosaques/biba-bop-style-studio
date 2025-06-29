@@ -1,4 +1,3 @@
-
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
@@ -120,11 +119,18 @@ export function DraggableClothingItem({
     };
     const actualPosition = { x: newPosition.x, y: newPosition.y };
     
+    // Calculate the center point of the current resized container
+    const currentCenter = {
+      x: actualPosition.x + resizedContainerSize.width / 2,
+      y: actualPosition.y + resizedContainerSize.height / 2
+    };
+    
     console.log(`[RESIZE-${shortId}] Resize completed (before aspect ratio adjustment):`, JSON.stringify({ 
       oldSize: size, 
       resizedContainerSize,
       oldPosition: position,
       newPosition: actualPosition,
+      currentCenter,
       category,
       direction,
       delta: { width: delta.width, height: delta.height }
@@ -133,15 +139,23 @@ export function DraggableClothingItem({
     // Calculate the size that respects the image's aspect ratio
     const aspectRatioSize = await calculateAspectRatioSize(resizedContainerSize);
     
+    // Calculate the new position to maintain the center point
+    const centeredPosition = {
+      x: currentCenter.x - aspectRatioSize.width / 2,
+      y: currentCenter.y - aspectRatioSize.height / 2
+    };
+    
     console.log(`[RESIZE-${shortId}] Final size after aspect ratio adjustment:`, JSON.stringify({
       resizedContainerSize,
       aspectRatioSize,
-      finalBoundingBox: { ...actualPosition, ...aspectRatioSize }
+      currentCenter,
+      centeredPosition,
+      finalBoundingBox: { ...centeredPosition, ...aspectRatioSize }
     }));
     
-    // Update with aspect ratio adjusted dimensions
+    // Update with aspect ratio adjusted dimensions and centered position
     onSizeChange(id, aspectRatioSize);
-    onPositionChange(id, actualPosition);
+    onPositionChange(id, centeredPosition);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
