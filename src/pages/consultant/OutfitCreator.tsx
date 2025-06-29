@@ -1,10 +1,11 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,14 +27,13 @@ interface ClientData {
   gender?: string;
 }
 
-interface ClothingPosition {
+interface PlacedClothingItem {
   id: string;
   position: { x: number; y: number };
-  scale: number;
-  zIndex?: number;
+  size: { width: number; height: number };
+  zIndex: number;
 }
 
-// Catalogue externe de vêtements
 const externalCatalog: ClothingItem[] = [
   {
     id: "ext1",
@@ -74,6 +74,7 @@ const externalCatalog: ClothingItem[] = [
 ];
 
 const categoryTranslations: { [key: string]: string } = {
+  all: "Tous",
   top: "Haut",
   bottom: "Bas",
   one_piece: "Une pièce",
@@ -113,45 +114,30 @@ const OutfitCreator = () => {
   const { toast } = useToast();
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
-  const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
-  const [clothingPositions, setClothingPositions] = useState<ClothingPosition[]>([]);
-  const [comments, setComments] = useState("");
-  const [activeTab, setActiveTab] = useState("wardrobe");
-  const [filter, setFilter] = useState("all");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [placedItems, setPlacedItems] = useState<PlacedClothingItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [comments, setComments] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
+  const [containerBounds, setContainerBounds] = useState({ width: 400, height: 600 });
 
-  // Add container bounds reference with better logging
-  const containerBounds = useRef({ width: 337, height: 600 });
-
-  useEffect(() => {
-    // Update container bounds when component mounts
-    const updateBounds = () => {
-      // These are the typical dimensions of the gray silhouette container
-      containerBounds.current = { width: 337, height: 600 };
-      console.log('[OutfitCreator] Container bounds set:', containerBounds.current);
-    };
-    updateBounds();
-  }, []);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!clientId) {
-      toast({
-        title: "Erreur",
-        description: "ID client manquant",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!user) {
-      return;
-    }
-
+    if (!clientId || !user) return;
     fetchClientClothes();
   }, [clientId, user]);
+
+  useEffect(() => {
+    // Update container bounds when canvas is ready
+    if (canvasRef.current) {
+      const bounds = canvasRef.current.getBoundingClientRect();
+      setContainerBounds({ width: bounds.width, height: bounds.height });
+      console.log('[CANVAS] Container bounds updated:', { width: bounds.width, height: bounds.height });
+    }
+  }, [canvasRef.current]);
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -164,7 +150,6 @@ const OutfitCreator = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setClientClothes((data || []) as ClothingItem[]);
     } catch (error) {
       console.error('Error fetching client clothes:', error);
@@ -178,105 +163,95 @@ const OutfitCreator = () => {
     }
   };
 
-  const getDefaultPosition = (category: string, existingPositions: ClothingPosition[]) => {
-    const containerWidth = containerBounds.current.width;
-    const containerHeight = containerBounds.current.height;
+  const getDefaultPosition = (category: string): { x: number; y: number } => {
+    const centerX = containerBounds.width / 2;
+    const centerY = containerBounds.height / 2;
     
-    // Center coordinates for the silhouette area
-    const centerX = containerWidth / 2;
-    const centerY = containerHeight / 2;
-    
-    console.log(`[OutfitCreator] Default position calculation for ${category}:`, { 
-      centerX, 
-      centerY, 
-      containerWidth, 
-      containerHeight 
-    });
-    
-    // Better positioning relative to silhouette center (silhouette is ~250px wide in 337px container)
-    const silhouetteWidth = containerWidth * 0.74; // ~250px 
-    const basePositions: { [key: string]: { x: number; y: number } } = {
-      top: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 120 },        // 75% width centered
-      bottom: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 20 },     // 75% width centered 
-      one_piece: { x: centerX - (silhouetteWidth * 0.375), y: centerY - 80 },  // 75% width centered
-      shoes: { x: centerX - (silhouetteWidth * 0.3), y: centerY + 80 },        // Smaller for shoes
-      outerwear: { x: centerX - (silhouetteWidth * 0.4), y: centerY - 130 },   // Slightly wider
-      accessory: { x: centerX - (silhouetteWidth * 0.25), y: centerY - 150 }   // Smaller accessories
+    // Silhouette is roughly in the center, so we position items relative to that
+    const positions: { [key: string]: { x: number; y: number } } = {
+      top: { x: centerX - 60, y: centerY - 150 },
+      bottom: { x: centerX - 60, y: centerY - 20 },
+      one_piece: { x: centerX - 60, y: centerY - 120 },
+      shoes: { x: centerX - 50, y: centerY + 120 },
+      outerwear: { x: centerX - 120, y: centerY - 100 },
+      accessory: { x: centerX + 40, y: centerY - 100 }
     };
-
-    let position = basePositions[category] || { x: centerX - (silhouetteWidth * 0.375), y: centerY - 75 };
     
-    // Offset for multiple items of same category
-    const sameCategory = existingPositions.filter(pos => {
-      const item = [...clientClothes, ...externalCatalog].find(i => i.id === pos.id);
-      return item?.category === category;
-    });
-    
-    if (sameCategory.length > 0) {
-      position.x += sameCategory.length * 15;
-      position.y += sameCategory.length * 15;
-    }
+    return positions[category] || { x: centerX - 60, y: centerY - 60 };
+  };
 
-    console.log(`[OutfitCreator] Final position for ${category}:`, {
-      ...position,
-      silhouetteWidth: Math.round(silhouetteWidth),
-      offsetCount: sameCategory.length
-    });
-    return position;
+  const getDefaultSize = (): { width: number; height: number } => {
+    // Default size for clothing items
+    return { width: 120, height: 120 };
   };
 
   const handleItemSelect = (itemId: string) => {
-    if (selectedClothes.includes(itemId)) {
-      setSelectedClothes(selectedClothes.filter(id => id !== itemId));
-      setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
+    const allItems = [...clientClothes, ...externalCatalog];
+    const item = allItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
+    
+    if (isAlreadyPlaced) {
+      // Remove item if already placed
+      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, { category: item.category });
+      setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
-      const item = [...clientClothes, ...externalCatalog].find(i => i.id === itemId);
-      if (item) {
-        setSelectedClothes([...selectedClothes, itemId]);
-        const position = getDefaultPosition(item.category, clothingPositions);
-        const newPosition = {
-          id: itemId,
-          position,
-          scale: 1,
-          zIndex: nextZIndex
-        };
-        setClothingPositions([...clothingPositions, newPosition]);
-        setSelectedItemId(itemId);
-        setNextZIndex(nextZIndex + 1);
-      }
+      // Add item to canvas
+      const newPlacedItem: PlacedClothingItem = {
+        id: itemId,
+        position: getDefaultPosition(item.category),
+        size: getDefaultSize(),
+        zIndex: nextZIndex
+      };
+      
+      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, { 
+        category: item.category,
+        position: newPlacedItem.position,
+        size: newPlacedItem.size
+      });
+      
+      setPlacedItems(prev => [...prev, newPlacedItem]);
+      setSelectedItemId(itemId);
+      setNextZIndex(prev => prev + 1);
     }
   };
 
-  const handlePositionChange = (itemId: string, position: { x: number; y: number }) => {
-    setClothingPositions(prev => 
-      prev.map(pos => pos.id === itemId ? { ...pos, position } : pos)
+  const handleItemPositionChange = (itemId: string, position: { x: number; y: number }) => {
+    setPlacedItems(prev => 
+      prev.map(item => 
+        item.id === itemId ? { ...item, position } : item
+      )
     );
   };
 
-  const handleScaleChange = (itemId: string, scale: number) => {
-    setClothingPositions(prev => 
-      prev.map(pos => pos.id === itemId ? { ...pos, scale } : pos)
+  const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
+    setPlacedItems(prev => 
+      prev.map(item => 
+        item.id === itemId ? { ...item, size } : item
+      )
     );
   };
 
   const handleItemSelection = (itemId: string) => {
-    if (selectedItemId !== itemId) {
-      setSelectedItemId(itemId);
-      setClothingPositions(prev => 
-        prev.map(pos => pos.id === itemId ? { ...pos, zIndex: nextZIndex } : pos)
-      );
-      setNextZIndex(nextZIndex + 1);
-    }
+    setSelectedItemId(itemId);
+    // Bring selected item to front
+    setPlacedItems(prev => 
+      prev.map(item => 
+        item.id === itemId ? { ...item, zIndex: nextZIndex } : item
+      )
+    );
+    setNextZIndex(prev => prev + 1);
   };
 
-  const handleRemoveFromSilhouette = (itemId: string) => {
-    setSelectedClothes(selectedClothes.filter(id => id !== itemId));
-    setClothingPositions(clothingPositions.filter(pos => pos.id !== itemId));
+  const handleItemRemove = (itemId: string) => {
+    setPlacedItems(prev => prev.filter(item => item.id !== itemId));
     setSelectedItemId(null);
   };
 
-  const handleSilhouetteClick = () => {
+  const handleCanvasClick = () => {
+    console.log('[CANVAS] Canvas clicked, clearing selection');
     setSelectedItemId(null);
   };
 
@@ -288,25 +263,16 @@ const OutfitCreator = () => {
         title: "Succès",
         description: "Tenue enregistrée et partagée avec le client!",
       });
-      setSelectedClothes([]);
+      setPlacedItems([]);
       setComments("");
+      setSelectedItemId(null);
     }, 1500);
   };
 
-  const filteredWardrobe = clientClothes.filter(
-    item => filter === "all" || item.category === filter
+  const allItems = [...clientClothes, ...externalCatalog];
+  const filteredItems = allItems.filter(
+    item => categoryFilter === "all" || item.category === categoryFilter
   );
-
-  const filteredCatalog = externalCatalog.filter(
-    item => filter === "all" || item.category === filter
-  );
-
-  const getEmptyStateMessage = () => {
-    if (filter === "all") {
-      return "Aucun vêtement dans la garde-robe de ce client";
-    }
-    return `Aucun vêtement de type "${categoryTranslations[filter]}" trouvé`;
-  };
 
   if (isLoading) {
     return (
@@ -321,63 +287,68 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      {/* Panel de gauche: silhouette et tenue */}
-      <div className="md:col-span-1">
-        <Card>
+    <div className="grid grid-cols-2 gap-6 h-screen">
+      {/* Left Panel: Silhouette */}
+      <div className="flex flex-col">
+        <Card className="flex-1 flex flex-col">
           <CardHeader>
             <CardTitle>Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center">
-              <div 
-                className="relative min-h-[400px] w-full bg-bibabop-lightgrey rounded-md flex items-center justify-center overflow-hidden cursor-default"
-                onClick={handleSilhouetteClick}
-              >
-                <img
-                  src={silhouetteImage}
-                  alt="Silhouette du client"
-                  className="max-h-[600px] w-auto object-contain"
-                />
+          <CardContent className="flex-1 flex flex-col">
+            <div 
+              ref={canvasRef}
+              className="relative flex-1 bg-bibabop-lightgrey rounded-md flex items-center justify-center overflow-hidden"
+              onClick={handleCanvasClick}
+              style={{ minHeight: '500px' }}
+            >
+              {/* Silhouette */}
+              <img
+                src={silhouetteImage}
+                alt="Silhouette du client"
+                className="absolute opacity-30 max-h-[80%] w-auto object-contain"
+                style={{ pointerEvents: 'none' }}
+              />
 
-                {/* Draggable clothing items with standardized 400px images */}
-                {clothingPositions.map(clothingPos => {
-                  const item = [...clientClothes, ...externalCatalog].find(i => i.id === clothingPos.id);
-                  if (!item) return null;
+              {/* Placed clothing items */}
+              {placedItems.map(placedItem => {
+                const item = allItems.find(i => i.id === placedItem.id);
+                if (!item) return null;
 
-                  // Use standardized 400px image URL for all clothing items
-                  const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                  
-                  return (
-                    <DraggableClothingItem
-                      key={clothingPos.id}
-                      id={clothingPos.id}
-                      imageUrl={imageUrl}
-                      category={item.category}
-                      initialPosition={clothingPos.position}
-                      initialScale={clothingPos.scale}
-                      zIndex={clothingPos.zIndex || 10}
-                      onPositionChange={handlePositionChange}
-                      onScaleChange={handleScaleChange}
-                      onRemove={handleRemoveFromSilhouette}
-                      onSelect={handleItemSelection}
-                      isSelected={selectedItemId === clothingPos.id}
-                    />
-                  );
-                })}
+                const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                
+                return (
+                  <DraggableClothingItem
+                    key={placedItem.id}
+                    id={placedItem.id}
+                    imageUrl={imageUrl}
+                    category={item.category}
+                    position={placedItem.position}
+                    size={placedItem.size}
+                    isSelected={selectedItemId === placedItem.id}
+                    zIndex={placedItem.zIndex}
+                    onPositionChange={handleItemPositionChange}
+                    onSizeChange={handleItemSizeChange}
+                    onSelect={handleItemSelection}
+                    onRemove={handleItemRemove}
+                    containerBounds={containerBounds}
+                  />
+                );
+              })}
 
-                {/* Instructions overlay */}
-                {selectedClothes.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
-                      <p className="text-sm">Sélectionnez des vêtements</p>
-                      <p className="text-sm">pour les ajouter à la silhouette</p>
-                    </div>
+              {/* Instructions overlay */}
+              {placedItems.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                    <p className="text-sm">Sélectionnez des vêtements</p>
+                    <p className="text-sm">pour les ajouter à la silhouette</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              <div className="mt-6 w-full">
+            {/* Bottom controls */}
+            <div className="mt-4 space-y-4">
+              <div>
                 <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
                 <Textarea
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
@@ -388,21 +359,21 @@ const OutfitCreator = () => {
               </div>
 
               <Button
-                className="btn-primary w-full mt-4"
+                className="btn-primary w-full"
                 onClick={handleSaveOutfit}
-                disabled={selectedClothes.length === 0 || isSaving}
+                disabled={placedItems.length === 0 || isSaving}
               >
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
 
-              {selectedClothes.length > 0 && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-md w-full">
+              {placedItems.length > 0 && (
+                <div className="p-3 bg-blue-50 rounded-md">
                   <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
                   <ul className="text-xs text-blue-600 mt-1 space-y-1">
                     <li>• Cliquez et glissez pour déplacer les vêtements</li>
                     <li>• Utilisez les carrés aux coins pour redimensionner</li>
                     <li>• Double-cliquez pour retirer un vêtement</li>
-                    <li>• Cliquez sur un vêtement pour le mettre au premier plan</li>
+                    <li>• Cliquez sur un vêtement pour le sélectionner</li>
                   </ul>
                 </div>
               )}
@@ -411,163 +382,87 @@ const OutfitCreator = () => {
         </Card>
       </div>
 
-      {/* Panel de droite: sélection des vêtements */}
-      <div className="md:col-span-2">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sélection des Vêtements</CardTitle>
-              <TabsList className="grid grid-cols-2 w-48 mb-4">
-                <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
-                <TabsTrigger value="catalog">Catalogue</TabsTrigger>
-              </TabsList>
-              <Tabs value={filter} onValueChange={setFilter}>
-                <TabsList className="grid grid-cols-7 mb-4">
-                  <TabsTrigger value="all">Tous</TabsTrigger>
-                  <TabsTrigger value="top">Hauts</TabsTrigger>
-                  <TabsTrigger value="bottom">Bas</TabsTrigger>
-                  <TabsTrigger value="one_piece">Une pièce</TabsTrigger>
-                  <TabsTrigger value="shoes">Chaussures</TabsTrigger>
-                  <TabsTrigger value="outerwear">Vestes</TabsTrigger>
-                  <TabsTrigger value="accessory">Accessoires</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
+      {/* Right Panel: Clothing Selection */}
+      <div>
+        <Card className="h-full flex flex-col">
+          <CardHeader>
+            <CardTitle>Sélection des Vêtements</CardTitle>
+            <div className="flex gap-4 items-center">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrer par type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categoryTranslations).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
 
-            <CardContent>
-              {activeTab === "wardrobe" && (
-                <TabsContent value="wardrobe" className="mt-0">
-                  {filteredWardrobe.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>{getEmptyStateMessage()}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {filteredWardrobe.map((item) => {
-                        const isSelected = selectedClothes.includes(item.id);
-                        // Use standardized 400px optimized images for consistent caching
-                        const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                        
-                        return (
-                          <div key={item.id} className="space-y-2">
-                            <div
-                              className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                                isSelected
-                                  ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                              }`}
-                              onClick={() => handleItemSelect(item.id)}
-                            >
-                              <img
-                                src={optimizedUrl}
-                                alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
-                                className="max-w-full max-h-full object-contain"
-                                loading="lazy"
-                              />
-                              {isSelected && (
-                                <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                  ✓
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs text-muted-foreground">
-                                {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
-                              </div>
-                              {item.notes && (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                      <NotepadText className="h-4 w-4 text-muted-foreground" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-80">
-                                    <div className="space-y-2">
-                                      <h4 className="font-medium text-xs">Notes</h4>
-                                      <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-                              )}
-                            </div>
+          <CardContent className="flex-1 overflow-y-auto">
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Aucun vêtement trouvé</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {filteredItems.map((item) => {
+                  const isPlaced = placedItems.some(p => p.id === item.id);
+                  const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                  
+                  return (
+                    <div key={item.id} className="space-y-2">
+                      <div
+                        className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
+                          isPlaced
+                            ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
+                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        }`}
+                        onClick={() => handleItemSelect(item.id)}
+                      >
+                        <img
+                          src={optimizedUrl}
+                          alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
+                          className="max-w-full max-h-full object-contain"
+                          loading="lazy"
+                        />
+                        {isPlaced && (
+                          <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                            ✓
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </TabsContent>
-              )}
-
-              {activeTab === "catalog" && (
-                <TabsContent value="catalog" className="mt-0">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredCatalog.map((item) => {
-                      const isSelected = selectedClothes.includes(item.id);
-                      // Use standardized 400px optimized images for consistent caching
-                      const optimizedUrl = getOptimizedImageUrl(item.image_url, 400);
-                      
-                      return (
-                        <div key={item.id} className="space-y-2">
-                          <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                              isSelected
-                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <img
-                              src={optimizedUrl}
-                              alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
-                              className="max-w-full max-h-full object-contain"
-                              loading="lazy"
-                            />
-                            {isSelected && (
-                              <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                ✓
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">
-                              {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
-                            </div>
-                            {item.notes && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                    <NotepadText className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-xs">Notes</h4>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                          {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
                         </div>
-                      );
-                    })}
-
-                    <Card className="card-hover flex flex-col bg-white">
-                      <CardHeader className="p-0 flex-shrink-0">
-                        <div className="aspect-square border-2 border-dashed rounded-t-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-all flex flex-col items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-bibabop-navy flex items-center justify-center text-white mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                          </div>
-                          <p className="font-medium text-sm">Ajouter au catalogue</p>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  </div>
-                </TabsContent>
-              )}
-            </CardContent>
-          </Card>
-        </Tabs>
+                        {item.notes && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
+                                <NotepadText className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-xs">Notes</h4>
+                                <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
