@@ -1,7 +1,7 @@
 
-
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
+import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -43,6 +43,42 @@ export function DraggableClothingItem({
     category
   }));
 
+  const calculateAspectRatioSize = async (containerSize: { width: number; height: number }): Promise<{ width: number; height: number }> => {
+    try {
+      const dimensions = await getImageDimensions(optimizedImageUrl);
+      const imageAspectRatio = dimensions.width / dimensions.height;
+      const containerAspectRatio = containerSize.width / containerSize.height;
+      
+      let finalSize;
+      if (imageAspectRatio > containerAspectRatio) {
+        // Image is wider than container - fit to width
+        finalSize = {
+          width: containerSize.width,
+          height: containerSize.width / imageAspectRatio
+        };
+      } else {
+        // Image is taller than container - fit to height
+        finalSize = {
+          width: containerSize.height * imageAspectRatio,
+          height: containerSize.height
+        };
+      }
+      
+      console.log(`[ASPECT-RATIO-${shortId}] Calculated aspect ratio size:`, JSON.stringify({
+        originalDimensions: dimensions,
+        imageAspectRatio,
+        containerSize,
+        containerAspectRatio,
+        finalSize
+      }));
+      
+      return finalSize;
+    } catch (error) {
+      console.error(`[ASPECT-RATIO-${shortId}] Failed to calculate aspect ratio:`, error);
+      return containerSize; // Fallback to container size
+    }
+  };
+
   const handleDragStart = () => {
     console.log(`[DRAG-${shortId}] Drag started:`, JSON.stringify({ 
       position, 
@@ -76,36 +112,36 @@ export function DraggableClothingItem({
     onSelect(id);
   };
 
-  const handleResizeStop = (e: any, direction: any, ref: any, delta: any, newPosition: any) => {
+  const handleResizeStop = async (e: any, direction: any, ref: any, delta: any, newPosition: any) => {
     // Get the actual DOM dimensions after resize
-    const actualSize = {
+    const resizedContainerSize = {
       width: ref.offsetWidth,
       height: ref.offsetHeight
     };
     const actualPosition = { x: newPosition.x, y: newPosition.y };
     
-    console.log(`[RESIZE-${shortId}] Resize completed:`, JSON.stringify({ 
+    console.log(`[RESIZE-${shortId}] Resize completed (before aspect ratio adjustment):`, JSON.stringify({ 
       oldSize: size, 
-      newSize: actualSize,
+      resizedContainerSize,
       oldPosition: position,
       newPosition: actualPosition,
       category,
-      oldBoundingBox: { ...position, ...size },
-      newBoundingBox: { ...actualPosition, ...actualSize },
       direction,
-      delta: { width: delta.width, height: delta.height },
-      refDimensions: { width: ref.offsetWidth, height: ref.offsetHeight }
+      delta: { width: delta.width, height: delta.height }
     }));
     
-    // Update with actual DOM dimensions
-    onSizeChange(id, actualSize);
+    // Calculate the size that respects the image's aspect ratio
+    const aspectRatioSize = await calculateAspectRatioSize(resizedContainerSize);
+    
+    console.log(`[RESIZE-${shortId}] Final size after aspect ratio adjustment:`, JSON.stringify({
+      resizedContainerSize,
+      aspectRatioSize,
+      finalBoundingBox: { ...actualPosition, ...aspectRatioSize }
+    }));
+    
+    // Update with aspect ratio adjusted dimensions
+    onSizeChange(id, aspectRatioSize);
     onPositionChange(id, actualPosition);
-    
-    console.log(`[RESIZE-${shortId}] State updates sent:`, JSON.stringify({
-      sizeUpdate: actualSize,
-      positionUpdate: actualPosition,
-      expectedBoundingBox: { ...actualPosition, ...actualSize }
-    }));
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
