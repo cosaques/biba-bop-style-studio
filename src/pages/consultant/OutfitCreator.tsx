@@ -81,7 +81,7 @@ const categoryTranslations: { [key: string]: string } = {
   bottom: "Bas",
   one_piece: "Une pièce",
   shoes: "Chaussures",
-  outerwear: "Veste/Manteau",
+  outerwear: "Outerwear",
   accessory: "Accessoire"
 };
 
@@ -140,13 +140,13 @@ const OutfitCreator = () => {
       if (canvasRef.current) {
         const bounds = canvasRef.current.getBoundingClientRect();
         const newBounds = { width: bounds.width, height: bounds.height };
-        
+
         // Only set containerReady to true if bounds are actually valid
         const isValid = newBounds.width > 0 && newBounds.height > 0;
-        
+
         setContainerBounds(newBounds);
         setContainerReady(isValid);
-        
+
         console.log('[CANVAS] Container bounds updated:', JSON.stringify({
           ...newBounds,
           isValid,
@@ -159,10 +159,10 @@ const OutfitCreator = () => {
     const timeoutId1 = setTimeout(updateBounds, 100);
     const timeoutId2 = setTimeout(updateBounds, 300);
     const timeoutId3 = setTimeout(updateBounds, 500);
-    
+
     // Update on resize
     window.addEventListener('resize', updateBounds);
-    
+
     // Cleanup
     return () => {
       clearTimeout(timeoutId1);
@@ -210,7 +210,7 @@ const OutfitCreator = () => {
     const silhouetteWidth = Math.min(containerBounds.width * 0.4, 200);
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
-    
+
     console.log(`[POSITION-DEBUG] Calculating position for ${category}:`, JSON.stringify({
       containerBounds,
       containerReady,
@@ -229,10 +229,10 @@ const OutfitCreator = () => {
       outerwear: { x: centerX - silhouetteWidth/2 - 60, y: centerY - 80 },
       accessory: { x: centerX + silhouetteWidth/2 + 20, y: centerY - 80 }
     };
-    
+
     const finalPosition = positions[category] || { x: centerX - itemSize.width / 2, y: centerY - itemSize.height / 2 };
     console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
-    
+
     return finalPosition;
   };
 
@@ -240,10 +240,10 @@ const OutfitCreator = () => {
     try {
       const dimensions = await getImageDimensions(imageUrl);
       console.log(`[IMAGE-DIMENSIONS] Natural dimensions:`, JSON.stringify(dimensions));
-      
+
       const optimalSize = calculateOptimalSize(dimensions.width, dimensions.height, 120);
       console.log(`[IMAGE-DIMENSIONS] Calculated optimal size:`, JSON.stringify(optimalSize));
-      
+
       return optimalSize;
     } catch (error) {
       console.error('Failed to get image dimensions:', error);
@@ -257,7 +257,7 @@ const OutfitCreator = () => {
     if (!item) return;
 
     const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
-    
+
     if (isAlreadyPlaced) {
       console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, JSON.stringify({ category: item.category }));
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
@@ -270,7 +270,7 @@ const OutfitCreator = () => {
           containerBounds,
           retryAttempt: true
         }));
-        
+
         // Retry after a short delay, but don't spam retries
         setTimeout(() => {
           if (containerReady && containerBounds.width > 0 && containerBounds.height > 0) {
@@ -290,15 +290,15 @@ const OutfitCreator = () => {
         size,
         zIndex: nextZIndex
       };
-      
-      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, JSON.stringify({ 
+
+      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, JSON.stringify({
         category: item.category,
         position: newPlacedItem.position,
         size: newPlacedItem.size,
         containerBounds,
         containerReady
       }));
-      
+
       setPlacedItems(prev => [...prev, newPlacedItem]);
       setSelectedItemId(itemId);
       setNextZIndex(prev => prev + 1);
@@ -307,8 +307,8 @@ const OutfitCreator = () => {
 
   const handleItemPositionChange = (itemId: string, position: { x: number; y: number }) => {
     console.log(`[POSITION-UPDATE-${itemId.slice(-8)}] Position changed to:`, JSON.stringify(position));
-    setPlacedItems(prev => 
-      prev.map(item => 
+    setPlacedItems(prev =>
+      prev.map(item =>
         item.id === itemId ? { ...item, position } : item
       )
     );
@@ -316,8 +316,8 @@ const OutfitCreator = () => {
 
   const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
     console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] Size changed to:`, JSON.stringify(size));
-    setPlacedItems(prev => 
-      prev.map(item => 
+    setPlacedItems(prev =>
+      prev.map(item =>
         item.id === itemId ? { ...item, size } : item
       )
     );
@@ -327,8 +327,8 @@ const OutfitCreator = () => {
     console.log(`[SELECTION-${itemId.slice(-8)}] Item selected`);
     setSelectedItemId(itemId);
     // Bring selected item to front
-    setPlacedItems(prev => 
-      prev.map(item => 
+    setPlacedItems(prev =>
+      prev.map(item =>
         item.id === itemId ? { ...item, zIndex: nextZIndex } : item
       )
     );
@@ -394,7 +394,7 @@ const OutfitCreator = () => {
             <CardTitle>Silhouette du Client</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div 
+            <div
               ref={canvasRef}
               className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden min-h-0"
               onClick={handleCanvasClick}
@@ -413,7 +413,7 @@ const OutfitCreator = () => {
                 if (!item) return null;
 
                 const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                
+
                 return (
                   <DraggableClothingItem
                     key={placedItem.id}
@@ -506,7 +506,7 @@ const OutfitCreator = () => {
                 <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
                 <TabsTrigger value="catalog">Catalogue</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="wardrobe" className="flex-1 mt-4 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -520,7 +520,7 @@ const OutfitCreator = () => {
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                      
+
                       return (
                         <div key={item.id} className="space-y-2">
                           <div
@@ -569,7 +569,7 @@ const OutfitCreator = () => {
                   </div>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="catalog" className="flex-1 mt-4 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -583,7 +583,7 @@ const OutfitCreator = () => {
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                      
+
                       return (
                         <div key={item.id} className="space-y-2">
                           <div
