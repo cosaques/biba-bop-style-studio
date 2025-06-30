@@ -14,7 +14,6 @@ import { NotepadText } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ClientData {
   id: string;
@@ -114,7 +113,6 @@ const OutfitCreator = () => {
   const { client } = useOutletContext<{ client: ClientData }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [placedItems, setPlacedItems] = useState<PlacedClothingItem[]>([]);
@@ -136,45 +134,29 @@ const OutfitCreator = () => {
   }, [clientId, user]);
 
   useEffect(() => {
+    // Update container bounds when canvas is ready
     const updateBounds = () => {
       if (canvasRef.current) {
-        const parentRect = canvasRef.current.parentElement?.getBoundingClientRect();
-        if (parentRect) {
-          // Use almost full width minus minimal padding for mobile/desktop
-          const padding = isMobile ? 16 : 24;
-          const availableWidth = parentRect.width - padding;
-          const availableHeight = parentRect.height - 120; // Space for header and controls
-          
-          // Make the canvas square (1:1 aspect ratio) based on available space
-          const canvasSize = Math.min(availableWidth, availableHeight);
-          
-          const newBounds = { width: canvasSize, height: canvasSize };
-          setContainerBounds(newBounds);
-          setContainerReady(true);
-          
-          console.log('[CANVAS-BOUNDS] Updated:', JSON.stringify({
-            ...newBounds,
-            availableWidth,
-            availableHeight,
-            padding,
-            timestamp: Date.now()
-          }));
-        }
+        const bounds = canvasRef.current.getBoundingClientRect();
+        const newBounds = { width: bounds.width, height: bounds.height };
+        setContainerBounds(newBounds);
+        setContainerReady(true);
+        console.log('[CANVAS] Container bounds updated:', JSON.stringify(newBounds));
       }
     };
 
-    const timeouts = [50, 100, 200, 500, 1000];
-    const timeoutIds = timeouts.map(delay => 
-      setTimeout(updateBounds, delay)
-    );
+    // Use timeout to ensure DOM is fully rendered
+    const timeoutId = setTimeout(updateBounds, 100);
     
+    // Update on resize
     window.addEventListener('resize', updateBounds);
     
+    // Cleanup
     return () => {
-      timeoutIds.forEach(clearTimeout);
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isMobile]);
+  }, []);
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -201,12 +183,12 @@ const OutfitCreator = () => {
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }): { x: number; y: number } => {
+    // Wait for container to be ready
     if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
-      console.log(`[POSITION-FALLBACK] Container not ready:`, JSON.stringify({
+      console.log(`[POSITION-DEBUG] Container not ready, using fallback position for ${category}:`, JSON.stringify({
         containerReady,
         containerBounds,
-        category,
-        timestamp: Date.now()
+        fallbackPosition: { x: 100, y: 100 }
       }));
       return { x: 100, y: 100 };
     }
@@ -215,6 +197,14 @@ const OutfitCreator = () => {
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
     
+    console.log(`[POSITION-DEBUG] Calculating position for ${category}:`, JSON.stringify({
+      containerBounds,
+      containerReady,
+      silhouetteWidth,
+      centerX,
+      centerY
+    }));
+
     const positions: { [key: string]: { x: number; y: number } } = {
       top: { x: centerX - 60, y: centerY - 150 },
       bottom: { x: centerX - 60, y: centerY - 20 },
@@ -224,17 +214,10 @@ const OutfitCreator = () => {
       accessory: { x: centerX + silhouetteWidth/2 + 20, y: centerY - 80 }
     };
     
-    const basePosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
+    const finalPosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
+    console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
     
-    console.log(`[POSITION-CALC] For ${category}:`, JSON.stringify({
-      containerBounds,
-      centerX,
-      centerY,
-      basePosition,
-      timestamp: Date.now()
-    }));
-    
-    return basePosition;
+    return finalPosition;
   };
 
   const getDefaultSize = async (imageUrl: string): Promise<{ width: number; height: number }> => {
@@ -260,53 +243,34 @@ const OutfitCreator = () => {
     const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
     
     if (isAlreadyPlaced) {
-      console.log(`[ITEM-REMOVE-${itemId.slice(-8)}] Removed from canvas:`, JSON.stringify({ 
-        category: item.category,
-        timestamp: Date.now()
-      }));
+      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, JSON.stringify({ category: item.category }));
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
-      if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
-        console.log(`[ITEM-ADD-RETRY-${itemId.slice(-8)}] Container not ready, forcing update:`, JSON.stringify({
-          containerReady,
-          containerBounds,
-          timestamp: Date.now()
-        }));
-        
-        if (canvasRef.current) {
-          const bounds = canvasRef.current.getBoundingClientRect();
-          const newBounds = { width: bounds.width, height: bounds.height };
-          setContainerBounds(newBounds);
-          setContainerReady(true);
-          
-          setTimeout(() => handleItemSelect(itemId), 100);
-          return;
-        }
+      // Wait for container to be ready before adding items
+      if (!containerReady) {
+        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`);
+        // Try again after a short delay
+        setTimeout(() => handleItemSelect(itemId), 200);
+        return;
       }
 
       const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
       const size = await getDefaultSize(imageUrl);
-      const position = getDefaultPosition(item.category, containerBounds);
-
-      const centeredPosition = {
-        x: position.x - size.width / 2 + 60,
-        y: position.y
-      };
 
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
-        position: centeredPosition,
+        position: getDefaultPosition(item.category, containerBounds),
         size,
         zIndex: nextZIndex
       };
       
-      console.log(`[ITEM-ADD-${itemId.slice(-8)}] Added to canvas:`, JSON.stringify({ 
+      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, JSON.stringify({ 
         category: item.category,
         position: newPlacedItem.position,
         size: newPlacedItem.size,
-        zIndex: newPlacedItem.zIndex,
-        timestamp: Date.now()
+        containerBounds,
+        containerReady
       }));
       
       setPlacedItems(prev => [...prev, newPlacedItem]);
@@ -316,10 +280,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemPositionChange = (itemId: string, position: { x: number; y: number }) => {
-    console.log(`[POSITION-UPDATE-${itemId.slice(-8)}] New position:`, JSON.stringify({
-      position,
-      timestamp: Date.now()
-    }));
+    console.log(`[POSITION-UPDATE-${itemId.slice(-8)}] Position changed to:`, JSON.stringify(position));
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, position } : item
@@ -328,10 +289,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
-    console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] New size:`, JSON.stringify({
-      size,
-      timestamp: Date.now()
-    }));
+    console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] Size changed to:`, JSON.stringify(size));
     setPlacedItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, size } : item
@@ -358,12 +316,8 @@ const OutfitCreator = () => {
   };
 
   const handleCanvasClick = () => {
-    // Only clear selection if not currently resizing any item
-    const hasResizingItem = placedItems.some(item => item.id === selectedItemId);
-    if (!hasResizingItem) {
-      console.log('[CANVAS] Canvas clicked, clearing selection');
-      setSelectedItemId(null);
-    }
+    console.log('[CANVAS] Canvas clicked, clearing selection');
+    setSelectedItemId(null);
   };
 
   const handleSaveOutfit = () => {
@@ -406,80 +360,72 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className={`${isMobile ? 'flex-col' : 'flex'} h-full gap-3 p-2`}>
-      {/* Left Panel: Silhouette - optimized for maximum space */}
-      <div className={`${isMobile ? 'w-full mb-3' : 'w-1/2'} flex flex-col min-h-0`}>
-        <Card className="flex-1 flex flex-col h-full">
-          <CardHeader className="flex-shrink-0 pb-2">
-            <CardTitle className="text-lg">Silhouette du Client</CardTitle>
+    <div className="flex h-screen gap-6">
+      {/* Left Panel: Silhouette - 50% width */}
+      <div className="w-1/2 flex flex-col">
+        <Card className="flex-1 flex flex-col">
+          <CardHeader>
+            <CardTitle>Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0 p-2">
-            {/* Canvas container - full width with minimal padding */}
-            <div className="flex-1 flex items-center justify-center min-h-0">
-              <div 
-                ref={canvasRef}
-                className="relative bg-gray-200 rounded-md flex items-center justify-center overflow-hidden"
-                onClick={handleCanvasClick}
-                style={{
-                  width: `${containerBounds.width}px`,
-                  height: `${containerBounds.height}px`,
-                  minWidth: '250px',
-                  minHeight: '250px'
-                }}
-              >
-                {/* Silhouette */}
-                <img
-                  src={silhouetteImage}
-                  alt="Silhouette du client"
-                  className="absolute opacity-30 h-4/5 w-auto object-contain"
-                  style={{ pointerEvents: 'none' }}
-                />
+          <CardContent className="flex-1 flex flex-col">
+            <div 
+              ref={canvasRef}
+              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden"
+              onClick={handleCanvasClick}
+              style={{ minHeight: '500px' }}
+            >
+              {/* Silhouette */}
+              <img
+                src={silhouetteImage}
+                alt="Silhouette du client"
+                className="absolute opacity-30 h-4/5 w-auto object-contain"
+                style={{ pointerEvents: 'none' }}
+              />
 
-                {/* Placed clothing items */}
-                {placedItems.map(placedItem => {
-                  const item = allItems.find(i => i.id === placedItem.id);
-                  if (!item) return null;
+              {/* Placed clothing items */}
+              {placedItems.map(placedItem => {
+                const item = allItems.find(i => i.id === placedItem.id);
+                if (!item) return null;
 
-                  const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                  
-                  return (
-                    <DraggableClothingItem
-                      key={placedItem.id}
-                      id={placedItem.id}
-                      imageUrl={imageUrl}
-                      category={item.category}
-                      position={placedItem.position}
-                      size={placedItem.size}
-                      isSelected={selectedItemId === placedItem.id}
-                      zIndex={placedItem.zIndex}
-                      onPositionChange={handleItemPositionChange}
-                      onSizeChange={handleItemSizeChange}
-                      onSelect={handleItemSelection}
-                      onRemove={handleItemRemove}
-                      containerBounds={containerBounds}
-                    />
-                  );
-                })}
+                const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                
+                return (
+                  <DraggableClothingItem
+                    key={placedItem.id}
+                    id={placedItem.id}
+                    imageUrl={imageUrl}
+                    category={item.category}
+                    position={placedItem.position}
+                    size={placedItem.size}
+                    isSelected={selectedItemId === placedItem.id}
+                    zIndex={placedItem.zIndex}
+                    onPositionChange={handleItemPositionChange}
+                    onSizeChange={handleItemSizeChange}
+                    onSelect={handleItemSelection}
+                    onRemove={handleItemRemove}
+                    containerBounds={containerBounds}
+                  />
+                );
+              })}
 
-                {/* Instructions overlay */}
-                {placedItems.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-black bg-opacity-50 text-white p-3 rounded-lg text-center">
-                      <p className="text-sm">Sélectionnez des vêtements</p>
-                      <p className="text-sm">pour les ajouter à la silhouette</p>
-                    </div>
+              {/* Instructions overlay */}
+              {placedItems.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                    <p className="text-sm">Sélectionnez des vêtements</p>
+                    <p className="text-sm">pour les ajouter à la silhouette</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Bottom controls - compact layout */}
-            <div className="mt-2 space-y-2 flex-shrink-0">
+            {/* Bottom controls */}
+            <div className="mt-4 space-y-4">
               <div>
-                <h3 className="font-medium mb-1 text-sm">Commentaires sur la tenue</h3>
+                <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
                 <Textarea
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
-                  className="min-h-[50px] text-sm"
+                  className="min-h-[100px]"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                 />
@@ -493,27 +439,27 @@ const OutfitCreator = () => {
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
 
-              {/* Usage tips - always visible */}
-              <div className="p-2 bg-blue-50 rounded-md">
-                <p className="text-xs text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
-                <ul className="text-xs text-blue-600 mt-1 space-y-0.5">
-                  <li>• Cliquez et glissez pour déplacer les vêtements</li>
-                  <li>• Utilisez les carrés aux coins pour redimensionner</li>
-                  <li>• Double-cliquez pour retirer un vêtement</li>
-                  <li>• Cliquez sur un vêtement pour le sélectionner</li>
-                  <li>• Sur mobile: appui long pour supprimer</li>
-                </ul>
-              </div>
+              {placedItems.length > 0 && (
+                <div className="p-3 bg-blue-50 rounded-md">
+                  <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
+                  <ul className="text-xs text-blue-600 mt-1 space-y-1">
+                    <li>• Cliquez et glissez pour déplacer les vêtements</li>
+                    <li>• Utilisez les carrés aux coins pour redimensionner</li>
+                    <li>• Double-cliquez pour retirer un vêtement</li>
+                    <li>• Cliquez sur un vêtement pour le sélectionner</li>
+                  </ul>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Right Panel: Clothing Selection */}
-      <div className={`${isMobile ? 'w-full' : 'w-1/2'} min-h-0`}>
+      {/* Right Panel: Clothing Selection - 50% width */}
+      <div className="w-1/2">
         <Card className="h-full flex flex-col">
-          <CardHeader className="flex-shrink-0 pb-2">
-            <CardTitle className="text-lg">Sélection des Vêtements</CardTitle>
+          <CardHeader>
+            <CardTitle>Sélection des Vêtements</CardTitle>
             <div className="flex gap-4 items-center">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48">
@@ -530,25 +476,20 @@ const OutfitCreator = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto min-h-0 p-2">
+          <CardContent className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
                 <TabsTrigger value="catalog">Catalogue</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="wardrobe" className="flex-1 mt-3 min-h-0">
+              <TabsContent value="wardrobe" className="flex-1 mt-4">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>
-                      {categoryFilter === "all" 
-                        ? "Aucun vêtement trouvé dans la garde-robe"
-                        : `Aucun vêtement de type "${categoryTranslations[categoryFilter]}" trouvé dans la garde-robe`
-                      }
-                    </p>
+                    <p>Aucun vêtement trouvé dans la garde-robe</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-3 pb-3">
+                  <div className="grid grid-cols-3 gap-4">
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
@@ -602,18 +543,13 @@ const OutfitCreator = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="catalog" className="flex-1 mt-3 min-h-0">
+              <TabsContent value="catalog" className="flex-1 mt-4">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>
-                      {categoryFilter === "all" 
-                        ? "Aucun vêtement trouvé dans le catalogue"
-                        : `Aucun vêtement de type "${categoryTranslations[categoryFilter]}" trouvé dans le catalogue`
-                      }
-                    </p>
+                    <p>Aucun vêtement trouvé dans le catalogue</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-3 pb-3">
+                  <div className="grid grid-cols-3 gap-4">
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);

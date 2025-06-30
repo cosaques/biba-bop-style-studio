@@ -5,12 +5,12 @@ import { ClientHeader } from "@/components/client/ClientHeader";
 
 const ClientDashboard = () => {
   return (
-    <div className="flex min-h-screen max-h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <ClientSidebar />
       
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1">
         <ClientHeader />
-        <main className="flex-1 min-h-0 overflow-hidden">
+        <main className="relative">
           <Outlet />
         </main>
       </div>

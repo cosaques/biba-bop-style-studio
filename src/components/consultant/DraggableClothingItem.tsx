@@ -2,7 +2,6 @@
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
-import { useState, useRef } from "react";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -35,20 +34,13 @@ export function DraggableClothingItem({
 }: DraggableClothingItemProps) {
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
   const shortId = id.slice(-8);
-  const [isResizing, setIsResizing] = useState(false);
-  const pendingUpdatesRef = useRef<{
-    size?: { width: number; height: number };
-    position?: { x: number; y: number };
-  }>({});
 
-  console.log(`[RENDER-${shortId}] Component render:`, JSON.stringify({
+  console.log(`[BOUNDS-${shortId}] Component render:`, JSON.stringify({
     position,
     size,
     isSelected,
-    isResizing,
     containerBounds,
-    category,
-    timestamp: Date.now()
+    category
   }));
 
   const calculateAspectRatioSize = async (containerSize: { width: number; height: number }): Promise<{ width: number; height: number }> => {
@@ -59,81 +51,82 @@ export function DraggableClothingItem({
       
       let finalSize;
       if (imageAspectRatio > containerAspectRatio) {
+        // Image is wider than container - fit to width
         finalSize = {
           width: containerSize.width,
           height: containerSize.width / imageAspectRatio
         };
       } else {
+        // Image is taller than container - fit to height
         finalSize = {
           width: containerSize.height * imageAspectRatio,
           height: containerSize.height
         };
       }
       
-      console.log(`[ASPECT-RATIO-${shortId}] Calculated:`, JSON.stringify({
+      console.log(`[ASPECT-RATIO-${shortId}] Calculated aspect ratio size:`, JSON.stringify({
         originalDimensions: dimensions,
         imageAspectRatio,
         containerSize,
-        finalSize,
-        timestamp: Date.now()
+        containerAspectRatio,
+        finalSize
       }));
       
       return finalSize;
     } catch (error) {
-      console.error(`[ASPECT-RATIO-${shortId}] Failed:`, error);
-      return containerSize;
+      console.error(`[ASPECT-RATIO-${shortId}] Failed to calculate aspect ratio:`, error);
+      return containerSize; // Fallback to container size
     }
   };
 
   const handleDragStart = () => {
-    console.log(`[DRAG-START-${shortId}] Drag initiated:`, JSON.stringify({ 
+    console.log(`[DRAG-${shortId}] Drag started:`, JSON.stringify({ 
       position, 
       category,
-      timestamp: Date.now()
+      boundingBox: { ...position, ...size },
+      isSelected
     }));
     onSelect(id);
   };
 
   const handleDragStop = (e: any, data: any) => {
     const newPosition = { x: data.x, y: data.y };
-    console.log(`[DRAG-END-${shortId}] Drag completed:`, JSON.stringify({ 
+    console.log(`[DRAG-${shortId}] Drag completed:`, JSON.stringify({ 
       oldPosition: position, 
       newPosition,
       category,
-      timestamp: Date.now()
+      boundingBoxBefore: { ...position, ...size },
+      boundingBoxAfter: { ...newPosition, ...size }
     }));
     onPositionChange(id, newPosition);
   };
 
   const handleResizeStart = () => {
-    console.log(`[RESIZE-START-${shortId}] Resize initiated:`, JSON.stringify({ 
+    console.log(`[RESIZE-${shortId}] Resize started:`, JSON.stringify({ 
       size, 
       category,
       position,
-      timestamp: Date.now()
+      boundingBox: { ...position, ...size },
+      isSelected
     }));
-    setIsResizing(true);
-    pendingUpdatesRef.current = {};
     onSelect(id);
   };
 
   const handleResizeStop = async (e: any, direction: any, ref: any, delta: any, newPosition: any) => {
-    console.log(`[RESIZE-PHASE-1-${shortId}] Resize completed - getting DOM dimensions:`, JSON.stringify({
-      timestamp: Date.now()
-    }));
-
+    // Get the actual DOM dimensions after resize
     const resizedContainerSize = {
       width: ref.offsetWidth,
       height: ref.offsetHeight
     };
     const actualPosition = { x: newPosition.x, y: newPosition.y };
     
+    // Calculate the center point of the current resized container
     const currentCenter = {
       x: actualPosition.x + resizedContainerSize.width / 2,
       y: actualPosition.y + resizedContainerSize.height / 2
     };
     
-    console.log(`[RESIZE-PHASE-2-${shortId}] Before aspect ratio calculation:`, JSON.stringify({ 
+    console.log(`[RESIZE-${shortId}] Resize completed (before aspect ratio adjustment):`, JSON.stringify({ 
       oldSize: size, 
       resizedContainerSize,
       oldPosition: position,
@@ -141,128 +134,77 @@ export function DraggableClothingItem({
       currentCenter,
       category,
       direction,
-      delta: { width: delta.width, height: delta.height },
-      timestamp: Date.now()
+      delta: { width: delta.width, height: delta.height }
     }));
     
-    console.log(`[RESIZE-PHASE-3-${shortId}] Starting aspect ratio calculation:`, JSON.stringify({
-      timestamp: Date.now()
-    }));
-
+    // Calculate the size that respects the image's aspect ratio
     const aspectRatioSize = await calculateAspectRatioSize(resizedContainerSize);
     
-    console.log(`[RESIZE-PHASE-4-${shortId}] Aspect ratio calculation completed:`, JSON.stringify({
-      aspectRatioSize,
-      timestamp: Date.now()
-    }));
-    
+    // Calculate the new position to maintain the center point
     const centeredPosition = {
       x: currentCenter.x - aspectRatioSize.width / 2,
       y: currentCenter.y - aspectRatioSize.height / 2
     };
     
-    console.log(`[RESIZE-PHASE-5-${shortId}] Final calculations before state update:`, JSON.stringify({
+    console.log(`[RESIZE-${shortId}] Final size after aspect ratio adjustment:`, JSON.stringify({
       resizedContainerSize,
       aspectRatioSize,
       currentCenter,
       centeredPosition,
-      timestamp: Date.now()
+      finalBoundingBox: { ...centeredPosition, ...aspectRatioSize }
     }));
     
-    // Store pending updates
-    pendingUpdatesRef.current = {
-      size: aspectRatioSize,
-      position: centeredPosition
-    };
-    
-    console.log(`[RESIZE-PHASE-6-${shortId}] Applying batch updates:`, JSON.stringify({
-      newSize: aspectRatioSize,
-      newPosition: centeredPosition,
-      timestamp: Date.now()
-    }));
-    
-    // Apply updates in batch
+    // Update with aspect ratio adjusted dimensions and centered position
     onSizeChange(id, aspectRatioSize);
     onPositionChange(id, centeredPosition);
-    
-    // Reset resizing state after a brief delay to prevent flicker
-    setTimeout(() => {
-      setIsResizing(false);
-      pendingUpdatesRef.current = {};
-      console.log(`[RESIZE-COMPLETE-${shortId}] Resize operation completed:`, JSON.stringify({
-        finalSize: aspectRatioSize,
-        finalPosition: centeredPosition,
-        timestamp: Date.now()
-      }));
-    }, 50);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[DOUBLE-CLICK-${shortId}] Item removal:`, JSON.stringify({ 
+    console.log(`[DELETE-${shortId}] Double-click remove:`, JSON.stringify({ 
       category,
-      timestamp: Date.now()
+      finalBoundingBox: { ...position, ...size }
     }));
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[CLICK-${shortId}] Item selected:`, JSON.stringify({ 
+    const clickPosition = { x: e.clientX, y: e.clientY };
+    const relativeClick = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
+    const currentBounds = e.currentTarget.getBoundingClientRect();
+    
+    console.log(`[CLICK-DEBUG-${shortId}] Click details:`, JSON.stringify({
       category,
-      timestamp: Date.now()
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      relativeClick,
+      currentBounds: { 
+        width: currentBounds.width, 
+        height: currentBounds.height,
+        x: currentBounds.x,
+        y: currentBounds.y
+      },
+      elementSize: {
+        offsetWidth: (e.currentTarget as HTMLElement).offsetWidth,
+        offsetHeight: (e.currentTarget as HTMLElement).offsetHeight
+      },
+      isCurrentlySelected: isSelected
+    }));
+    
+    console.log(`[SELECT-${shortId}] Item selected:`, JSON.stringify({ 
+      category,
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      isCurrentlySelected: isSelected
     }));
     onSelect(id);
   };
 
-  // Mobile touch handling - improved for better mobile experience
-  let touchStartTime = 0;
-  let touchTimeout: NodeJS.Timeout;
-  let isLongPress = false;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    touchStartTime = Date.now();
-    isLongPress = false;
-    
-    // Long press for delete (1 second)
-    touchTimeout = setTimeout(() => {
-      isLongPress = true;
-      console.log(`[LONG-PRESS-${shortId}] Item removal via long press:`, JSON.stringify({ 
-        category,
-        timestamp: Date.now()
-      }));
-      onRemove(id);
-    }, 1000);
-    
-    onSelect(id);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    clearTimeout(touchTimeout);
-    
-    const touchDuration = Date.now() - touchStartTime;
-    
-    // If it was a short touch (not a long press), treat as selection
-    if (!isLongPress && touchDuration < 500) {
-      console.log(`[TOUCH-SELECT-${shortId}] Item selected via touch:`, JSON.stringify({ 
-        category,
-        duration: touchDuration,
-        timestamp: Date.now()
-      }));
-      onSelect(id);
-    }
-  };
-
-  // Use pending updates during resize to prevent flicker
-  const currentSize = isResizing && pendingUpdatesRef.current.size ? pendingUpdatesRef.current.size : size;
-  const currentPosition = isResizing && pendingUpdatesRef.current.position ? pendingUpdatesRef.current.position : position;
-
   return (
     <Rnd
-      size={currentSize}
-      position={currentPosition}
+      size={size}
+      position={position}
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResizeStart={handleResizeStart}
@@ -312,22 +254,20 @@ export function DraggableClothingItem({
         className="w-full h-full cursor-move relative"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
         style={{
           width: '100%',
           height: '100%'
         }}
       >
-        {/* Selection border as overlay */}
+        {/* Selection border overlay - positioned absolutely to not affect image dimensions */}
         {isSelected && (
           <div 
-            className="absolute pointer-events-none border-2 border-dashed border-blue-500"
+            className="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"
             style={{
-              top: '-2px',
-              left: '-2px',
-              right: '-2px',
-              bottom: '-2px'
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0
             }}
           />
         )}
