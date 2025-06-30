@@ -33,15 +33,6 @@ export function DraggableClothingItem({
   containerBounds
 }: DraggableClothingItemProps) {
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
-  const shortId = id.slice(-8);
-
-  console.log(`[BOUNDS-${shortId}] Component render:`, JSON.stringify({
-    position,
-    size,
-    isSelected,
-    containerBounds,
-    category
-  }));
 
   const calculateAspectRatioSize = async (containerSize: { width: number; height: number }): Promise<{ width: number; height: number }> => {
     try {
@@ -64,51 +55,23 @@ export function DraggableClothingItem({
         };
       }
       
-      console.log(`[ASPECT-RATIO-${shortId}] Calculated aspect ratio size:`, JSON.stringify({
-        originalDimensions: dimensions,
-        imageAspectRatio,
-        containerSize,
-        containerAspectRatio,
-        finalSize
-      }));
-      
       return finalSize;
     } catch (error) {
-      console.error(`[ASPECT-RATIO-${shortId}] Failed to calculate aspect ratio:`, error);
+      console.error('Failed to calculate aspect ratio:', error);
       return containerSize; // Fallback to container size
     }
   };
 
   const handleDragStart = () => {
-    console.log(`[DRAG-${shortId}] Drag started:`, JSON.stringify({ 
-      position, 
-      category,
-      boundingBox: { ...position, ...size },
-      isSelected
-    }));
     onSelect(id);
   };
 
   const handleDragStop = (e: any, data: any) => {
     const newPosition = { x: data.x, y: data.y };
-    console.log(`[DRAG-${shortId}] Drag completed:`, JSON.stringify({ 
-      oldPosition: position, 
-      newPosition,
-      category,
-      boundingBoxBefore: { ...position, ...size },
-      boundingBoxAfter: { ...newPosition, ...size }
-    }));
     onPositionChange(id, newPosition);
   };
 
   const handleResizeStart = () => {
-    console.log(`[RESIZE-${shortId}] Resize started:`, JSON.stringify({ 
-      size, 
-      category,
-      position,
-      boundingBox: { ...position, ...size },
-      isSelected
-    }));
     onSelect(id);
   };
 
@@ -126,17 +89,6 @@ export function DraggableClothingItem({
       y: actualPosition.y + resizedContainerSize.height / 2
     };
     
-    console.log(`[RESIZE-${shortId}] Resize completed (before aspect ratio adjustment):`, JSON.stringify({ 
-      oldSize: size, 
-      resizedContainerSize,
-      oldPosition: position,
-      newPosition: actualPosition,
-      currentCenter,
-      category,
-      direction,
-      delta: { width: delta.width, height: delta.height }
-    }));
-    
     // Calculate the size that respects the image's aspect ratio
     const aspectRatioSize = await calculateAspectRatioSize(resizedContainerSize);
     
@@ -146,14 +98,6 @@ export function DraggableClothingItem({
       y: currentCenter.y - aspectRatioSize.height / 2
     };
     
-    console.log(`[RESIZE-${shortId}] Final size after aspect ratio adjustment:`, JSON.stringify({
-      resizedContainerSize,
-      aspectRatioSize,
-      currentCenter,
-      centeredPosition,
-      finalBoundingBox: { ...centeredPosition, ...aspectRatioSize }
-    }));
-    
     // Update with aspect ratio adjusted dimensions and centered position
     onSizeChange(id, aspectRatioSize);
     onPositionChange(id, centeredPosition);
@@ -161,43 +105,11 @@ export function DraggableClothingItem({
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[DELETE-${shortId}] Double-click remove:`, JSON.stringify({ 
-      category,
-      finalBoundingBox: { ...position, ...size }
-    }));
     onRemove(id);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const clickPosition = { x: e.clientX, y: e.clientY };
-    const relativeClick = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
-    const currentBounds = e.currentTarget.getBoundingClientRect();
-    
-    console.log(`[CLICK-DEBUG-${shortId}] Click details:`, JSON.stringify({
-      category,
-      currentBoundingBox: { ...position, ...size },
-      clickPosition,
-      relativeClick,
-      currentBounds: { 
-        width: currentBounds.width, 
-        height: currentBounds.height,
-        x: currentBounds.x,
-        y: currentBounds.y
-      },
-      elementSize: {
-        offsetWidth: (e.currentTarget as HTMLElement).offsetWidth,
-        offsetHeight: (e.currentTarget as HTMLElement).offsetHeight
-      },
-      isCurrentlySelected: isSelected
-    }));
-    
-    console.log(`[SELECT-${shortId}] Item selected:`, JSON.stringify({ 
-      category,
-      currentBoundingBox: { ...position, ...size },
-      clickPosition,
-      isCurrentlySelected: isSelected
-    }));
     onSelect(id);
   };
 

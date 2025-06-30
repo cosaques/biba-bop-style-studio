@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -146,12 +145,6 @@ const OutfitCreator = () => {
 
         setContainerBounds(newBounds);
         setContainerReady(isValid);
-
-        console.log('[CANVAS] Container bounds updated:', JSON.stringify({
-          ...newBounds,
-          isValid,
-          containerReady: isValid
-        }));
       }
     };
 
@@ -199,26 +192,12 @@ const OutfitCreator = () => {
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }, itemSize: { width: number; height: number }): { x: number; y: number } => {
     // Wait for container to be ready
     if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
-      console.log(`[POSITION-DEBUG] Container not ready, using fallback position for ${category}:`, JSON.stringify({
-        containerReady,
-        containerBounds,
-        fallbackPosition: { x: 100, y: 100 }
-      }));
       return { x: 100, y: 100 };
     }
 
     const silhouetteWidth = Math.min(containerBounds.width * 0.4, 200);
     const centerX = containerBounds.width / 2;
     const centerY = containerBounds.height / 2;
-
-    console.log(`[POSITION-DEBUG] Calculating position for ${category}:`, JSON.stringify({
-      containerBounds,
-      containerReady,
-      silhouetteWidth,
-      centerX,
-      centerY,
-      itemSize
-    }));
 
     // Center the item properly by subtracting half of its dimensions
     const positions: { [key: string]: { x: number; y: number } } = {
@@ -230,20 +209,13 @@ const OutfitCreator = () => {
       accessory: { x: centerX + silhouetteWidth / 2 + 20, y: centerY - 80 }
     };
 
-    const finalPosition = positions[category] || { x: centerX - itemSize.width / 2, y: centerY - itemSize.height / 2 };
-    console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
-
-    return finalPosition;
+    return positions[category] || { x: centerX - itemSize.width / 2, y: centerY - itemSize.height / 2 };
   };
 
   const getDefaultSize = async (imageUrl: string): Promise<{ width: number; height: number }> => {
     try {
       const dimensions = await getImageDimensions(imageUrl);
-      console.log(`[IMAGE-DIMENSIONS] Natural dimensions:`, JSON.stringify(dimensions));
-
       const optimalSize = calculateOptimalSize(dimensions.width, dimensions.height, 120);
-      console.log(`[IMAGE-DIMENSIONS] Calculated optimal size:`, JSON.stringify(optimalSize));
-
       return optimalSize;
     } catch (error) {
       console.error('Failed to get image dimensions:', error);
@@ -259,18 +231,11 @@ const OutfitCreator = () => {
     const isAlreadyPlaced = placedItems.some(p => p.id === itemId);
 
     if (isAlreadyPlaced) {
-      console.log(`[DROP-${itemId.slice(-8)}] Item removed from canvas`, JSON.stringify({ category: item.category }));
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
       // Check if container is ready before adding items
       if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
-        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`, JSON.stringify({
-          containerReady,
-          containerBounds,
-          retryAttempt: true
-        }));
-
         // Retry after a short delay, but don't spam retries
         setTimeout(() => {
           if (containerReady && containerBounds.width > 0 && containerBounds.height > 0) {
@@ -291,14 +256,6 @@ const OutfitCreator = () => {
         zIndex: nextZIndex
       };
 
-      console.log(`[DROP-${itemId.slice(-8)}] Item added to canvas`, JSON.stringify({
-        category: item.category,
-        position: newPlacedItem.position,
-        size: newPlacedItem.size,
-        containerBounds,
-        containerReady
-      }));
-
       setPlacedItems(prev => [...prev, newPlacedItem]);
       setSelectedItemId(itemId);
       setNextZIndex(prev => prev + 1);
@@ -306,7 +263,6 @@ const OutfitCreator = () => {
   };
 
   const handleItemPositionChange = (itemId: string, position: { x: number; y: number }) => {
-    console.log(`[POSITION-UPDATE-${itemId.slice(-8)}] Position changed to:`, JSON.stringify(position));
     setPlacedItems(prev =>
       prev.map(item =>
         item.id === itemId ? { ...item, position } : item
@@ -315,7 +271,6 @@ const OutfitCreator = () => {
   };
 
   const handleItemSizeChange = (itemId: string, size: { width: number; height: number }) => {
-    console.log(`[SIZE-UPDATE-${itemId.slice(-8)}] Size changed to:`, JSON.stringify(size));
     setPlacedItems(prev =>
       prev.map(item =>
         item.id === itemId ? { ...item, size } : item
@@ -324,7 +279,6 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelection = (itemId: string) => {
-    console.log(`[SELECTION-${itemId.slice(-8)}] Item selected`);
     setSelectedItemId(itemId);
     // Bring selected item to front
     setPlacedItems(prev =>
@@ -336,13 +290,11 @@ const OutfitCreator = () => {
   };
 
   const handleItemRemove = (itemId: string) => {
-    console.log(`[REMOVE-${itemId.slice(-8)}] Item removed from canvas`);
     setPlacedItems(prev => prev.filter(item => item.id !== itemId));
     setSelectedItemId(null);
   };
 
   const handleCanvasClick = () => {
-    console.log('[CANVAS] Canvas clicked, clearing selection');
     setSelectedItemId(null);
   };
 
