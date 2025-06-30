@@ -1,8 +1,7 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Rnd } from 'react-rnd';
-import { X } from 'lucide-react';
-import { getImageDimensions } from '@/utils/imageLoadUtils';
+import { Rnd } from "react-rnd";
+import { getOptimizedImageUrl } from "@/utils/imageUtils";
+import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -19,7 +18,7 @@ interface DraggableClothingItemProps {
   containerBounds: { width: number; height: number };
 }
 
-export const DraggableClothingItem: React.FC<DraggableClothingItemProps> = ({
+export function DraggableClothingItem({
   id,
   imageUrl,
   category,
@@ -32,188 +31,260 @@ export const DraggableClothingItem: React.FC<DraggableClothingItemProps> = ({
   onSelect,
   onRemove,
   containerBounds
-}) => {
-  const [isResizing, setIsResizing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
-  const rndRef = useRef<Rnd>(null);
+}: DraggableClothingItemProps) {
+  const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
+  const shortId = id.slice(-8);
 
-  // Get image aspect ratio
-  useEffect(() => {
-    const loadImageAspectRatio = async () => {
-      try {
-        const dimensions = await getImageDimensions(imageUrl);
-        const aspectRatio = dimensions.width / dimensions.height;
-        setImageAspectRatio(aspectRatio);
-      } catch (error) {
-        console.error('Failed to load image dimensions:', error);
-        setImageAspectRatio(1); // Fallback to square
-      }
-    };
+  console.log(`[BOUNDS-${shortId}] Component render:`, JSON.stringify({
+    position,
+    size,
+    isSelected,
+    containerBounds,
+    category
+  }));
 
-    if (imageUrl) {
-      loadImageAspectRatio();
-    }
-  }, [imageUrl]);
-
-  const handleDragStart = useCallback(() => {
-    setIsDragging(true);
-    onSelect(id);
-  }, [id, onSelect]);
-
-  const handleDragStop = useCallback((e: any, data: any) => {
-    setIsDragging(false);
-    onPositionChange(id, { x: data.x, y: data.y });
-  }, [id, onPositionChange]);
-
-  const handleResizeStart = useCallback(() => {
-    setIsResizing(true);
-    onSelect(id);
-  }, [id, onSelect]);
-
-  const handleResizeStop = useCallback((e: any, direction: any, ref: any, delta: any, position: any) => {
-    setIsResizing(false);
-    
-    // Get the container's current size
-    const containerRect = ref.getBoundingClientRect();
-    const resizedContainerSize = {
-      width: containerRect.width,
-      height: containerRect.height
-    };
-
-    // If we have the image aspect ratio, calculate the proper size maintaining aspect ratio
-    if (imageAspectRatio) {
-      let finalSize: { width: number; height: number };
+  const calculateAspectRatioSize = async (containerSize: { width: number; height: number }): Promise<{ width: number; height: number }> => {
+    try {
+      const dimensions = await getImageDimensions(optimizedImageUrl);
+      const imageAspectRatio = dimensions.width / dimensions.height;
+      const containerAspectRatio = containerSize.width / containerSize.height;
       
-      if (resizedContainerSize.width / resizedContainerSize.height > imageAspectRatio) {
-        // Container is wider than image aspect ratio, fit by height
+      let finalSize;
+      if (imageAspectRatio > containerAspectRatio) {
+        // Image is wider than container - fit to width
         finalSize = {
-          width: resizedContainerSize.height * imageAspectRatio,
-          height: resizedContainerSize.height
+          width: containerSize.width,
+          height: containerSize.width / imageAspectRatio
         };
       } else {
-        // Container is taller than image aspect ratio, fit by width
+        // Image is taller than container - fit to height
         finalSize = {
-          width: resizedContainerSize.width,
-          height: resizedContainerSize.width / imageAspectRatio
+          width: containerSize.height * imageAspectRatio,
+          height: containerSize.height
         };
       }
-
-      // Calculate centered position based on the new size
-      const currentCenter = {
-        x: position.x + resizedContainerSize.width / 2,
-        y: position.y + resizedContainerSize.height / 2
-      };
-
-      const centeredPosition = {
-        x: currentCenter.x - finalSize.width / 2,
-        y: currentCenter.y - finalSize.height / 2
-      };
-
-      // Update size and position
-      onSizeChange(id, finalSize);
-      onPositionChange(id, centeredPosition);
-    } else {
-      // Fallback if aspect ratio not available
-      onSizeChange(id, resizedContainerSize);
-      onPositionChange(id, position);
+      
+      console.log(`[ASPECT-RATIO-${shortId}] Calculated aspect ratio size:`, JSON.stringify({
+        originalDimensions: dimensions,
+        imageAspectRatio,
+        containerSize,
+        containerAspectRatio,
+        finalSize
+      }));
+      
+      return finalSize;
+    } catch (error) {
+      console.error(`[ASPECT-RATIO-${shortId}] Failed to calculate aspect ratio:`, error);
+      return containerSize; // Fallback to container size
     }
-  }, [id, imageAspectRatio, onSizeChange, onPositionChange]);
+  };
 
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onRemove(id);
-  }, [id, onRemove]);
-
-  const handleSingleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDragStart = () => {
+    console.log(`[DRAG-${shortId}] Drag started:`, JSON.stringify({ 
+      position, 
+      category,
+      boundingBox: { ...position, ...size },
+      isSelected
+    }));
     onSelect(id);
-  }, [id, onSelect]);
+  };
+
+  const handleDragStop = (e: any, data: any) => {
+    const newPosition = { x: data.x, y: data.y };
+    console.log(`[DRAG-${shortId}] Drag completed:`, JSON.stringify({ 
+      oldPosition: position, 
+      newPosition,
+      category,
+      boundingBoxBefore: { ...position, ...size },
+      boundingBoxAfter: { ...newPosition, ...size }
+    }));
+    onPositionChange(id, newPosition);
+  };
+
+  const handleResizeStart = () => {
+    console.log(`[RESIZE-${shortId}] Resize started:`, JSON.stringify({ 
+      size, 
+      category,
+      position,
+      boundingBox: { ...position, ...size },
+      isSelected
+    }));
+    onSelect(id);
+  };
+
+  const handleResizeStop = async (e: any, direction: any, ref: any, delta: any, newPosition: any) => {
+    // Get the actual DOM dimensions after resize
+    const resizedContainerSize = {
+      width: ref.offsetWidth,
+      height: ref.offsetHeight
+    };
+    const actualPosition = { x: newPosition.x, y: newPosition.y };
+    
+    // Calculate the center point of the current resized container
+    const currentCenter = {
+      x: actualPosition.x + resizedContainerSize.width / 2,
+      y: actualPosition.y + resizedContainerSize.height / 2
+    };
+    
+    console.log(`[RESIZE-${shortId}] Resize completed (before aspect ratio adjustment):`, JSON.stringify({ 
+      oldSize: size, 
+      resizedContainerSize,
+      oldPosition: position,
+      newPosition: actualPosition,
+      currentCenter,
+      category,
+      direction,
+      delta: { width: delta.width, height: delta.height }
+    }));
+    
+    // Calculate the size that respects the image's aspect ratio
+    const aspectRatioSize = await calculateAspectRatioSize(resizedContainerSize);
+    
+    // Calculate the new position to maintain the center point
+    const centeredPosition = {
+      x: currentCenter.x - aspectRatioSize.width / 2,
+      y: currentCenter.y - aspectRatioSize.height / 2
+    };
+    
+    console.log(`[RESIZE-${shortId}] Final size after aspect ratio adjustment:`, JSON.stringify({
+      resizedContainerSize,
+      aspectRatioSize,
+      currentCenter,
+      centeredPosition,
+      finalBoundingBox: { ...centeredPosition, ...aspectRatioSize }
+    }));
+    
+    // Update with aspect ratio adjusted dimensions and centered position
+    onSizeChange(id, aspectRatioSize);
+    onPositionChange(id, centeredPosition);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log(`[DELETE-${shortId}] Double-click remove:`, JSON.stringify({ 
+      category,
+      finalBoundingBox: { ...position, ...size }
+    }));
+    onRemove(id);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const clickPosition = { x: e.clientX, y: e.clientY };
+    const relativeClick = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
+    const currentBounds = e.currentTarget.getBoundingClientRect();
+    
+    console.log(`[CLICK-DEBUG-${shortId}] Click details:`, JSON.stringify({
+      category,
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      relativeClick,
+      currentBounds: { 
+        width: currentBounds.width, 
+        height: currentBounds.height,
+        x: currentBounds.x,
+        y: currentBounds.y
+      },
+      elementSize: {
+        offsetWidth: (e.currentTarget as HTMLElement).offsetWidth,
+        offsetHeight: (e.currentTarget as HTMLElement).offsetHeight
+      },
+      isCurrentlySelected: isSelected
+    }));
+    
+    console.log(`[SELECT-${shortId}] Item selected:`, JSON.stringify({ 
+      category,
+      currentBoundingBox: { ...position, ...size },
+      clickPosition,
+      isCurrentlySelected: isSelected
+    }));
+    onSelect(id);
+  };
 
   return (
     <Rnd
-      ref={rndRef}
-      size={{ width: size.width, height: size.height }}
-      position={{ x: position.x, y: position.y }}
+      size={size}
+      position={position}
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResizeStart={handleResizeStart}
       onResizeStop={handleResizeStop}
       bounds="parent"
+      minWidth={30}
+      minHeight={30}
+      maxWidth={containerBounds.width}
+      maxHeight={containerBounds.height}
+      enableResizing={isSelected}
+      disableDragging={false}
       style={{
-        zIndex: zIndex,
-        border: isSelected ? '2px solid #ff6b9d' : '2px solid transparent',
-        borderRadius: '4px',
-        cursor: isDragging ? 'grabbing' : 'grab'
+        zIndex: isSelected ? 1000 : zIndex
       }}
       resizeHandleStyles={{
-        bottomRight: {
-          bottom: -5,
-          right: -5,
-          width: 10,
-          height: 10,
-          backgroundColor: isSelected ? '#ff6b9d' : 'transparent',
-          border: isSelected ? '2px solid white' : 'none',
-          borderRadius: '50%',
-          cursor: 'se-resize'
+        topLeft: { 
+          width: '12px', 
+          height: '12px', 
+          backgroundColor: '#3B82F6',
+          border: '2px solid white',
+          borderRadius: '2px'
         },
-        topLeft: {
-          top: -5,
-          left: -5,
-          width: 10,
-          height: 10,
-          backgroundColor: isSelected ? '#ff6b9d' : 'transparent',
-          border: isSelected ? '2px solid white' : 'none',
-          borderRadius: '50%',
-          cursor: 'nw-resize'
+        topRight: { 
+          width: '12px', 
+          height: '12px', 
+          backgroundColor: '#3B82F6',
+          border: '2px solid white',
+          borderRadius: '2px'
         },
-        topRight: {
-          top: -5,
-          right: -5,
-          width: 10,
-          height: 10,
-          backgroundColor: isSelected ? '#ff6b9d' : 'transparent',
-          border: isSelected ? '2px solid white' : 'none',
-          borderRadius: '50%',
-          cursor: 'ne-resize'
+        bottomLeft: { 
+          width: '12px', 
+          height: '12px', 
+          backgroundColor: '#3B82F6',
+          border: '2px solid white',
+          borderRadius: '2px'
         },
-        bottomLeft: {
-          bottom: -5,
-          left: -5,
-          width: 10,
-          height: 10,
-          backgroundColor: isSelected ? '#ff6b9d' : 'transparent',
-          border: isSelected ? '2px solid white' : 'none',
-          borderRadius: '50%',
-          cursor: 'sw-resize'
+        bottomRight: { 
+          width: '12px', 
+          height: '12px', 
+          backgroundColor: '#3B82F6',
+          border: '2px solid white',
+          borderRadius: '2px'
         }
       }}
-      enableResizing={isSelected}
     >
-      <div 
-        className="w-full h-full flex items-center justify-center relative bg-white rounded"
-        onClick={handleSingleClick}
+      <div
+        className="w-full h-full cursor-move relative"
+        onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        style={{
+          width: '100%',
+          height: '100%'
+        }}
       >
+        {/* Selection border overlay - positioned absolutely to not affect image dimensions */}
+        {isSelected && (
+          <div 
+            className="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"
+            style={{
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0
+            }}
+          />
+        )}
+        
         <img
-          src={imageUrl}
-          alt={`Clothing item ${category}`}
-          className="max-w-full max-h-full object-contain pointer-events-none"
+          src={optimizedImageUrl}
+          alt={category}
+          className="w-full h-full object-contain pointer-events-none"
           draggable={false}
         />
         
         {isSelected && (
-          <button
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors z-10"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove(id);
-            }}
-          >
-            <X className="w-3 h-3" />
-          </button>
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+            Double-cliquez pour retirer
+          </div>
         )}
       </div>
     </Rnd>
   );
-};
+}
