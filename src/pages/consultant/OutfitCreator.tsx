@@ -140,11 +140,12 @@ const OutfitCreator = () => {
       if (canvasRef.current) {
         const parentRect = canvasRef.current.parentElement?.getBoundingClientRect();
         if (parentRect) {
-          // Calculate available space for the canvas
-          const availableWidth = parentRect.width;
-          const availableHeight = parentRect.height;
+          // Use almost full width minus minimal padding for mobile/desktop
+          const padding = isMobile ? 16 : 24;
+          const availableWidth = parentRect.width - padding;
+          const availableHeight = parentRect.height - 120; // Space for header and controls
           
-          // Make the canvas square (1:1 aspect ratio) based on the smaller dimension
+          // Make the canvas square (1:1 aspect ratio) based on available space
           const canvasSize = Math.min(availableWidth, availableHeight);
           
           const newBounds = { width: canvasSize, height: canvasSize };
@@ -155,6 +156,7 @@ const OutfitCreator = () => {
             ...newBounds,
             availableWidth,
             availableHeight,
+            padding,
             timestamp: Date.now()
           }));
         }
@@ -172,7 +174,7 @@ const OutfitCreator = () => {
       timeoutIds.forEach(clearTimeout);
       window.removeEventListener('resize', updateBounds);
     };
-  }, []);
+  }, [isMobile]);
 
   const fetchClientClothes = async () => {
     if (!clientId) return;
@@ -356,8 +358,12 @@ const OutfitCreator = () => {
   };
 
   const handleCanvasClick = () => {
-    console.log('[CANVAS] Canvas clicked, clearing selection');
-    setSelectedItemId(null);
+    // Only clear selection if not currently resizing any item
+    const hasResizingItem = placedItems.some(item => item.id === selectedItemId);
+    if (!hasResizingItem) {
+      console.log('[CANVAS] Canvas clicked, clearing selection');
+      setSelectedItemId(null);
+    }
   };
 
   const handleSaveOutfit = () => {
@@ -400,15 +406,15 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className={`${isMobile ? 'flex-col' : 'flex'} h-full gap-4 p-4`}>
+    <div className={`${isMobile ? 'flex-col' : 'flex'} h-full gap-3 p-2`}>
       {/* Left Panel: Silhouette - optimized for maximum space */}
-      <div className={`${isMobile ? 'w-full mb-4' : 'w-1/2'} flex flex-col min-h-0`}>
+      <div className={`${isMobile ? 'w-full mb-3' : 'w-1/2'} flex flex-col min-h-0`}>
         <Card className="flex-1 flex flex-col h-full">
-          <CardHeader className="flex-shrink-0 pb-3">
+          <CardHeader className="flex-shrink-0 pb-2">
             <CardTitle className="text-lg">Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0 p-3">
-            {/* Canvas container - optimized for square aspect ratio */}
+          <CardContent className="flex-1 flex flex-col min-h-0 p-2">
+            {/* Canvas container - full width with minimal padding */}
             <div className="flex-1 flex items-center justify-center min-h-0">
               <div 
                 ref={canvasRef}
@@ -417,8 +423,8 @@ const OutfitCreator = () => {
                 style={{
                   width: `${containerBounds.width}px`,
                   height: `${containerBounds.height}px`,
-                  minWidth: '300px',
-                  minHeight: '300px'
+                  minWidth: '250px',
+                  minHeight: '250px'
                 }}
               >
                 {/* Silhouette */}
@@ -458,7 +464,7 @@ const OutfitCreator = () => {
                 {/* Instructions overlay */}
                 {placedItems.length === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                    <div className="bg-black bg-opacity-50 text-white p-3 rounded-lg text-center">
                       <p className="text-sm">Sélectionnez des vêtements</p>
                       <p className="text-sm">pour les ajouter à la silhouette</p>
                     </div>
@@ -468,12 +474,12 @@ const OutfitCreator = () => {
             </div>
 
             {/* Bottom controls - compact layout */}
-            <div className="mt-3 space-y-3 flex-shrink-0">
+            <div className="mt-2 space-y-2 flex-shrink-0">
               <div>
-                <h3 className="font-medium mb-2 text-sm">Commentaires sur la tenue</h3>
+                <h3 className="font-medium mb-1 text-sm">Commentaires sur la tenue</h3>
                 <Textarea
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
-                  className="min-h-[60px] text-sm"
+                  className="min-h-[50px] text-sm"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                 />
@@ -487,7 +493,7 @@ const OutfitCreator = () => {
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
 
-              {/* Usage tips - compact version */}
+              {/* Usage tips - always visible */}
               <div className="p-2 bg-blue-50 rounded-md">
                 <p className="text-xs text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
                 <ul className="text-xs text-blue-600 mt-1 space-y-0.5">
@@ -503,10 +509,10 @@ const OutfitCreator = () => {
         </Card>
       </div>
 
-      {/* Right Panel: Clothing Selection - optimized space */}
+      {/* Right Panel: Clothing Selection */}
       <div className={`${isMobile ? 'w-full' : 'w-1/2'} min-h-0`}>
         <Card className="h-full flex flex-col">
-          <CardHeader className="flex-shrink-0 pb-3">
+          <CardHeader className="flex-shrink-0 pb-2">
             <CardTitle className="text-lg">Sélection des Vêtements</CardTitle>
             <div className="flex gap-4 items-center">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -524,7 +530,7 @@ const OutfitCreator = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
+          <CardContent className="flex-1 overflow-y-auto min-h-0 p-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                 <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>

@@ -2,6 +2,7 @@
 import { Rnd } from "react-rnd";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
+import { useState, useRef } from "react";
 
 interface DraggableClothingItemProps {
   id: string;
@@ -34,11 +35,17 @@ export function DraggableClothingItem({
 }: DraggableClothingItemProps) {
   const optimizedImageUrl = getOptimizedImageUrl(imageUrl, 400);
   const shortId = id.slice(-8);
+  const [isResizing, setIsResizing] = useState(false);
+  const pendingUpdatesRef = useRef<{
+    size?: { width: number; height: number };
+    position?: { x: number; y: number };
+  }>({});
 
   console.log(`[RENDER-${shortId}] Component render:`, JSON.stringify({
     position,
     size,
     isSelected,
+    isResizing,
     containerBounds,
     category,
     timestamp: Date.now()
@@ -105,6 +112,8 @@ export function DraggableClothingItem({
       position,
       timestamp: Date.now()
     }));
+    setIsResizing(true);
+    pendingUpdatesRef.current = {};
     onSelect(id);
   };
 
@@ -160,23 +169,32 @@ export function DraggableClothingItem({
       timestamp: Date.now()
     }));
     
-    console.log(`[RESIZE-PHASE-6-${shortId}] Updating size state:`, JSON.stringify({
-      newSize: aspectRatioSize,
-      timestamp: Date.now()
-    }));
-    onSizeChange(id, aspectRatioSize);
+    // Store pending updates
+    pendingUpdatesRef.current = {
+      size: aspectRatioSize,
+      position: centeredPosition
+    };
     
-    console.log(`[RESIZE-PHASE-7-${shortId}] Updating position state:`, JSON.stringify({
+    console.log(`[RESIZE-PHASE-6-${shortId}] Applying batch updates:`, JSON.stringify({
+      newSize: aspectRatioSize,
       newPosition: centeredPosition,
       timestamp: Date.now()
     }));
+    
+    // Apply updates in batch
+    onSizeChange(id, aspectRatioSize);
     onPositionChange(id, centeredPosition);
     
-    console.log(`[RESIZE-COMPLETE-${shortId}] All state updates sent:`, JSON.stringify({
-      finalSize: aspectRatioSize,
-      finalPosition: centeredPosition,
-      timestamp: Date.now()
-    }));
+    // Reset resizing state after a brief delay to prevent flicker
+    setTimeout(() => {
+      setIsResizing(false);
+      pendingUpdatesRef.current = {};
+      console.log(`[RESIZE-COMPLETE-${shortId}] Resize operation completed:`, JSON.stringify({
+        finalSize: aspectRatioSize,
+        finalPosition: centeredPosition,
+        timestamp: Date.now()
+      }));
+    }, 50);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -237,10 +255,14 @@ export function DraggableClothingItem({
     }
   };
 
+  // Use pending updates during resize to prevent flicker
+  const currentSize = isResizing && pendingUpdatesRef.current.size ? pendingUpdatesRef.current.size : size;
+  const currentPosition = isResizing && pendingUpdatesRef.current.position ? pendingUpdatesRef.current.position : position;
+
   return (
     <Rnd
-      size={size}
-      position={position}
+      size={currentSize}
+      position={currentPosition}
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResizeStart={handleResizeStart}
