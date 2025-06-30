@@ -226,8 +226,8 @@ const OutfitCreator = () => {
       bottom: { x: centerX - itemSize.width / 2, y: centerY - 20 },
       one_piece: { x: centerX - itemSize.width / 2, y: centerY - 120 },
       shoes: { x: centerX - itemSize.width / 2, y: centerY + 120 },
-      outerwear: { x: centerX - silhouetteWidth/2 - 60, y: centerY - 80 },
-      accessory: { x: centerX + silhouetteWidth/2 + 20, y: centerY - 80 }
+      outerwear: { x: centerX - silhouetteWidth / 2 - 60, y: centerY - 80 },
+      accessory: { x: centerX + silhouetteWidth / 2 + 20, y: centerY - 80 }
     };
 
     const finalPosition = positions[category] || { x: centerX - itemSize.width / 2, y: centerY - itemSize.height / 2 };
@@ -386,62 +386,65 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className="flex h-screen gap-6 overflow-hidden">
+    <div className="flex min-h-screen gap-6 overflow-hidden">
       {/* Left Panel: Silhouette - 50% width */}
-      <div className="w-1/2 flex flex-col min-h-0">
-        <Card className="flex-1 flex flex-col min-h-0">
+      <div className="w-1/2 flex flex-col overflow-y-auto">
+        <Card className="flex-1 flex flex-col">
           <CardHeader className="flex-shrink-0">
             <CardTitle>Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div
-              ref={canvasRef}
-              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden min-h-0"
-              onClick={handleCanvasClick}
-            >
-              {/* Silhouette */}
-              <img
-                src={silhouetteImage}
-                alt="Silhouette du client"
-                className="absolute opacity-30 h-4/5 w-auto object-contain"
-                style={{ pointerEvents: 'none' }}
-              />
+          <CardContent className="flex-1 flex flex-col space-y-4">
+            <div className="w-full mx-auto">
+              <div
+                className="relative bg-gray-200 rounded-md flex items-center justify-center overflow-hidden"
+                style={{ aspectRatio: '1 / 1' }}
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+              >
+                {/* Silhouette */}
+                <img
+                  src={silhouetteImage}
+                  alt="Silhouette du client"
+                  className="absolute opacity-30 h-4/5 w-auto object-contain"
+                  style={{ pointerEvents: 'none' }}
+                />
 
-              {/* Placed clothing items */}
-              {placedItems.map(placedItem => {
-                const item = allItems.find(i => i.id === placedItem.id);
-                if (!item) return null;
+                {/* Placed clothing items */}
+                {placedItems.map(placedItem => {
+                  const item = allItems.find(i => i.id === placedItem.id);
+                  if (!item) return null;
 
-                const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                  const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
 
-                return (
-                  <DraggableClothingItem
-                    key={placedItem.id}
-                    id={placedItem.id}
-                    imageUrl={imageUrl}
-                    category={item.category}
-                    position={placedItem.position}
-                    size={placedItem.size}
-                    isSelected={selectedItemId === placedItem.id}
-                    zIndex={placedItem.zIndex}
-                    onPositionChange={handleItemPositionChange}
-                    onSizeChange={handleItemSizeChange}
-                    onSelect={handleItemSelection}
-                    onRemove={handleItemRemove}
-                    containerBounds={containerBounds}
-                  />
-                );
-              })}
+                  return (
+                    <DraggableClothingItem
+                      key={placedItem.id}
+                      id={placedItem.id}
+                      imageUrl={imageUrl}
+                      category={item.category}
+                      position={placedItem.position}
+                      size={placedItem.size}
+                      isSelected={selectedItemId === placedItem.id}
+                      zIndex={placedItem.zIndex}
+                      onPositionChange={handleItemPositionChange}
+                      onSizeChange={handleItemSizeChange}
+                      onSelect={handleItemSelection}
+                      onRemove={handleItemRemove}
+                      containerBounds={containerBounds}
+                    />
+                  );
+                })}
 
-              {/* Instructions overlay */}
-              {placedItems.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
-                    <p className="text-sm">Sélectionnez des vêtements</p>
-                    <p className="text-sm">pour les ajouter à la silhouette</p>
+                {/* Instructions overlay */}
+                {placedItems.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                      <p className="text-sm">Sélectionnez des vêtements</p>
+                      <p className="text-sm">pour les ajouter à la silhouette</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Bottom controls */}
@@ -524,11 +527,10 @@ const OutfitCreator = () => {
                       return (
                         <div key={item.id} className="space-y-2">
                           <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                              isPlaced
-                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
+                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${isPlaced
+                              ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
+                              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                              }`}
                             onClick={() => handleItemSelect(item.id)}
                           >
                             <img
@@ -587,11 +589,10 @@ const OutfitCreator = () => {
                       return (
                         <div key={item.id} className="space-y-2">
                           <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${
-                              isPlaced
-                                ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
+                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${isPlaced
+                              ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
+                              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                              }`}
                             onClick={() => handleItemSelect(item.id)}
                           >
                             <img
