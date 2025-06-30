@@ -145,15 +145,18 @@ const OutfitCreator = () => {
       }
     };
 
-    // Use timeout to ensure DOM is fully rendered
-    const timeoutId = setTimeout(updateBounds, 100);
+    // Multiple attempts to ensure container is ready
+    const timeouts = [50, 100, 200, 500];
+    const timeoutIds = timeouts.map(delay => 
+      setTimeout(updateBounds, delay)
+    );
     
     // Update on resize
     window.addEventListener('resize', updateBounds);
     
     // Cleanup
     return () => {
-      clearTimeout(timeoutId);
+      timeoutIds.forEach(clearTimeout);
       window.removeEventListener('resize', updateBounds);
     };
   }, []);
@@ -214,10 +217,12 @@ const OutfitCreator = () => {
       accessory: { x: centerX + silhouetteWidth/2 + 20, y: centerY - 80 }
     };
     
-    const finalPosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
-    console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
+    // Center the item properly by accounting for its size
+    const basePosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
     
-    return finalPosition;
+    console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(basePosition));
+    
+    return basePosition;
   };
 
   const getDefaultSize = async (imageUrl: string): Promise<{ width: number; height: number }> => {
@@ -247,20 +252,43 @@ const OutfitCreator = () => {
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
-      // Wait for container to be ready before adding items
-      if (!containerReady) {
-        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`);
-        // Try again after a short delay
-        setTimeout(() => handleItemSelect(itemId), 200);
-        return;
+      // Enhanced container readiness check
+      if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
+        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, retrying...`, JSON.stringify({
+          containerReady,
+          containerBounds,
+          attempt: 'retrying'
+        }));
+        
+        // Force update bounds and retry
+        if (canvasRef.current) {
+          const bounds = canvasRef.current.getBoundingClientRect();
+          const newBounds = { width: bounds.width, height: bounds.height };
+          setContainerBounds(newBounds);
+          setContainerReady(true);
+          
+          // Retry with new bounds
+          setTimeout(() => handleItemSelect(itemId), 100);
+          return;
+        }
+        
+        // Final fallback
+        console.log(`[DROP-${itemId.slice(-8)}] Using fallback bounds`);
       }
 
       const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
       const size = await getDefaultSize(imageUrl);
+      const position = getDefaultPosition(item.category, containerBounds);
+
+      // Center the position based on the actual size
+      const centeredPosition = {
+        x: position.x - size.width / 2 + 60, // Adjust for better centering
+        y: position.y
+      };
 
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
-        position: getDefaultPosition(item.category, containerBounds),
+        position: centeredPosition,
         size,
         zIndex: nextZIndex
       };
@@ -439,17 +467,17 @@ const OutfitCreator = () => {
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
 
-              {placedItems.length > 0 && (
-                <div className="p-3 bg-blue-50 rounded-md">
-                  <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
-                  <ul className="text-xs text-blue-600 mt-1 space-y-1">
-                    <li>• Cliquez et glissez pour déplacer les vêtements</li>
-                    <li>• Utilisez les carrés aux coins pour redimensionner</li>
-                    <li>• Double-cliquez pour retirer un vêtement</li>
-                    <li>• Cliquez sur un vêtement pour le sélectionner</li>
-                  </ul>
-                </div>
-              )}
+              {/* Show usage tips by default */}
+              <div className="p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
+                <ul className="text-xs text-blue-600 mt-1 space-y-1">
+                  <li>• Cliquez et glissez pour déplacer les vêtements</li>
+                  <li>• Utilisez les carrés aux coins pour redimensionner</li>
+                  <li>• Double-cliquez pour retirer un vêtement</li>
+                  <li>• Cliquez sur un vêtement pour le sélectionner</li>
+                  <li>• Sur mobile: appui long pour supprimer</li>
+                </ul>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -486,7 +514,12 @@ const OutfitCreator = () => {
               <TabsContent value="wardrobe" className="flex-1 mt-4">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans la garde-robe</p>
+                    <p>
+                      {categoryFilter === "all" 
+                        ? "Aucun vêtement trouvé dans la garde-robe"
+                        : `Aucun vêtement de type "${categoryTranslations[categoryFilter]}" trouvé dans la garde-robe`
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-4">
@@ -546,7 +579,12 @@ const OutfitCreator = () => {
               <TabsContent value="catalog" className="flex-1 mt-4">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans le catalogue</p>
+                    <p>
+                      {categoryFilter === "all" 
+                        ? "Aucun vêtement trouvé dans le catalogue"
+                        : `Aucun vêtement de type "${categoryTranslations[categoryFilter]}" trouvé dans le catalogue`
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-4">

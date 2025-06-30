@@ -154,7 +154,7 @@ export function DraggableClothingItem({
       finalBoundingBox: { ...centeredPosition, ...aspectRatioSize }
     }));
     
-    // Update with aspect ratio adjusted dimensions and centered position
+    // Update both size and position simultaneously to prevent flicker
     onSizeChange(id, aspectRatioSize);
     onPositionChange(id, centeredPosition);
   };
@@ -199,6 +199,27 @@ export function DraggableClothingItem({
       isCurrentlySelected: isSelected
     }));
     onSelect(id);
+  };
+
+  // Handle mobile touch events for better mobile support
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    onSelect(id);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+  };
+
+  let touchTimeout: NodeJS.Timeout;
+  const handleTouchStartForDelete = (e: React.TouchEvent) => {
+    touchTimeout = setTimeout(() => {
+      onRemove(id);
+    }, 1000); // Long press for 1 second to delete on mobile
+  };
+
+  const handleTouchEndForDelete = (e: React.TouchEvent) => {
+    clearTimeout(touchTimeout);
   };
 
   return (
@@ -254,6 +275,8 @@ export function DraggableClothingItem({
         className="w-full h-full cursor-move relative"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        onTouchStart={handleTouchStartForDelete}
+        onTouchEnd={handleTouchEndForDelete}
         style={{
           width: '100%',
           height: '100%'
