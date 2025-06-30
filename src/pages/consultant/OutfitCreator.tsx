@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -139,21 +140,34 @@ const OutfitCreator = () => {
       if (canvasRef.current) {
         const bounds = canvasRef.current.getBoundingClientRect();
         const newBounds = { width: bounds.width, height: bounds.height };
+        
+        // Only set containerReady to true if bounds are actually valid
+        const isValid = newBounds.width > 0 && newBounds.height > 0;
+        
         setContainerBounds(newBounds);
-        setContainerReady(true);
-        console.log('[CANVAS] Container bounds updated:', JSON.stringify(newBounds));
+        setContainerReady(isValid);
+        
+        console.log('[CANVAS] Container bounds updated:', JSON.stringify({
+          ...newBounds,
+          isValid,
+          containerReady: isValid
+        }));
       }
     };
 
-    // Use timeout to ensure DOM is fully rendered
-    const timeoutId = setTimeout(updateBounds, 100);
+    // Use multiple attempts to ensure proper measurement
+    const timeoutId1 = setTimeout(updateBounds, 100);
+    const timeoutId2 = setTimeout(updateBounds, 300);
+    const timeoutId3 = setTimeout(updateBounds, 500);
     
     // Update on resize
     window.addEventListener('resize', updateBounds);
     
     // Cleanup
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
       window.removeEventListener('resize', updateBounds);
     };
   }, []);
@@ -182,7 +196,7 @@ const OutfitCreator = () => {
     }
   };
 
-  const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }): { x: number; y: number } => {
+  const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }, itemSize: { width: number; height: number }): { x: number; y: number } => {
     // Wait for container to be ready
     if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
       console.log(`[POSITION-DEBUG] Container not ready, using fallback position for ${category}:`, JSON.stringify({
@@ -202,19 +216,21 @@ const OutfitCreator = () => {
       containerReady,
       silhouetteWidth,
       centerX,
-      centerY
+      centerY,
+      itemSize
     }));
 
+    // Center the item properly by subtracting half of its dimensions
     const positions: { [key: string]: { x: number; y: number } } = {
-      top: { x: centerX - 60, y: centerY - 150 },
-      bottom: { x: centerX - 60, y: centerY - 20 },
-      one_piece: { x: centerX - 60, y: centerY - 120 },
-      shoes: { x: centerX - 50, y: centerY + 120 },
+      top: { x: centerX - itemSize.width / 2, y: centerY - 150 },
+      bottom: { x: centerX - itemSize.width / 2, y: centerY - 20 },
+      one_piece: { x: centerX - itemSize.width / 2, y: centerY - 120 },
+      shoes: { x: centerX - itemSize.width / 2, y: centerY + 120 },
       outerwear: { x: centerX - silhouetteWidth/2 - 60, y: centerY - 80 },
       accessory: { x: centerX + silhouetteWidth/2 + 20, y: centerY - 80 }
     };
     
-    const finalPosition = positions[category] || { x: centerX - 60, y: centerY - 60 };
+    const finalPosition = positions[category] || { x: centerX - itemSize.width / 2, y: centerY - itemSize.height / 2 };
     console.log(`[POSITION-DEBUG] Final position for ${category}:`, JSON.stringify(finalPosition));
     
     return finalPosition;
@@ -247,20 +263,30 @@ const OutfitCreator = () => {
       setPlacedItems(prev => prev.filter(p => p.id !== itemId));
       setSelectedItemId(null);
     } else {
-      // Wait for container to be ready before adding items
-      if (!containerReady) {
-        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`);
-        // Try again after a short delay
-        setTimeout(() => handleItemSelect(itemId), 200);
+      // Check if container is ready before adding items
+      if (!containerReady || containerBounds.width === 0 || containerBounds.height === 0) {
+        console.log(`[DROP-${itemId.slice(-8)}] Container not ready, waiting...`, JSON.stringify({
+          containerReady,
+          containerBounds,
+          retryAttempt: true
+        }));
+        
+        // Retry after a short delay, but don't spam retries
+        setTimeout(() => {
+          if (containerReady && containerBounds.width > 0 && containerBounds.height > 0) {
+            handleItemSelect(itemId);
+          }
+        }, 200);
         return;
       }
 
       const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
       const size = await getDefaultSize(imageUrl);
+      const position = getDefaultPosition(item.category, containerBounds, size);
 
       const newPlacedItem: PlacedClothingItem = {
         id: itemId,
-        position: getDefaultPosition(item.category, containerBounds),
+        position,
         size,
         zIndex: nextZIndex
       };
@@ -360,19 +386,18 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className="flex h-screen gap-6">
+    <div className="flex h-screen gap-6 overflow-hidden">
       {/* Left Panel: Silhouette - 50% width */}
-      <div className="w-1/2 flex flex-col">
-        <Card className="flex-1 flex flex-col">
-          <CardHeader>
+      <div className="w-1/2 flex flex-col min-h-0">
+        <Card className="flex-1 flex flex-col min-h-0">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col min-h-0 space-y-4">
             <div 
               ref={canvasRef}
-              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden"
+              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden min-h-0"
               onClick={handleCanvasClick}
-              style={{ minHeight: '500px' }}
             >
               {/* Silhouette */}
               <img
@@ -420,15 +445,26 @@ const OutfitCreator = () => {
             </div>
 
             {/* Bottom controls */}
-            <div className="mt-4 space-y-4">
+            <div className="flex-shrink-0 space-y-4">
               <div>
                 <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
                 <Textarea
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
-                  className="min-h-[100px]"
+                  className="min-h-[80px]"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                 />
+              </div>
+
+              {/* Usage tips - always visible */}
+              <div className="p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
+                <ul className="text-xs text-blue-600 mt-1 space-y-1">
+                  <li>• Cliquez et glissez pour déplacer les vêtements</li>
+                  <li>• Utilisez les carrés aux coins pour redimensionner</li>
+                  <li>• Double-cliquez pour retirer un vêtement</li>
+                  <li>• Cliquez sur un vêtement pour le sélectionner</li>
+                </ul>
               </div>
 
               <Button
@@ -438,27 +474,15 @@ const OutfitCreator = () => {
               >
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
-
-              {placedItems.length > 0 && (
-                <div className="p-3 bg-blue-50 rounded-md">
-                  <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
-                  <ul className="text-xs text-blue-600 mt-1 space-y-1">
-                    <li>• Cliquez et glissez pour déplacer les vêtements</li>
-                    <li>• Utilisez les carrés aux coins pour redimensionner</li>
-                    <li>• Double-cliquez pour retirer un vêtement</li>
-                    <li>• Cliquez sur un vêtement pour le sélectionner</li>
-                  </ul>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Right Panel: Clothing Selection - 50% width */}
-      <div className="w-1/2">
-        <Card className="h-full flex flex-col">
-          <CardHeader>
+      <div className="w-1/2 min-h-0">
+        <Card className="h-full flex flex-col min-h-0">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>Sélection des Vêtements</CardTitle>
             <div className="flex gap-4 items-center">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -476,17 +500,20 @@ const OutfitCreator = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2">
+          <CardContent className="flex-1 overflow-y-auto min-h-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                 <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
                 <TabsTrigger value="catalog">Catalogue</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="wardrobe" className="flex-1 mt-4">
+              <TabsContent value="wardrobe" className="flex-1 mt-4 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans la garde-robe</p>
+                    <p>
+                      Aucun vêtement trouvé dans la garde-robe
+                      {categoryFilter !== "all" && ` de type "${categoryTranslations[categoryFilter]}"`}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-4">
@@ -543,10 +570,13 @@ const OutfitCreator = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="catalog" className="flex-1 mt-4">
+              <TabsContent value="catalog" className="flex-1 mt-4 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>Aucun vêtement trouvé dans le catalogue</p>
+                    <p>
+                      Aucun vêtement trouvé dans le catalogue
+                      {categoryFilter !== "all" && ` de type "${categoryTranslations[categoryFilter]}"`}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-4">
