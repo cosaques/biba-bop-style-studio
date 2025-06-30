@@ -138,14 +138,26 @@ const OutfitCreator = () => {
   useEffect(() => {
     const updateBounds = () => {
       if (canvasRef.current) {
-        const bounds = canvasRef.current.getBoundingClientRect();
-        const newBounds = { width: bounds.width, height: bounds.height };
-        setContainerBounds(newBounds);
-        setContainerReady(true);
-        console.log('[CANVAS-BOUNDS] Updated:', JSON.stringify({
-          ...newBounds,
-          timestamp: Date.now()
-        }));
+        const parentRect = canvasRef.current.parentElement?.getBoundingClientRect();
+        if (parentRect) {
+          // Calculate available space for the canvas
+          const availableWidth = parentRect.width;
+          const availableHeight = parentRect.height;
+          
+          // Make the canvas square (1:1 aspect ratio) based on the smaller dimension
+          const canvasSize = Math.min(availableWidth, availableHeight);
+          
+          const newBounds = { width: canvasSize, height: canvasSize };
+          setContainerBounds(newBounds);
+          setContainerReady(true);
+          
+          console.log('[CANVAS-BOUNDS] Updated:', JSON.stringify({
+            ...newBounds,
+            availableWidth,
+            availableHeight,
+            timestamp: Date.now()
+          }));
+        }
       }
     };
 
@@ -388,71 +400,80 @@ const OutfitCreator = () => {
     : "/looks/look-0.png";
 
   return (
-    <div className={`${isMobile ? 'flex-col' : 'flex'} h-full gap-6 p-6`}>
-      {/* Left Panel: Silhouette - responsive width */}
-      <div className={`${isMobile ? 'w-full mb-6' : 'w-1/2'} flex flex-col`}>
+    <div className={`${isMobile ? 'flex-col' : 'flex'} h-full gap-4 p-4`}>
+      {/* Left Panel: Silhouette - optimized for maximum space */}
+      <div className={`${isMobile ? 'w-full mb-4' : 'w-1/2'} flex flex-col min-h-0`}>
         <Card className="flex-1 flex flex-col h-full">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle>Silhouette du Client</CardTitle>
+          <CardHeader className="flex-shrink-0 pb-3">
+            <CardTitle className="text-lg">Silhouette du Client</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0">
-            <div 
-              ref={canvasRef}
-              className="relative flex-1 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden min-h-[400px]"
-              onClick={handleCanvasClick}
-            >
-              {/* Silhouette */}
-              <img
-                src={silhouetteImage}
-                alt="Silhouette du client"
-                className="absolute opacity-30 h-4/5 w-auto object-contain"
-                style={{ pointerEvents: 'none' }}
-              />
+          <CardContent className="flex-1 flex flex-col min-h-0 p-3">
+            {/* Canvas container - optimized for square aspect ratio */}
+            <div className="flex-1 flex items-center justify-center min-h-0">
+              <div 
+                ref={canvasRef}
+                className="relative bg-gray-200 rounded-md flex items-center justify-center overflow-hidden"
+                onClick={handleCanvasClick}
+                style={{
+                  width: `${containerBounds.width}px`,
+                  height: `${containerBounds.height}px`,
+                  minWidth: '300px',
+                  minHeight: '300px'
+                }}
+              >
+                {/* Silhouette */}
+                <img
+                  src={silhouetteImage}
+                  alt="Silhouette du client"
+                  className="absolute opacity-30 h-4/5 w-auto object-contain"
+                  style={{ pointerEvents: 'none' }}
+                />
 
-              {/* Placed clothing items */}
-              {placedItems.map(placedItem => {
-                const item = allItems.find(i => i.id === placedItem.id);
-                if (!item) return null;
+                {/* Placed clothing items */}
+                {placedItems.map(placedItem => {
+                  const item = allItems.find(i => i.id === placedItem.id);
+                  if (!item) return null;
 
-                const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
-                
-                return (
-                  <DraggableClothingItem
-                    key={placedItem.id}
-                    id={placedItem.id}
-                    imageUrl={imageUrl}
-                    category={item.category}
-                    position={placedItem.position}
-                    size={placedItem.size}
-                    isSelected={selectedItemId === placedItem.id}
-                    zIndex={placedItem.zIndex}
-                    onPositionChange={handleItemPositionChange}
-                    onSizeChange={handleItemSizeChange}
-                    onSelect={handleItemSelection}
-                    onRemove={handleItemRemove}
-                    containerBounds={containerBounds}
-                  />
-                );
-              })}
+                  const imageUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+                  
+                  return (
+                    <DraggableClothingItem
+                      key={placedItem.id}
+                      id={placedItem.id}
+                      imageUrl={imageUrl}
+                      category={item.category}
+                      position={placedItem.position}
+                      size={placedItem.size}
+                      isSelected={selectedItemId === placedItem.id}
+                      zIndex={placedItem.zIndex}
+                      onPositionChange={handleItemPositionChange}
+                      onSizeChange={handleItemSizeChange}
+                      onSelect={handleItemSelection}
+                      onRemove={handleItemRemove}
+                      containerBounds={containerBounds}
+                    />
+                  );
+                })}
 
-              {/* Instructions overlay */}
-              {placedItems.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
-                    <p className="text-sm">Sélectionnez des vêtements</p>
-                    <p className="text-sm">pour les ajouter à la silhouette</p>
+                {/* Instructions overlay */}
+                {placedItems.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black bg-opacity-50 text-white p-4 rounded-lg text-center">
+                      <p className="text-sm">Sélectionnez des vêtements</p>
+                      <p className="text-sm">pour les ajouter à la silhouette</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Bottom controls - now in a scrollable container if needed */}
-            <div className="mt-4 space-y-4 flex-shrink-0">
+            {/* Bottom controls - compact layout */}
+            <div className="mt-3 space-y-3 flex-shrink-0">
               <div>
-                <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
+                <h3 className="font-medium mb-2 text-sm">Commentaires sur la tenue</h3>
                 <Textarea
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
-                  className="min-h-[80px]"
+                  className="min-h-[60px] text-sm"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                 />
@@ -466,10 +487,10 @@ const OutfitCreator = () => {
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
 
-              {/* Usage tips - always visible */}
-              <div className="p-3 bg-blue-50 rounded-md">
-                <p className="text-sm text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
-                <ul className="text-xs text-blue-600 mt-1 space-y-1">
+              {/* Usage tips - compact version */}
+              <div className="p-2 bg-blue-50 rounded-md">
+                <p className="text-xs text-blue-700 font-medium">💡 Conseils d'utilisation:</p>
+                <ul className="text-xs text-blue-600 mt-1 space-y-0.5">
                   <li>• Cliquez et glissez pour déplacer les vêtements</li>
                   <li>• Utilisez les carrés aux coins pour redimensionner</li>
                   <li>• Double-cliquez pour retirer un vêtement</li>
@@ -482,11 +503,11 @@ const OutfitCreator = () => {
         </Card>
       </div>
 
-      {/* Right Panel: Clothing Selection - responsive width */}
-      <div className={`${isMobile ? 'w-full' : 'w-1/2'}`}>
+      {/* Right Panel: Clothing Selection - optimized space */}
+      <div className={`${isMobile ? 'w-full' : 'w-1/2'} min-h-0`}>
         <Card className="h-full flex flex-col">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle>Sélection des Vêtements</CardTitle>
+          <CardHeader className="flex-shrink-0 pb-3">
+            <CardTitle className="text-lg">Sélection des Vêtements</CardTitle>
             <div className="flex gap-4 items-center">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48">
@@ -503,14 +524,14 @@ const OutfitCreator = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto min-h-0">
+          <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                 <TabsTrigger value="wardrobe">Garde-robe</TabsTrigger>
                 <TabsTrigger value="catalog">Catalogue</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="wardrobe" className="flex-1 mt-4 min-h-0">
+              <TabsContent value="wardrobe" className="flex-1 mt-3 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p>
@@ -521,7 +542,7 @@ const OutfitCreator = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-4 pb-4">
+                  <div className="grid grid-cols-3 gap-3 pb-3">
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
@@ -575,7 +596,7 @@ const OutfitCreator = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="catalog" className="flex-1 mt-4 min-h-0">
+              <TabsContent value="catalog" className="flex-1 mt-3 min-h-0">
                 {filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p>
@@ -586,7 +607,7 @@ const OutfitCreator = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-4 pb-4">
+                  <div className="grid grid-cols-3 gap-3 pb-3">
                     {filteredItems.map((item) => {
                       const isPlaced = placedItems.some(p => p.id === item.id);
                       const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
