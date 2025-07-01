@@ -164,7 +164,8 @@ const OutfitCreator = () => {
           clothing_item_id,
           clothing_items (*)
         `)
-        .eq('client_id', clientId);
+        .eq('client_id', clientId)
+        .order('created_at', {ascending: false});
 
       if (error) throw error;
 
@@ -188,16 +189,16 @@ const OutfitCreator = () => {
     try {
       // First, create the clothing item using useClothingItems.createItem
       const result = await createItem(itemData);
-      
+
       if (result.error) {
         throw new Error('Failed to create clothing item');
       }
 
       const newItem = result.data as ClothingItem;
-      
+
       // Add the new item to catalog items state
       setCatalogItems(prev => [newItem, ...prev]);
-      
+
       // Link the new item to the client
       await supabase
         .from('client_clothing_items')
@@ -205,7 +206,7 @@ const OutfitCreator = () => {
           client_id: clientId,
           clothing_item_id: newItem.id
         });
-      
+
       toast({
         title: "Succès",
         description: "Vêtement ajouté au catalogue et lié au client",
@@ -616,11 +617,12 @@ const OutfitCreator = () => {
                     );
                   })}
                 </div>
-
-                {catalogItems.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground mt-4">
-                    <p>Aucun vêtement dans le catalogue pour ce client</p>
-                    <p className="text-sm mt-1">Cliquez sur "Ajouter un nouveau vêtement" pour commencer</p>
+                {filteredItems.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>
+                      Aucun vêtement trouvé dans le catalogue
+                      {categoryFilter !== "all" && ` de type "${categoryTranslations[categoryFilter]}"`}
+                    </p>
                   </div>
                 )}
               </TabsContent>
