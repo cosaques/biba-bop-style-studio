@@ -37,10 +37,10 @@ export const useOutfits = () => {
       return { success: false };
     }
 
-    if (clothingItemIds.length < 2) {
+    if (clothingItemIds.length < 1) {
       toast({
         title: "Erreur",
-        description: "Vous devez placer au moins 2 vêtements pour sauvegarder une tenue",
+        description: "Vous devez placer au moins 1 vêtement pour sauvegarder une tenue",
         variant: "destructive",
       });
       return { success: false };
@@ -109,6 +109,107 @@ export const useOutfits = () => {
     }
   };
 
+  const updateOutfit = async (outfitId: string, name: string, comments: string) => {
+    if (!user) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour modifier une tenue",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('outfits')
+        .update({
+          name,
+          comments: comments || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', outfitId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Tenue modifiée avec succès!",
+      });
+
+      // Refresh outfits list
+      await fetchOutfits();
+
+      return { success: true, outfit: data };
+    } catch (error) {
+      console.error('Error updating outfit:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la tenue",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+  };
+
+  const deleteOutfit = async (outfitId: string, imageUrl: string) => {
+    if (!user) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour supprimer une tenue",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    try {
+      // Delete outfit clothing items first
+      const { error: itemsError } = await supabase
+        .from('outfit_clothing_items')
+        .delete()
+        .eq('outfit_id', outfitId);
+
+      if (itemsError) throw itemsError;
+
+      // Delete the outfit
+      const { error: outfitError } = await supabase
+        .from('outfits')
+        .delete()
+        .eq('id', outfitId);
+
+      if (outfitError) throw outfitError;
+
+      // Delete the image from storage
+      if (imageUrl) {
+        const imagePath = imageUrl.split('/').pop();
+        if (imagePath) {
+          await supabase.storage
+            .from('outfit-images')
+            .remove([`${user.id}/${imagePath}`]);
+        }
+      }
+
+      toast({
+        title: "Succès",
+        description: "Tenue supprimée avec succès!",
+      });
+
+      // Refresh outfits list
+      await fetchOutfits();
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting outfit:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la tenue",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+  };
+
   const fetchOutfits = async () => {
     if (!user) return;
 
@@ -140,6 +241,8 @@ export const useOutfits = () => {
     outfits,
     loading,
     createOutfit,
+    updateOutfit,
+    deleteOutfit,
     fetchOutfits,
   };
 };

@@ -348,10 +348,10 @@ const OutfitCreator = () => {
       return;
     }
 
-    if (placedItems.length < 2) {
+    if (placedItems.length < 1) {
       toast({
         title: "Erreur",
-        description: "Vous devez placer au moins 2 vêtements pour sauvegarder une tenue",
+        description: "Vous devez placer au moins 1 vêtement pour sauvegarder une tenue",
         variant: "destructive",
       });
       return;
@@ -369,6 +369,12 @@ const OutfitCreator = () => {
     setIsSaving(true);
 
     try {
+      // Deselect all items before capturing screenshot
+      setSelectedItemId(null);
+      
+      // Wait a brief moment for the UI to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Capture screenshot of the canvas
       const imageBlob = await captureElementAsImage(canvasRef.current);
       
@@ -532,7 +538,7 @@ const OutfitCreator = () => {
               <Button
                 className="btn-primary w-full"
                 onClick={handleSaveOutfit}
-                disabled={placedItems.length < 2 || !outfitName.trim() || isSaving}
+                disabled={placedItems.length < 1 || !outfitName.trim() || isSaving}
               >
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>
