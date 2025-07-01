@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ClothingItem } from "@/hooks/useClothingItems";
+import { ClothingItem, useClothingItems } from "@/hooks/useClothingItems";
 import { NotepadText, Plus } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
 import { ClothingItemModal } from "@/components/shared/ClothingItemModal";
@@ -75,6 +75,7 @@ const OutfitCreator = () => {
   const { client } = useOutletContext<{ client: ClientData }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createItem } = useClothingItems();
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [catalogItems, setCatalogItems] = useState<ClothingItem[]>([]);
@@ -181,31 +182,41 @@ const OutfitCreator = () => {
     }
   };
 
-  const handleItemCreated = async (newItem: ClothingItem) => {
-    setCatalogItems(prev => [newItem, ...prev]);
-    
-    // Link the new item to the client
-    if (clientId && user) {
-      try {
-        await supabase
-          .from('client_clothing_items')
-          .insert({
-            client_id: clientId,
-            clothing_item_id: newItem.id
-          });
-        
-        toast({
-          title: "Succès",
-          description: "Vêtement ajouté au catalogue et lié au client",
-        });
-      } catch (error) {
-        console.error('Error linking item to client:', error);
-        toast({
-          title: "Avertissement",
-          description: "Vêtement créé mais pas lié au client",
-          variant: "destructive",
-        });
+  const handleItemCreated = async (itemData: Omit<ClothingItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user || !clientId) return;
+
+    try {
+      // First, create the clothing item using useClothingItems.createItem
+      const result = await createItem(itemData);
+      
+      if (result.error) {
+        throw new Error('Failed to create clothing item');
       }
+
+      const newItem = result.data as ClothingItem;
+      
+      // Add the new item to catalog items state
+      setCatalogItems(prev => [newItem, ...prev]);
+      
+      // Link the new item to the client
+      await supabase
+        .from('client_clothing_items')
+        .insert({
+          client_id: clientId,
+          clothing_item_id: newItem.id
+        });
+      
+      toast({
+        title: "Succès",
+        description: "Vêtement ajouté au catalogue et lié au client",
+      });
+    } catch (error) {
+      console.error('Error creating item for client:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter le vêtement au catalogue",
+        variant: "destructive",
+      });
     }
   };
 
@@ -623,7 +634,6 @@ const OutfitCreator = () => {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onSave={handleItemCreated}
-        clientId={clientId}
       />
     </div>
   );

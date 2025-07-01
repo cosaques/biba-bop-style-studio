@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,15 +10,12 @@ import { ClothingItem } from "@/hooks/useClothingItems";
 import { uploadClothingImage, getOptimizedImageUrl } from "@/utils/imageUtils";
 import { useImageEnhancement } from "@/hooks/useImageEnhancement";
 import { Upload, X, Loader2, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface ClothingItemModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: Omit<ClothingItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   editItem?: ClothingItem;
-  clientId?: string; // Optional prop for consultant catalog
 }
 
 const categoryOptions = [
@@ -55,9 +51,8 @@ const seasonOptions = [
   { value: 'winter', label: 'Hiver' }
 ];
 
-export function ClothingItemModal({ open, onOpenChange, onSave, editItem, clientId }: ClothingItemModalProps) {
+export function ClothingItemModal({ open, onOpenChange, onSave, editItem }: ClothingItemModalProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -218,13 +213,6 @@ export function ClothingItemModal({ open, onOpenChange, onSave, editItem, client
       };
 
       await onSave(itemData);
-
-      // If clientId is provided and we're creating a new item (not editing), link it to the client
-      if (clientId && !editItem) {
-        // We need to get the created item ID, but since onSave doesn't return it,
-        // we'll need to handle this in the calling component
-        // For now, we'll just show a success message
-      }
 
       onOpenChange(false);
     } catch (error) {
