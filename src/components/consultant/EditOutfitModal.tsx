@@ -115,7 +115,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
 
     setIsSaving(true);
     const result = await onSave(outfit.id, name.trim(), comments.trim());
-    
+
     if (result.success) {
       onOpenChange(false);
     }
@@ -133,8 +133,8 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
         <CardContent>
           <div className="grid grid-cols-1 gap-3">
             {items.map((item) => {
-              const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 200);
-              
+              const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+
               return (
                 <div key={item.id} className="flex items-center space-x-3 p-2 border rounded-md">
                   <div className="w-12 h-12 flex-shrink-0">
@@ -225,7 +225,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
           {/* Clothing Items */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Vêtements utilisés</h3>
-            
+
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bibabop-navy mx-auto"></div>
@@ -234,7 +234,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
               <>
                 {renderClothingItemsList(clientItems, "Garde-robe du client")}
                 {renderClothingItemsList(consultantItems, "Propositions du consultant")}
-                
+
                 {clothingItems.length === 0 && (
                   <p className="text-center text-gray-500 py-4">
                     Aucun vêtement trouvé pour cette tenue
