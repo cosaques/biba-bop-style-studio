@@ -36,7 +36,7 @@ export const useClothingItems = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setItems((data || []) as ClothingItem[]);
     } catch (error) {
       console.error('Error fetching clothing items:', error);
@@ -64,13 +64,13 @@ export const useClothingItems = () => {
         .single();
 
       if (error) throw error;
-      
+
       setItems(prev => [data as ClothingItem, ...prev]);
       toast({
         title: "Succès",
         description: "Vêtement ajouté avec succès",
       });
-      
+
       return { data };
     } catch (error) {
       console.error('Error creating clothing item:', error);
@@ -93,13 +93,13 @@ export const useClothingItems = () => {
         .single();
 
       if (error) throw error;
-      
+
       setItems(prev => prev.map(item => item.id === id ? data as ClothingItem : item));
       toast({
         title: "Succès",
         description: "Vêtement modifié avec succès",
       });
-      
+
       return { data };
     } catch (error) {
       console.error('Error updating clothing item:', error);
@@ -116,14 +116,14 @@ export const useClothingItems = () => {
     try {
       // Delete the images from storage first
       const imagesToDelete: string[] = [];
-      
+
       if (imageUrl) {
         const imagePath = imageUrl.split('/').pop();
         if (imagePath && user) {
           imagesToDelete.push(`${user.id}/${imagePath}`);
         }
       }
-      
+
       if (enhancedImageUrl) {
         const enhancedImagePath = enhancedImageUrl.split('/').pop();
         if (enhancedImagePath && user) {
@@ -131,26 +131,28 @@ export const useClothingItems = () => {
         }
       }
 
+
+      // Delete the item from database
+      const { error } = await supabase
+      .from('clothing_items')
+      .delete()
+      .eq('id', id);
+
+      if (error) throw error;
+
+      // Delete images only after cloth item is successfully deleted
       if (imagesToDelete.length > 0) {
         await supabase.storage
           .from('clothing-images')
           .remove(imagesToDelete);
       }
 
-      // Delete the item from database
-      const { error } = await supabase
-        .from('clothing_items')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
       setItems(prev => prev.filter(item => item.id !== id));
       toast({
         title: "Succès",
         description: "Vêtement supprimé avec succès",
       });
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error deleting clothing item:', error);
