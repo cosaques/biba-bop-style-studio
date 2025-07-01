@@ -181,8 +181,32 @@ const OutfitCreator = () => {
     }
   };
 
-  const handleItemCreated = (newItem: ClothingItem) => {
+  const handleItemCreated = async (newItem: ClothingItem) => {
     setCatalogItems(prev => [newItem, ...prev]);
+    
+    // Link the new item to the client
+    if (clientId && user) {
+      try {
+        await supabase
+          .from('client_clothing_items')
+          .insert({
+            client_id: clientId,
+            clothing_item_id: newItem.id
+          });
+        
+        toast({
+          title: "Succès",
+          description: "Vêtement ajouté au catalogue et lié au client",
+        });
+      } catch (error) {
+        console.error('Error linking item to client:', error);
+        toast({
+          title: "Avertissement",
+          description: "Vêtement créé mais pas lié au client",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }, itemSize: { width: number; height: number }): { x: number; y: number } => {
@@ -596,9 +620,9 @@ const OutfitCreator = () => {
 
       {/* Clothing Item Modal */}
       <ClothingItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onItemCreated={handleItemCreated}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSave={handleItemCreated}
         clientId={clientId}
       />
     </div>
