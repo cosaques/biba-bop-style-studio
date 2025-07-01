@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useOutfits } from "@/hooks/useOutfits";
 import { EditOutfitModal } from "@/components/consultant/EditOutfitModal";
+import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -83,67 +84,71 @@ const ClientOutfits = () => {
             </Card>
 
             {/* Existing Outfits */}
-            {clientOutfits.map((outfit) => (
-              <Card key={outfit.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="aspect-square rounded-md overflow-hidden bg-gray-100 mb-3">
-                    <img
-                      src={outfit.image_url}
-                      alt={outfit.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <CardTitle className="text-lg line-clamp-1">{outfit.name}</CardTitle>
-                  <CardDescription className="text-sm">
-                    Créée le {format(new Date(outfit.created_at), 'dd MMMM yyyy', { locale: fr })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditOutfit(outfit)}
-                      className="flex-1"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Modifier
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Supprimer
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer la tenue</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer la tenue "{outfit.name}" ? 
-                            Cette action est irréversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDeleteOutfit(outfit)}
-                            className="bg-red-600 hover:bg-red-700"
+            {clientOutfits.map((outfit) => {
+              const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
+              
+              return (
+                <Card key={outfit.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="aspect-square rounded-md overflow-hidden bg-gray-100 mb-3">
+                      <img
+                        src={optimizedImageUrl}
+                        alt={outfit.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <CardTitle className="text-lg line-clamp-1">{outfit.name}</CardTitle>
+                    <CardDescription className="text-sm">
+                      Créée le {format(new Date(outfit.created_at), 'dd MMMM yyyy', { locale: fr })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditOutfit(outfit)}
+                        className="flex-1"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Modifier
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
+                            <Trash2 className="h-4 w-4 mr-1" />
                             Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer la tenue</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Êtes-vous sûr de vouloir supprimer la tenue "{outfit.name}" ? 
+                              Cette action est irréversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteOutfit(outfit)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {/* Empty State */}
             {clientOutfits.length === 0 && (

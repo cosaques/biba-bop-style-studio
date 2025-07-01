@@ -2,22 +2,23 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { ClothingItem } from "@/hooks/useClothingItems";
 import { Outfit } from "@/hooks/useOutfits";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { NotepadText, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
-interface EditOutfitModalProps {
+interface ClientOutfitDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   outfit: Outfit | null;
-  onSave: (outfitId: string, name: string, comments: string) => Promise<{ success: boolean }>;
+  consultantName: string;
+  consultantAvatar?: string;
 }
 
 const categoryTranslations: { [key: string]: string } = {
@@ -87,20 +88,21 @@ const FullscreenImageModal = ({
   );
 };
 
-export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutfitModalProps) => {
-  const [name, setName] = useState("");
-  const [comments, setComments] = useState("");
+export const ClientOutfitDetailsModal = ({ 
+  open, 
+  onOpenChange, 
+  outfit, 
+  consultantName, 
+  consultantAvatar 
+}: ClientOutfitDetailsModalProps) => {
   const [clothingItems, setClothingItems] = useState<ClothingItem[]>([]);
   const [clientItems, setClientItems] = useState<ClothingItem[]>([]);
   const [consultantItems, setConsultantItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
 
   useEffect(() => {
     if (outfit) {
-      setName(outfit.name);
-      setComments(outfit.comments || "");
       fetchOutfitClothingItems();
     }
   }, [outfit]);
@@ -110,7 +112,6 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
 
     setLoading(true);
     try {
-      // Get outfit clothing items with full clothing item details
       const { data: outfitItems, error } = await supabase
         .from('outfit_clothing_items')
         .select(`
@@ -143,18 +144,6 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSave = async () => {
-    if (!outfit || !name.trim()) return;
-
-    setIsSaving(true);
-    const result = await onSave(outfit.id, name.trim(), comments.trim());
-
-    if (result.success) {
-      onOpenChange(false);
-    }
-    setIsSaving(false);
   };
 
   const renderClothingItemsList = (items: ClothingItem[], title: string) => {
@@ -221,10 +210,33 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier la tenue</DialogTitle>
+            <DialogTitle>Détails de la tenue</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Outfit Info */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">{outfit.name}</h2>
+              
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-8 w-8">
+                  {consultantAvatar ? (
+                    <AvatarImage src={consultantAvatar} alt={consultantName} />
+                  ) : (
+                    <AvatarFallback>
+                      {consultantName.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">Créée par {consultantName}</p>
+                  <p className="text-xs text-gray-500">
+                    Le {format(new Date(outfit.created_at), 'dd MMMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Outfit Image */}
             <div className="flex justify-center">
               <div className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-pointer" onClick={() => setFullscreenImageOpen(true)}>
@@ -236,29 +248,13 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
               </div>
             </div>
 
-            {/* Outfit Name */}
-            <div>
-              <Label htmlFor="outfit-name">Nom de la tenue *</Label>
-              <Input
-                id="outfit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nom de la tenue"
-                className="mt-1"
-              />
-            </div>
-
             {/* Comments */}
-            <div>
-              <Label htmlFor="comments">Commentaires</Label>
-              <Textarea
-                id="comments"
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                placeholder="Commentaires sur la tenue..."
-                className="mt-1 min-h-[80px]"
-              />
-            </div>
+            {outfit.comments && (
+              <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">
+                <p className="text-sm font-medium mb-1">Commentaires du conseiller en image:</p>
+                <p className="text-sm">{outfit.comments}</p>
+              </div>
+            )}
 
             {/* Clothing Items */}
             <div>
@@ -270,7 +266,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
                 </div>
               ) : (
                 <>
-                  {renderClothingItemsList(clientItems, "Garde-robe du client")}
+                  {renderClothingItemsList(clientItems, "Votre garde-robe")}
                   {renderClothingItemsList(consultantItems, "Propositions du consultant")}
 
                   {clothingItems.length === 0 && (
@@ -282,21 +278,13 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4">
+            {/* Close Button */}
+            <div className="flex justify-end pt-4">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSaving}
               >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!name.trim() || isSaving}
-                className="btn-primary"
-              >
-                {isSaving ? "Enregistrement..." : "Enregistrer"}
+                Fermer
               </Button>
             </div>
           </div>
