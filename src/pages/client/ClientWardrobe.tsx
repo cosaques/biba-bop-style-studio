@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useClothingItems, ClothingItem } from "@/hooks/useClothingItems";
-import { ClothingItemModal } from "@/components/client/ClothingItemModal";
+import { ClothingItemModal } from "@/components/shared/ClothingItemModal";
 import { DeleteClothingModal } from "@/components/client/DeleteClothingModal";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 

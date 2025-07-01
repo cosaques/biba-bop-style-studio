@@ -13,10 +13,10 @@ import { Upload, X } from "lucide-react";
 import { ClothingItem } from "@/hooks/useClothingItems";
 
 interface ClothingItemModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onItemCreated?: (item: ClothingItem) => void;
-  item?: ClothingItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave?: (item: Omit<ClothingItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
+  editItem?: ClothingItem;
   clientId?: string; // For consultant use - links item to specific client
 }
 
@@ -53,18 +53,18 @@ const seasonOptions = [
   { value: "winter", label: "Hiver" }
 ];
 
-export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, clientId }: ClothingItemModalProps) {
+export function ClothingItemModal({ open, onOpenChange, onSave, editItem, clientId }: ClothingItemModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(item?.image_url || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(editItem?.enhanced_image_url || editItem?.image_url || null);
   
   const [formData, setFormData] = useState({
-    category: item?.category || "top",
-    color: item?.color || "other",
-    season: item?.season || "all",
-    notes: item?.notes || ""
+    category: editItem?.category || "top" as ClothingItem['category'],
+    color: editItem?.color || "other" as ClothingItem['color'],
+    season: editItem?.season || "all" as ClothingItem['season'],
+    notes: editItem?.notes || ""
   });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,13 +112,13 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
     setIsLoading(true);
 
     try {
-      let imageUrl = item?.image_url || "";
+      let imageUrl = editItem?.image_url || "";
       
       if (selectedFile) {
         imageUrl = await uploadImage(selectedFile);
       }
 
-      if (!imageUrl && !item) {
+      if (!imageUrl && !editItem) {
         toast({
           title: "Erreur",
           description: "Veuillez sélectionner une image",
@@ -128,19 +128,24 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
         return;
       }
 
-      if (item) {
+      const itemData = {
+        image_url: imageUrl,
+        category: formData.category,
+        color: formData.color,
+        season: formData.season,
+        notes: formData.notes,
+        enhanced_image_url: editItem?.enhanced_image_url || null
+      };
+
+      if (editItem) {
         // Update existing item
         const { data, error } = await supabase
           .from('clothing_items')
           .update({
-            category: formData.category,
-            color: formData.color,
-            season: formData.season,
-            notes: formData.notes,
-            ...(selectedFile && { image_url: imageUrl }),
+            ...itemData,
             updated_at: new Date().toISOString()
           })
-          .eq('id', item.id)
+          .eq('id', editItem.id)
           .select()
           .single();
 
@@ -151,18 +156,14 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
           description: "Vêtement modifié avec succès",
         });
 
-        onItemCreated?.(data as ClothingItem);
+        onSave?.(itemData);
       } else {
         // Create new item
         const { data, error } = await supabase
           .from('clothing_items')
           .insert({
             user_id: user.id,
-            image_url: imageUrl,
-            category: formData.category,
-            color: formData.color,
-            season: formData.season,
-            notes: formData.notes
+            ...itemData
           })
           .select()
           .single();
@@ -186,10 +187,10 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
           description: "Vêtement ajouté avec succès",
         });
 
-        onItemCreated?.(data as ClothingItem);
+        onSave?.(itemData);
       }
 
-      onClose();
+      onOpenChange(false);
     } catch (error) {
       console.error('Error saving clothing item:', error);
       toast({
@@ -213,17 +214,17 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
     setPreviewUrl(null);
   };
 
-  const handleClose = () => {
-    if (!item) resetForm();
-    onClose();
+  const handleClose = (open: boolean) => {
+    if (!open && !editItem) resetForm();
+    onOpenChange(open);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {item ? "Modifier le vêtement" : "Ajouter un nouveau vêtement"}
+            {editItem ? "Modifier le vêtement" : "Ajouter un nouveau vêtement"}
           </DialogTitle>
         </DialogHeader>
 
@@ -285,7 +286,10 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
                 <Label htmlFor="category">Type de vêtement *</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    category: value as ClothingItem['category']
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionnez un type" />
@@ -304,7 +308,10 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
                 <Label htmlFor="color">Couleur</Label>
                 <Select
                   value={formData.color}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, color: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    color: value as ClothingItem['color']
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionnez une couleur" />
@@ -324,7 +331,10 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
               <Label htmlFor="season">Saison</Label>
               <Select
                 value={formData.season}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, season: value }))}
+                onValueChange={(value) => setFormData(prev => ({ 
+                  ...prev, 
+                  season: value as ClothingItem['season']
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionnez une saison" />
@@ -352,11 +362,11 @@ export function ClothingItemModal({ isOpen, onClose, onItemCreated, item, client
           </div>
 
           <div className="flex justify-end space-x-3">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={() => handleClose(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Enregistrement..." : (item ? "Modifier" : "Ajouter")}
+              {isLoading ? "Enregistrement..." : (editItem ? "Modifier" : "Ajouter")}
             </Button>
           </div>
         </form>
