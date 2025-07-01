@@ -67,8 +67,8 @@ const FullscreenImageModal = ({
   if (!open) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+    <div
+      className="fixed inset-0 m-0 p-0 bg-black bg-opacity-90 flex items-center justify-center z-[60]"
       onClick={() => onOpenChange(false)}
     >
       <button
@@ -227,11 +227,14 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
           <div className="space-y-6">
             {/* Outfit Image */}
             <div className="flex justify-center">
-              <div className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-pointer" onClick={() => setFullscreenImageOpen(true)}>
+              <div
+                className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-zoom-in"
+                onClick={() => setFullscreenImageOpen(true)}
+              >
                 <img
                   src={optimizedOutfitImageUrl}
                   alt={outfit.name}
-                  className="w-full h-full object-contain hover:opacity-90 transition-opacity"
+                  className="w-full h-full object-contain hover:opacity-90 transition-opacity cursor-zoom-in"
                 />
               </div>
             </div>
