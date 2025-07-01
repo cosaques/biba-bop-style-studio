@@ -3,6 +3,8 @@ import { useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,11 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClothingItem, useClothingItems } from "@/hooks/useClothingItems";
+import { useOutfits } from "@/hooks/useOutfits";
 import { NotepadText, Plus } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
 import { ClothingItemModal } from "@/components/shared/ClothingItemModal";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
+import { captureElementAsImage } from "@/utils/screenshotUtils";
 
 interface ClientData {
   id: string;
@@ -76,11 +80,13 @@ const OutfitCreator = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { createItem } = useClothingItems();
+  const { createOutfit } = useOutfits();
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
   const [catalogItems, setCatalogItems] = useState<ClothingItem[]>([]);
   const [placedItems, setPlacedItems] = useState<PlacedClothingItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [outfitName, setOutfitName] = useState("");
   const [comments, setComments] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("wardrobe");
@@ -330,18 +336,71 @@ const OutfitCreator = () => {
     setSelectedItemId(null);
   };
 
-  const handleSaveOutfit = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+  const handleSaveOutfit = async () => {
+    if (!clientId || !user) return;
+
+    if (!outfitName.trim()) {
       toast({
-        title: "Succès",
-        description: "Tenue enregistrée et partagée avec le client!",
+        title: "Erreur",
+        description: "Le nom de la tenue est obligatoire",
+        variant: "destructive",
       });
-      setPlacedItems([]);
-      setComments("");
-      setSelectedItemId(null);
-    }, 1500);
+      return;
+    }
+
+    if (placedItems.length < 2) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez placer au moins 2 vêtements pour sauvegarder une tenue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canvasRef.current) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de capturer l'image de la tenue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Capture screenshot of the canvas
+      const imageBlob = await captureElementAsImage(canvasRef.current);
+      
+      // Get clothing item IDs
+      const clothingItemIds = placedItems.map(item => item.id);
+
+      // Create outfit
+      const result = await createOutfit(
+        outfitName.trim(),
+        comments.trim(),
+        clientId,
+        clothingItemIds,
+        imageBlob
+      );
+
+      if (result.success) {
+        // Reset form
+        setOutfitName("");
+        setComments("");
+        setPlacedItems([]);
+        setSelectedItemId(null);
+      }
+    } catch (error) {
+      console.error('Error saving outfit:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la tenue",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getCurrentItems = () => {
@@ -434,10 +493,26 @@ const OutfitCreator = () => {
             {/* Bottom controls */}
             <div className="flex-shrink-0 space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Commentaires sur la tenue</h3>
+                <Label htmlFor="outfit-name" className="text-sm font-medium">
+                  Nom de la tenue *
+                </Label>
+                <Input
+                  id="outfit-name"
+                  placeholder="Ex: Tenue décontractée printemps"
+                  value={outfitName}
+                  onChange={(e) => setOutfitName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="comments" className="text-sm font-medium">
+                  Commentaires sur la tenue
+                </Label>
                 <Textarea
+                  id="comments"
                   placeholder="Ajoutez vos commentaires et conseils pour le client..."
-                  className="min-h-[80px]"
+                  className="min-h-[80px] mt-1"
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                 />
@@ -457,7 +532,7 @@ const OutfitCreator = () => {
               <Button
                 className="btn-primary w-full"
                 onClick={handleSaveOutfit}
-                disabled={placedItems.length === 0 || isSaving}
+                disabled={placedItems.length < 2 || !outfitName.trim() || isSaving}
               >
                 {isSaving ? "Enregistrement..." : "Enregistrer et partager"}
               </Button>

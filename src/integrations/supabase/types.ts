@@ -220,6 +220,90 @@ export type Database = {
           },
         ]
       }
+      outfit_clothing_items: {
+        Row: {
+          clothing_item_id: string
+          created_at: string
+          id: string
+          outfit_id: string
+        }
+        Insert: {
+          clothing_item_id: string
+          created_at?: string
+          id?: string
+          outfit_id: string
+        }
+        Update: {
+          clothing_item_id?: string
+          created_at?: string
+          id?: string
+          outfit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outfit_clothing_items_clothing_item_id_fkey"
+            columns: ["clothing_item_id"]
+            isOneToOne: false
+            referencedRelation: "clothing_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outfit_clothing_items_outfit_id_fkey"
+            columns: ["outfit_id"]
+            isOneToOne: false
+            referencedRelation: "outfits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outfits: {
+        Row: {
+          client_id: string
+          comments: string | null
+          consultant_id: string
+          created_at: string
+          id: string
+          image_url: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          comments?: string | null
+          consultant_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          comments?: string | null
+          consultant_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outfits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outfits_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
