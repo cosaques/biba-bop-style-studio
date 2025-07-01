@@ -10,8 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClothingItem } from "@/hooks/useClothingItems";
-import { NotepadText } from "lucide-react";
+import { NotepadText, Plus } from "lucide-react";
 import { DraggableClothingItem } from "@/components/consultant/DraggableClothingItem";
+import { ClothingItemModal } from "@/components/shared/ClothingItemModal";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { getImageDimensions, calculateOptimalSize } from "@/utils/imageLoadUtils";
 
@@ -34,45 +35,6 @@ interface PlacedClothingItem {
   size: { width: number; height: number };
   zIndex: number;
 }
-
-const externalCatalog: ClothingItem[] = [
-  {
-    id: "ext1",
-    user_id: "external",
-    image_url: "/clothes/cloth-3.png",
-    enhanced_image_url: null,
-    category: "bottom",
-    color: "grey",
-    season: "all",
-    notes: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: "ext2",
-    user_id: "external",
-    image_url: "/clothes/cloth-6.png",
-    enhanced_image_url: null,
-    category: "accessory",
-    color: "brown",
-    season: "all",
-    notes: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: "ext3",
-    user_id: "external",
-    image_url: "/clothes/cloth-7.png",
-    enhanced_image_url: null,
-    category: "accessory",
-    color: "beige",
-    season: "all",
-    notes: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
 
 const categoryTranslations: { [key: string]: string } = {
   all: "Tous",
@@ -115,6 +77,7 @@ const OutfitCreator = () => {
   const { toast } = useToast();
 
   const [clientClothes, setClientClothes] = useState<ClothingItem[]>([]);
+  const [catalogItems, setCatalogItems] = useState<ClothingItem[]>([]);
   const [placedItems, setPlacedItems] = useState<PlacedClothingItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [comments, setComments] = useState("");
@@ -125,12 +88,14 @@ const OutfitCreator = () => {
   const [nextZIndex, setNextZIndex] = useState(10);
   const [containerBounds, setContainerBounds] = useState({ width: 0, height: 0 });
   const [containerReady, setContainerReady] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!clientId || !user) return;
     fetchClientClothes();
+    fetchCatalogItems();
   }, [clientId, user]);
 
   useEffect(() => {
@@ -184,9 +149,40 @@ const OutfitCreator = () => {
         description: "Impossible de charger la garde-robe du client",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchCatalogItems = async () => {
+    if (!clientId || !user) return;
+
+    try {
+      // Fetch clothing items from consultant that are linked to this client
+      const { data, error } = await supabase
+        .from('client_clothing_items')
+        .select(`
+          clothing_item_id,
+          clothing_items (*)
+        `)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      const items = data?.map(item => item.clothing_items).filter(Boolean) || [];
+      setCatalogItems(items as ClothingItem[]);
+    } catch (error) {
+      console.error('Error fetching catalog items:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le catalogue",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleItemCreated = (newItem: ClothingItem) => {
+    setCatalogItems(prev => [newItem, ...prev]);
   };
 
   const getDefaultPosition = (category: string, containerBounds: { width: number; height: number }, itemSize: { width: number; height: number }): { x: number; y: number } => {
@@ -224,7 +220,7 @@ const OutfitCreator = () => {
   };
 
   const handleItemSelect = async (itemId: string) => {
-    const allItems = [...clientClothes, ...externalCatalog];
+    const allItems = [...clientClothes, ...catalogItems];
     const item = allItems.find(i => i.id === itemId);
     if (!item) return;
 
@@ -316,11 +312,11 @@ const OutfitCreator = () => {
     if (activeTab === "wardrobe") {
       return clientClothes;
     } else {
-      return externalCatalog;
+      return catalogItems;
     }
   };
 
-  const allItems = [...clientClothes, ...externalCatalog];
+  const allItems = [...clientClothes, ...catalogItems];
   const filteredItems = getCurrentItems().filter(
     item => categoryFilter === "all" || item.category === categoryFilter
   );
@@ -525,63 +521,71 @@ const OutfitCreator = () => {
               </TabsContent>
 
               <TabsContent value="catalog" className="flex-1 mt-4 min-h-0">
-                {filteredItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>
-                      Aucun vêtement trouvé dans le catalogue
-                      {categoryFilter !== "all" && ` de type "${categoryTranslations[categoryFilter]}"`}
-                    </p>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Add new item card */}
+                  <div
+                    className="aspect-square rounded-md border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center cursor-pointer transition-all hover:border-bibabop-pink hover:bg-gray-50"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-600 text-center">Ajouter un nouveau vêtement</span>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-4">
-                    {filteredItems.map((item) => {
-                      const isPlaced = placedItems.some(p => p.id === item.id);
-                      const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
 
-                      return (
-                        <div key={item.id} className="space-y-2">
-                          <div
-                            className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${isPlaced
-                              ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
-                              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                              }`}
-                            onClick={() => handleItemSelect(item.id)}
-                          >
-                            <img
-                              src={optimizedUrl}
-                              alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
-                              className="max-w-full max-h-full object-contain"
-                              loading="lazy"
-                            />
-                            {isPlaced && (
-                              <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                ✓
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">
-                              {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                  {/* Catalog items */}
+                  {filteredItems.map((item) => {
+                    const isPlaced = placedItems.some(p => p.id === item.id);
+                    const optimizedUrl = getOptimizedImageUrl(item.enhanced_image_url || item.image_url, 400);
+
+                    return (
+                      <div key={item.id} className="space-y-2">
+                        <div
+                          className={`aspect-square rounded-md border-2 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all bg-white relative ${isPlaced
+                            ? 'border-bibabop-lightpink shadow-lg ring-2 ring-bibabop-lightpink/20'
+                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                            }`}
+                          onClick={() => handleItemSelect(item.id)}
+                        >
+                          <img
+                            src={optimizedUrl}
+                            alt={`${colorTranslations[item.color]} ${categoryTranslations[item.category]}`}
+                            className="max-w-full max-h-full object-contain"
+                            loading="lazy"
+                          />
+                          {isPlaced && (
+                            <div className="absolute top-1 right-1 bg-bibabop-pink text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                              ✓
                             </div>
-                            {item.notes && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                    <NotepadText className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-xs">Notes</h4>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      );
-                    })}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-muted-foreground">
+                            {categoryTranslations[item.category]} · {colorTranslations[item.color]} · {seasonTranslations[item.season]}
+                          </div>
+                          {item.notes && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
+                                  <NotepadText className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-xs">Notes</h4>
+                                  <p className="text-xs text-muted-foreground leading-relaxed">{item.notes}</p>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {catalogItems.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground mt-4">
+                    <p>Aucun vêtement dans le catalogue pour ce client</p>
+                    <p className="text-sm mt-1">Cliquez sur "Ajouter un nouveau vêtement" pour commencer</p>
                   </div>
                 )}
               </TabsContent>
@@ -589,6 +593,14 @@ const OutfitCreator = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Clothing Item Modal */}
+      <ClothingItemModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onItemCreated={handleItemCreated}
+        clientId={clientId}
+      />
     </div>
   );
 };
