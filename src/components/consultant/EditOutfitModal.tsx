@@ -68,8 +68,12 @@ const FullscreenImageModal = ({
 
   return (
     <div
-      className="fixed inset-0 m-0 p-0 bg-black bg-opacity-90 flex items-center justify-center z-[60]"
-      onClick={() => onOpenChange(false)}
+      className="fixed inset-0 m-0 p-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999]"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpenChange(false)
+      }}
     >
       <button
         onClick={() => onOpenChange(false)}
