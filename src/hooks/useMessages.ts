@@ -37,6 +37,8 @@ export const useMessages = () => {
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
+    console.log('Fetching conversations for user:', user.id, 'role:', user.role);
+
     try {
       const { data, error } = await supabase
         .from('conversations')
@@ -57,10 +59,14 @@ export const useMessages = () => {
 
       if (error) throw error;
 
+      console.log('Raw conversations data:', data);
+
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
           const otherUser = conv.client_id === user.id ? conv.consultant : conv.client;
           const otherUserName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utilisateur';
+
+          console.log('Processing conversation:', conv.id, 'Other user:', otherUserName);
 
           // Get last message
           const { data: lastMessage } = await supabase
@@ -100,6 +106,7 @@ export const useMessages = () => {
         })
       );
 
+      console.log('Processed conversations:', conversationsWithDetails);
       setConversations(conversationsWithDetails);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -115,6 +122,8 @@ export const useMessages = () => {
 
   const fetchMessages = useCallback(async (conversationId: string) => {
     if (!user) return;
+
+    console.log('Fetching messages for conversation:', conversationId);
 
     try {
       const { data, error } = await supabase
@@ -132,6 +141,8 @@ export const useMessages = () => {
 
       if (error) throw error;
 
+      console.log('Fetched messages:', data);
+
       const messagesWithSender = (data || []).map(message => ({
         ...message,
         sender_name: `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || 'Utilisateur',
@@ -141,12 +152,16 @@ export const useMessages = () => {
       setMessages(messagesWithSender);
 
       // Mark messages as read
-      await supabase
+      const { error: updateError } = await supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user.id)
         .is('read_at', null);
+
+      if (updateError) {
+        console.error('Error marking messages as read:', updateError);
+      }
 
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -160,6 +175,8 @@ export const useMessages = () => {
 
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
+
+    console.log('Sending message:', { conversationId, content, senderId: user.id });
 
     try {
       const { error } = await supabase
@@ -195,18 +212,32 @@ export const useMessages = () => {
   const createConversation = async (otherUserId: string) => {
     if (!user) return null;
 
+    console.log('Creating conversation between:', user.id, 'and:', otherUserId);
+
     try {
-      const clientId = user.id;
-      const consultantId = otherUserId;
+      // Determine client and consultant IDs
+      let clientId, consultantId;
+      
+      if (user.role === 'consultant') {
+        consultantId = user.id;
+        clientId = otherUserId;
+      } else {
+        clientId = user.id;
+        consultantId = otherUserId;
+      }
+
+      console.log('Conversation IDs:', { clientId, consultantId });
 
       // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
-        .or(`and(client_id.eq.${clientId},consultant_id.eq.${consultantId}),and(client_id.eq.${consultantId},consultant_id.eq.${clientId})`)
+        .eq('client_id', clientId)
+        .eq('consultant_id', consultantId)
         .single();
 
       if (existingConv) {
+        console.log('Conversation already exists:', existingConv.id);
         return existingConv.id;
       }
 
@@ -222,6 +253,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
+      console.log('Created new conversation:', data.id);
       await fetchConversations();
       return data.id;
 
@@ -250,6 +282,8 @@ export const useMessages = () => {
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up real-time subscription for user:', user.id);
+    
     const channel = supabase
       .channel('messages-changes')
       .on(
@@ -259,7 +293,8 @@ export const useMessages = () => {
           schema: 'public',
           table: 'messages'
         },
-        () => {
+        (payload) => {
+          console.log('Real-time message received:', payload);
           fetchConversations();
         }
       )
