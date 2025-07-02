@@ -126,7 +126,7 @@ export default function ClientOutfits() {
           ) : (
             <div className="grid md:grid-cols-3 gap-6">
               {filteredOutfits.map((outfit) => {
-                const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
+                const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 600);
 
                 return (
                   <Card key={outfit.id} className="card-hover">

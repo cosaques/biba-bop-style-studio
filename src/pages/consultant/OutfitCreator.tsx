@@ -375,8 +375,11 @@ const OutfitCreator = () => {
       // Wait a brief moment for the UI to update
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Capture screenshot of the canvas
-      const imageBlob = await captureElementAsImage(canvasRef.current);
+      // Capture screenshot of the canvas in JPEG format
+      const imageBlob = await captureElementAsImage(
+        canvasRef.current,
+        'image/jpeg'
+      );
       
       // Get clothing item IDs
       const clothingItemIds = placedItems.map(item => item.id);

@@ -48,11 +48,11 @@ export const useOutfits = () => {
 
     try {
       // Upload image to storage
-      const fileName = `${user.id}/${Date.now()}-outfit.png`;
+      const fileName = `${user.id}/${Date.now()}-outfit.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('outfit-images')
         .upload(fileName, imageBlob, {
-          contentType: 'image/png',
+          contentType: 'image/jpeg',
         });
 
       if (uploadError) throw uploadError;

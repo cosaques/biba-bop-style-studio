@@ -220,7 +220,7 @@ export const ClientOutfitDetailsModal = ({
 
   if (!outfit) return null;
 
-  const optimizedOutfitImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
+  const optimizedOutfitImageUrl = getOptimizedImageUrl(outfit.image_url, 600);
 
   return (
     <>

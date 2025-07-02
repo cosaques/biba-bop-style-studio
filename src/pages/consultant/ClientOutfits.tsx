@@ -85,7 +85,7 @@ const ClientOutfits = () => {
 
             {/* Existing Outfits */}
             {clientOutfits.map((outfit) => {
-              const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
+              const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 600);
               
               return (
                 <Card key={outfit.id} className="hover:shadow-md transition-shadow">
