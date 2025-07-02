@@ -22,6 +22,13 @@ export default function Messages() {
     return user.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
   };
 
+  console.log('Messages: Component rendering with:', JSON.stringify({
+    userId: user?.id,
+    userRole: user?.role,
+    conversationsCount: conversations.length,
+    baseRoute: getBaseRoute()
+  }));
+
   if (loading) {
     return (
       <div className="p-6">
@@ -62,51 +69,59 @@ export default function Messages() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {conversations.map((conversation) => (
-            <Link
-              key={conversation.id}
-              to={`${getBaseRoute()}/messages/${conversation.id}`}
-              className="block"
-            >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={conversation.other_user_avatar} />
-                      <AvatarFallback>
-                        {conversation.other_user_name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-bibabop-navy truncate">
-                          {conversation.other_user_name}
-                        </h3>
-                        {conversation.unread_count > 0 && (
-                          <Badge variant="destructive" className="ml-2">
-                            {conversation.unread_count}
-                          </Badge>
+          {conversations.map((conversation) => {
+            const conversationLink = `${getBaseRoute()}/messages/${conversation.id}`;
+            console.log('Messages: Creating link for conversation:', JSON.stringify({
+              conversationId: conversation.id,
+              link: conversationLink
+            }));
+            
+            return (
+              <Link
+                key={conversation.id}
+                to={conversationLink}
+                className="block"
+              >
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarImage src={conversation.other_user_avatar} />
+                        <AvatarFallback>
+                          {conversation.other_user_name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-bibabop-navy truncate">
+                            {conversation.other_user_name}
+                          </h3>
+                          {conversation.unread_count > 0 && (
+                            <Badge variant="destructive" className="ml-2">
+                              {conversation.unread_count}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {conversation.last_message && (
+                          <div className="mt-1">
+                            <p className="text-sm text-muted-foreground truncate">
+                              {conversation.last_message.sender_id === user?.id ? 'Vous: ' : ''}
+                              {conversation.last_message.content}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {format(new Date(conversation.last_message.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                            </p>
+                          </div>
                         )}
                       </div>
-                      
-                      {conversation.last_message && (
-                        <div className="mt-1">
-                          <p className="text-sm text-muted-foreground truncate">
-                            {conversation.last_message.sender_id === user?.id ? 'Vous: ' : ''}
-                            {conversation.last_message.content}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(conversation.last_message.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
 

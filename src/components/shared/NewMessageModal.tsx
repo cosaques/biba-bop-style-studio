@@ -44,7 +44,7 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
       let query;
       
       if (user.role === 'consultant') {
-        // Fetch consultant's clients
+        // Consultant should see their clients
         console.log('NewMessageModal: Fetching clients for consultant:', JSON.stringify({ consultantId: user.id }));
         query = supabase
           .from('consultant_clients')
@@ -60,7 +60,7 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
           `)
           .eq('consultant_id', user.id);
       } else {
-        // Fetch client's consultants
+        // Client should see their consultants
         console.log('NewMessageModal: Fetching consultants for client:', JSON.stringify({ clientId: user.id }));
         query = supabase
           .from('consultant_clients')

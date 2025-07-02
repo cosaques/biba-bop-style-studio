@@ -20,7 +20,7 @@ export default function Conversation() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Find conversation - be more flexible with timing
+  // Find conversation
   const conversation = conversations.find(c => c.id === conversationId);
 
   console.log('Conversation: Component mounted with:', JSON.stringify({ 
@@ -61,7 +61,8 @@ export default function Conversation() {
     navigate(targetRoute);
   };
 
-  if (loading && conversations.length === 0) {
+  // Show loading initially
+  if (loading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center py-10">
@@ -71,8 +72,8 @@ export default function Conversation() {
     );
   }
 
-  // Show conversation not found only if we have conversations loaded but none match
-  if (!loading && conversations.length > 0 && !conversation) {
+  // Show conversation not found if no conversation exists
+  if (!conversation) {
     console.log('Conversation: No conversation found for ID:', JSON.stringify({ conversationId }));
     return (
       <div className="p-6">
@@ -84,17 +85,6 @@ export default function Conversation() {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // Show loading while waiting for conversations to load
-  if (!conversation) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy"></div>
-        </div>
       </div>
     );
   }
