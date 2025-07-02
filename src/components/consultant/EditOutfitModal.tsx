@@ -106,6 +106,14 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
   const [isSaving, setIsSaving] = useState(false);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
 
+  const handleModalOpenChange = (newOpen: boolean) => {
+    if (!newOpen && fullscreenImageOpen) {
+      setFullscreenImageOpen(false)
+      return
+    }
+    onOpenChange(newOpen)
+  }
+
   useEffect(() => {
     if (outfit) {
       setName(outfit.name);
@@ -227,7 +235,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleModalOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier la tenue</DialogTitle>
