@@ -125,7 +125,7 @@ export default function ClientOutfits() {
               </p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               {filteredOutfits.map((outfit) => {
                 const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
                 
@@ -147,7 +147,6 @@ export default function ClientOutfits() {
                       </div>
                       {outfit.comments && (
                         <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">
-                          <p className="text-sm font-medium mb-1">Commentaires du conseiller en image:</p>
                           <p className="text-sm">{outfit.comments}</p>
                         </div>
                       )}
