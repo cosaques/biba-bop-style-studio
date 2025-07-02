@@ -138,11 +138,11 @@ export default function ClientOutfits() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="aspect-auto bg-muted rounded-md flex items-center justify-center mb-4 overflow-hidden">
+                      <div className="mb-4 rounded-md overflow-hidden bg-muted">
                         <img
                           src={optimizedImageUrl}
                           alt={outfit.name}
-                          className="w-full h-auto object-contain max-h-[200px]"
+                          className="w-full h-48 object-cover"
                         />
                       </div>
                       {outfit.comments && (
