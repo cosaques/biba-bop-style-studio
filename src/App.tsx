@@ -27,6 +27,8 @@ import ConsultantClientMain from "./pages/consultant/ClientMain";
 import ConsultantClientOutfits from "./pages/consultant/ClientOutfits";
 import ConsultantClientWardrobe from "./pages/consultant/ClientWardrobe";
 import OutfitCreator from "./pages/consultant/OutfitCreator";
+import Messages from "./pages/shared/Messages";
+import Conversation from "./pages/shared/Conversation";
 import NotFound from "./pages/NotFound";
 
 // Create a stable query client instance outside the component
@@ -65,6 +67,8 @@ const App = () => {
                   <Route index element={<ClientMain />} />
                   <Route path="outfits" element={<ClientOutfits />} />
                   <Route path="wardrobe" element={<ClientWardrobe />} />
+                  <Route path="messages" element={<Messages />} />
+                  <Route path="messages/:conversationId" element={<Conversation />} />
                   <Route path="settings" element={<ClientSettingsPage />} />
                 </Route>
 
@@ -81,6 +85,8 @@ const App = () => {
                   </ProtectedRoute>
                 }>
                   <Route index element={<ConsultantMain />} />
+                  <Route path="messages" element={<Messages />} />
+                  <Route path="messages/:conversationId" element={<Conversation />} />
                   <Route path="settings" element={<ConsultantSettings />} />
                 </Route>
 

@@ -1,21 +1,23 @@
 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import {
   Home,
+  MessageCircle,
+  Shirt,
   Settings,
   LogOut,
-  Shirt,
-  Image,
-  Menu
+  Palette
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useMessages } from "@/hooks/useMessages";
 
-function SidebarContent() {
+export function ClientSidebar() {
   const { signOut } = useAuth();
+  const { getTotalUnreadCount } = useMessages();
   const location = useLocation();
+  const unreadCount = getTotalUnreadCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -25,10 +27,14 @@ function SidebarContent() {
     return location.pathname === path;
   };
 
+  const isMessagesActive = () => {
+    return location.pathname.startsWith('/client/dashboard/messages');
+  };
+
   return (
-    <div className="flex flex-col h-full bg-bibabop-pink text-white">
+    <div className="hidden md:flex w-64 flex-col border-r bg-bibabop-pink text-white">
       <div className="p-6">
-        <p className="text-sm text-white/70">Portail Client</p>
+        <p className="text-sm text-white/70">Tableau de Bord Client</p>
       </div>
 
       <nav className="flex-1 px-4 space-y-1">
@@ -54,7 +60,7 @@ function SidebarContent() {
                 isActive('/client/dashboard/outfits') ? 'bg-white/20' : ''
               }`}
             >
-              <Image className="mr-2 h-5 w-5" />
+              <Palette className="mr-2 h-5 w-5" />
               Mes Tenues
             </Button>
           </Link>
@@ -69,7 +75,26 @@ function SidebarContent() {
               }`}
             >
               <Shirt className="mr-2 h-5 w-5" />
-              Ma Garde-robe
+              Ma Garde-Robe
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mb-1">
+          <Link to="/client/dashboard/messages">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
+                isMessagesActive() ? 'bg-white/20' : ''
+              }`}
+            >
+              <MessageCircle className="mr-2 h-5 w-5" />
+              Messages
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-auto">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
           </Link>
         </div>
@@ -99,31 +124,6 @@ function SidebarContent() {
           </Button>
         </div>
       </nav>
-    </div>
-  );
-}
-
-export function ClientSidebar() {
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return (
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-50">
-            <Menu className="h-6 w-6" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
-  return (
-    <div className="hidden md:flex w-64 flex-col border-r">
-      <SidebarContent />
     </div>
   );
 }

@@ -1,16 +1,21 @@
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Home,
   Settings,
-  LogOut
+  LogOut,
+  MessageCircle
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMessages } from "@/hooks/useMessages";
 
 export function ConsultantSidebar() {
   const { signOut } = useAuth();
+  const { getTotalUnreadCount } = useMessages();
   const location = useLocation();
+  const unreadCount = getTotalUnreadCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -18,6 +23,10 @@ export function ConsultantSidebar() {
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const isMessagesActive = () => {
+    return location.pathname.startsWith('/consultant/dashboard/messages');
   };
 
   return (
@@ -37,6 +46,25 @@ export function ConsultantSidebar() {
             >
               <Home className="mr-2 h-5 w-5" />
               Accueil
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mb-1">
+          <Link to="/consultant/dashboard/messages">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-white hover:bg-white/20 hover:bg-opacity-80 ${
+                isMessagesActive() ? 'bg-white/20' : ''
+              }`}
+            >
+              <MessageCircle className="mr-2 h-5 w-5" />
+              Messages
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-auto">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
           </Link>
         </div>
