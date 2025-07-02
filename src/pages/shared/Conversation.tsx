@@ -22,8 +22,18 @@ export default function Conversation() {
 
   const conversation = conversations.find(c => c.id === conversationId);
 
+  console.log('Conversation: Component mounted with:', JSON.stringify({ 
+    conversationId, 
+    userId: user?.id, 
+    userRole: user?.role,
+    conversationsCount: conversations.length,
+    messagesCount: messages.length,
+    foundConversation: !!conversation
+  }));
+
   useEffect(() => {
     if (conversationId) {
+      console.log('Conversation: Fetching messages for conversation:', JSON.stringify({ conversationId }));
       fetchMessages(conversationId);
     }
   }, [conversationId, fetchMessages]);
@@ -36,6 +46,7 @@ export default function Conversation() {
     e.preventDefault();
     if (!newMessage.trim() || !conversationId || sending) return;
 
+    console.log('Conversation: Sending message:', JSON.stringify({ conversationId, message: newMessage }));
     setSending(true);
     await sendMessage(conversationId, newMessage);
     setNewMessage('');
@@ -44,7 +55,9 @@ export default function Conversation() {
 
   const handleBack = () => {
     const baseRoute = user?.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
-    navigate(`${baseRoute}/messages`);
+    const targetRoute = `${baseRoute}/messages`;
+    console.log('Conversation: Navigating back to:', JSON.stringify({ targetRoute }));
+    navigate(targetRoute);
   };
 
   if (loading) {
@@ -58,6 +71,7 @@ export default function Conversation() {
   }
 
   if (!conversation) {
+    console.log('Conversation: No conversation found for ID:', JSON.stringify({ conversationId }));
     return (
       <div className="p-6">
         <Card>
@@ -71,6 +85,12 @@ export default function Conversation() {
       </div>
     );
   }
+
+  console.log('Conversation: Rendering conversation with messages:', JSON.stringify({ 
+    conversationId: conversation.id,
+    messagesCount: messages.length,
+    messages: messages.map(m => ({ id: m.id, content: m.content, sender_id: m.sender_id }))
+  }));
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[800px] p-6">
@@ -108,6 +128,13 @@ export default function Conversation() {
             ) : (
               messages.map((message) => {
                 const isOwn = message.sender_id === user?.id;
+                console.log('Conversation: Rendering message:', JSON.stringify({ 
+                  messageId: message.id, 
+                  senderId: message.sender_id, 
+                  userId: user?.id, 
+                  isOwn,
+                  content: message.content 
+                }));
                 return (
                   <div
                     key={message.id}

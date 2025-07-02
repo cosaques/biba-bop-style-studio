@@ -37,7 +37,7 @@ export const useMessages = () => {
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
-    console.log('Fetching conversations for user:', user.id, 'role:', user.role);
+    console.log('useMessages: Fetching conversations for user:', JSON.stringify({ userId: user.id, userRole: user.role }));
 
     try {
       const { data, error } = await supabase
@@ -59,14 +59,20 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('Raw conversations data:', data);
+      console.log('useMessages: Raw conversations data:', JSON.stringify(data));
 
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
           const otherUser = conv.client_id === user.id ? conv.consultant : conv.client;
           const otherUserName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utilisateur';
 
-          console.log('Processing conversation:', conv.id, 'Other user:', otherUserName);
+          console.log('useMessages: Processing conversation:', JSON.stringify({ 
+            conversationId: conv.id, 
+            otherUserName, 
+            userId: user.id,
+            clientId: conv.client_id,
+            consultantId: conv.consultant_id
+          }));
 
           // Get last message
           const { data: lastMessage } = await supabase
@@ -106,10 +112,10 @@ export const useMessages = () => {
         })
       );
 
-      console.log('Processed conversations:', conversationsWithDetails);
+      console.log('useMessages: Processed conversations:', JSON.stringify(conversationsWithDetails));
       setConversations(conversationsWithDetails);
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      console.error('useMessages: Error fetching conversations:', JSON.stringify({ error: error.message }));
       toast({
         title: "Erreur",
         description: "Impossible de charger les conversations",
@@ -123,7 +129,7 @@ export const useMessages = () => {
   const fetchMessages = useCallback(async (conversationId: string) => {
     if (!user) return;
 
-    console.log('Fetching messages for conversation:', conversationId);
+    console.log('useMessages: Fetching messages for conversation:', JSON.stringify({ conversationId, userId: user.id }));
 
     try {
       const { data, error } = await supabase
@@ -141,7 +147,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('Fetched messages:', data);
+      console.log('useMessages: Fetched messages:', JSON.stringify(data));
 
       const messagesWithSender = (data || []).map(message => ({
         ...message,
@@ -149,6 +155,7 @@ export const useMessages = () => {
         sender_avatar: message.sender.profile_photo_url
       }));
 
+      console.log('useMessages: Processed messages:', JSON.stringify(messagesWithSender));
       setMessages(messagesWithSender);
 
       // Mark messages as read
@@ -160,11 +167,11 @@ export const useMessages = () => {
         .is('read_at', null);
 
       if (updateError) {
-        console.error('Error marking messages as read:', updateError);
+        console.error('useMessages: Error marking messages as read:', JSON.stringify({ error: updateError.message }));
       }
 
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('useMessages: Error fetching messages:', JSON.stringify({ error: error.message }));
       toast({
         title: "Erreur",
         description: "Impossible de charger les messages",
@@ -176,7 +183,7 @@ export const useMessages = () => {
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
 
-    console.log('Sending message:', { conversationId, content, senderId: user.id });
+    console.log('useMessages: Sending message:', JSON.stringify({ conversationId, content, senderId: user.id }));
 
     try {
       const { error } = await supabase
@@ -200,7 +207,7 @@ export const useMessages = () => {
       await fetchConversations();
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('useMessages: Error sending message:', JSON.stringify({ error: error.message }));
       toast({
         title: "Erreur",
         description: "Impossible d'envoyer le message",
@@ -212,7 +219,7 @@ export const useMessages = () => {
   const createConversation = async (otherUserId: string) => {
     if (!user) return null;
 
-    console.log('Creating conversation between:', user.id, 'and:', otherUserId);
+    console.log('useMessages: Creating conversation between:', JSON.stringify({ userId: user.id, otherUserId, userRole: user.role }));
 
     try {
       // Determine client and consultant IDs
@@ -226,7 +233,7 @@ export const useMessages = () => {
         consultantId = otherUserId;
       }
 
-      console.log('Conversation IDs:', { clientId, consultantId });
+      console.log('useMessages: Conversation IDs:', JSON.stringify({ clientId, consultantId }));
 
       // Check if conversation already exists
       const { data: existingConv } = await supabase
@@ -237,7 +244,7 @@ export const useMessages = () => {
         .single();
 
       if (existingConv) {
-        console.log('Conversation already exists:', existingConv.id);
+        console.log('useMessages: Conversation already exists:', JSON.stringify({ conversationId: existingConv.id }));
         return existingConv.id;
       }
 
@@ -253,12 +260,12 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('Created new conversation:', data.id);
+      console.log('useMessages: Created new conversation:', JSON.stringify({ conversationId: data.id }));
       await fetchConversations();
       return data.id;
 
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('useMessages: Error creating conversation:', JSON.stringify({ error: error.message }));
       toast({
         title: "Erreur",
         description: "Impossible de créer la conversation",
@@ -282,7 +289,7 @@ export const useMessages = () => {
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up real-time subscription for user:', user.id);
+    console.log('useMessages: Setting up real-time subscription for user:', JSON.stringify({ userId: user.id }));
     
     const channel = supabase
       .channel('messages-changes')
@@ -294,7 +301,7 @@ export const useMessages = () => {
           table: 'messages'
         },
         (payload) => {
-          console.log('Real-time message received:', payload);
+          console.log('useMessages: Real-time message received:', JSON.stringify(payload));
           fetchConversations();
         }
       )

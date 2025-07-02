@@ -31,7 +31,7 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
 
   useEffect(() => {
     if (open && user) {
-      console.log('Fetching contacts for user:', user.id, 'role:', user.role);
+      console.log('NewMessageModal: Fetching contacts for user:', JSON.stringify({ userId: user.id, userRole: user.role }));
       fetchContacts();
     }
   }, [open, user]);
@@ -40,12 +40,12 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
     if (!user) return;
 
     try {
-      console.log('Fetching contacts for role:', user.role);
+      console.log('NewMessageModal: Starting fetchContacts for role:', JSON.stringify({ role: user.role }));
       let query;
       
       if (user.role === 'consultant') {
         // Fetch consultant's clients
-        console.log('Fetching clients for consultant:', user.id);
+        console.log('NewMessageModal: Fetching clients for consultant:', JSON.stringify({ consultantId: user.id }));
         query = supabase
           .from('consultant_clients')
           .select(`
@@ -61,7 +61,7 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
           .eq('consultant_id', user.id);
       } else {
         // Fetch client's consultants
-        console.log('Fetching consultants for client:', user.id);
+        console.log('NewMessageModal: Fetching consultants for client:', JSON.stringify({ clientId: user.id }));
         query = supabase
           .from('consultant_clients')
           .select(`
@@ -78,13 +78,13 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
       }
 
       const { data, error } = await query;
-      console.log('Contacts query result:', { data, error });
+      console.log('NewMessageModal: Contacts query result:', JSON.stringify({ data, error }));
       
       if (error) throw error;
 
       const contactOptions = (data || []).map(item => {
         const profile = user.role === 'consultant' ? item.client : item.consultant;
-        console.log('Processing contact:', profile);
+        console.log('NewMessageModal: Processing contact:', JSON.stringify(profile));
         return {
           id: profile.id,
           name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilisateur',
@@ -93,24 +93,25 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
         };
       });
 
-      console.log('Final contact options:', contactOptions);
+      console.log('NewMessageModal: Final contact options:', JSON.stringify(contactOptions));
       setContacts(contactOptions);
     } catch (error) {
-      console.error('Error fetching contacts:', error);
+      console.error('NewMessageModal: Error fetching contacts:', JSON.stringify({ error: error.message }));
     }
   };
 
   const handleStartConversation = async () => {
     if (!selectedContact) return;
 
-    console.log('Starting conversation with:', selectedContact);
+    console.log('NewMessageModal: Starting conversation with:', JSON.stringify({ selectedContact }));
     setLoading(true);
     const conversationId = await createConversation(selectedContact);
     
     if (conversationId) {
       const baseRoute = user?.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
-      console.log('Navigating to:', `${baseRoute}/messages/${conversationId}`);
-      navigate(`${baseRoute}/messages/${conversationId}`);
+      const targetRoute = `${baseRoute}/messages/${conversationId}`;
+      console.log('NewMessageModal: Navigating to:', JSON.stringify({ targetRoute }));
+      navigate(targetRoute);
       onOpenChange(false);
       setSelectedContact('');
     }
