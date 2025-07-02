@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,11 +54,11 @@ const seasonTranslations: { [key: string]: string } = {
   winter: "Hiver"
 };
 
-const FullscreenImageModal = ({ 
-  open, 
-  onOpenChange, 
-  imageUrl, 
-  alt 
+const FullscreenImageModal = ({
+  open,
+  onOpenChange,
+  imageUrl,
+  alt
 }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void; 
@@ -66,13 +67,20 @@ const FullscreenImageModal = ({
 }) => {
   if (!open) return null;
 
-  return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-      onClick={() => onOpenChange(false)}
+  return createPortal(
+    <div
+      className="fixed inset-0 m-0 p-0 bg-black bg-opacity-90 flex items-center justify-center z-[10000]"
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpenChange(false)
+      }}
     >
       <button
-        onClick={() => onOpenChange(false)}
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpenChange(false)
+        }}
         className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
       >
         <X className="h-8 w-8" />
@@ -83,7 +91,8 @@ const FullscreenImageModal = ({
         className="max-w-full max-h-full object-contain"
         onClick={(e) => e.stopPropagation()}
       />
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -96,6 +105,14 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
+
+  const handleModalOpenChange = (newOpen: boolean) => {
+    if (!newOpen && fullscreenImageOpen) {
+      setFullscreenImageOpen(false)
+      return
+    }
+    onOpenChange(newOpen)
+  }
 
   useEffect(() => {
     if (outfit) {
@@ -218,7 +235,7 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleModalOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier la tenue</DialogTitle>
@@ -227,11 +244,14 @@ export const EditOutfitModal = ({ open, onOpenChange, outfit, onSave }: EditOutf
           <div className="space-y-6">
             {/* Outfit Image */}
             <div className="flex justify-center">
-              <div className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-pointer" onClick={() => setFullscreenImageOpen(true)}>
+              <div
+                className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-zoom-in"
+                onClick={() => setFullscreenImageOpen(true)}
+              >
                 <img
                   src={optimizedOutfitImageUrl}
                   alt={outfit.name}
-                  className="w-full h-full object-contain hover:opacity-90 transition-opacity"
+                  className="w-full h-full object-contain hover:opacity-90 transition-opacity cursor-zoom-in"
                 />
               </div>
             </div>

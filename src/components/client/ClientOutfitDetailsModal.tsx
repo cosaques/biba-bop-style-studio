@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,26 +55,33 @@ const seasonTranslations: { [key: string]: string } = {
   winter: "Hiver"
 };
 
-const FullscreenImageModal = ({ 
-  open, 
-  onOpenChange, 
-  imageUrl, 
-  alt 
-}: { 
-  open: boolean; 
-  onOpenChange: (open: boolean) => void; 
-  imageUrl: string; 
-  alt: string; 
+const FullscreenImageModal = ({
+  open,
+  onOpenChange,
+  imageUrl,
+  alt
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  imageUrl: string;
+  alt: string;
 }) => {
   if (!open) return null;
 
-  return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-      onClick={() => onOpenChange(false)}
+  return createPortal(
+    <div
+      className="fixed inset-0 m-0 p-0 bg-black bg-opacity-90 flex items-center justify-center z-[10000]"
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpenChange(false)
+      }}
     >
       <button
-        onClick={() => onOpenChange(false)}
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpenChange(false)
+        }}
         className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
       >
         <X className="h-8 w-8" />
@@ -84,7 +92,8 @@ const FullscreenImageModal = ({
         className="max-w-full max-h-full object-contain"
         onClick={(e) => e.stopPropagation()}
       />
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -100,6 +109,14 @@ export const ClientOutfitDetailsModal = ({
   const [consultantItems, setConsultantItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
+
+  const handleModalOpenChange = (newOpen: boolean) => {
+    if (!newOpen && fullscreenImageOpen) {
+      setFullscreenImageOpen(false)
+      return
+    }
+    onOpenChange(newOpen)
+  }
 
   useEffect(() => {
     if (outfit) {
@@ -207,7 +224,7 @@ export const ClientOutfitDetailsModal = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleModalOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Détails de la tenue</DialogTitle>
@@ -239,11 +256,11 @@ export const ClientOutfitDetailsModal = ({
 
             {/* Outfit Image */}
             <div className="flex justify-center">
-              <div className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-pointer" onClick={() => setFullscreenImageOpen(true)}>
+              <div className="w-64 h-64 border rounded-md overflow-hidden bg-gray-50 cursor-zoom-in" onClick={() => setFullscreenImageOpen(true)}>
                 <img
                   src={optimizedOutfitImageUrl}
                   alt={outfit.name}
-                  className="w-full h-full object-contain hover:opacity-90 transition-opacity"
+                  className="w-full h-full object-contain hover:opacity-90 transition-opacity cursor-zoom-in"
                 />
               </div>
             </div>
@@ -251,7 +268,6 @@ export const ClientOutfitDetailsModal = ({
             {/* Comments */}
             {outfit.comments && (
               <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">
-                <p className="text-sm font-medium mb-1">Commentaires du conseiller en image:</p>
                 <p className="text-sm">{outfit.comments}</p>
               </div>
             )}
@@ -282,7 +298,7 @@ export const ClientOutfitDetailsModal = ({
             <div className="flex justify-end pt-4">
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleModalOpenChange(false)}
               >
                 Fermer
               </Button>
