@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOutfits } from "@/hooks/useOutfits";
 import { getOptimizedImageUrl } from "@/utils/imageUtils";
 import { ClientOutfitDetailsModal } from "@/components/client/ClientOutfitDetailsModal";
 import { format } from "date-fns";
@@ -128,7 +127,7 @@ export default function ClientOutfits() {
             <div className="grid md:grid-cols-3 gap-6">
               {filteredOutfits.map((outfit) => {
                 const optimizedImageUrl = getOptimizedImageUrl(outfit.image_url, 400);
-                
+
                 return (
                   <Card key={outfit.id} className="card-hover">
                     <CardHeader>
@@ -138,22 +137,17 @@ export default function ClientOutfits() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="mb-4 rounded-md overflow-hidden bg-muted flex items-center justify-center h-48">
+                      <div className="mb-4 rounded-md overflow-hidden bg-muted">
                         <img
                           src={optimizedImageUrl}
                           alt={outfit.name}
-                          className="w-full max-h-full object-contain"
+                          className="w-full object-cover"
                         />
                       </div>
-                      {outfit.comments && (
-                        <div className="mt-4 p-3 bg-bibabop-lightgrey rounded-md">
-                          <p className="text-sm">{outfit.comments}</p>
-                        </div>
-                      )}
                     </CardContent>
                     <CardFooter>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => handleViewDetails(outfit)}
                       >
