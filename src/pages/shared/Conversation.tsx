@@ -91,14 +91,14 @@ export default function Conversation() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            
+
             <Avatar>
               <AvatarImage src={conversation.other_user_avatar} />
               <AvatarFallback>
                 {conversation.other_user_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            
+
             <CardTitle className="text-bibabop-navy">
               {conversation.other_user_name}
             </CardTitle>
@@ -122,7 +122,7 @@ export default function Conversation() {
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
                         isOwn
-                          ? 'bg-bibabop-navy text-white'
+                          ? 'bg-bibabop-pink text-white'
                           : 'bg-gray-100 text-gray-900'
                       }`}
                     >
