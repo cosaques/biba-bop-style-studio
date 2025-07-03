@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +29,7 @@ import OutfitCreator from "./pages/consultant/OutfitCreator";
 import Messages from "./pages/shared/Messages";
 import Conversation from "./pages/shared/Conversation";
 import NotFound from "./pages/NotFound";
+import AIDress from "./pages/experimental/AIDress";
 
 // Create a stable query client instance outside the component
 const queryClient = new QueryClient({
@@ -57,6 +57,13 @@ const App = () => {
                 <Route path="/register/:role" element={<Register />} />
                 <Route path="/password-reset" element={<PasswordReset />} />
                 <Route path="/invite/:token" element={<InviteAccept />} />
+
+                {/* Experimental Routes */}
+                <Route path="/experimental/ai-dress" element={
+                  <ProtectedRoute>
+                    <AIDress />
+                  </ProtectedRoute>
+                } />
 
                 {/* Routes Client */}
                 <Route path="/client/dashboard" element={

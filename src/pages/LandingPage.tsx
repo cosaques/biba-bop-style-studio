@@ -191,7 +191,7 @@ const LandingPage = () => {
                   <span>Intégration simple avec questionnaire en 5 étapes</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-bibapop-gold mr-2">✓</span>
+                  <span className="text-bibabop-gold mr-2">✓</span>
                   <span>Création de silhouette adaptée à votre morphologie</span>
                 </li>
                 <li className="flex items-start">
@@ -348,6 +348,14 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Add this somewhere in the JSX where appropriate - you can place it in the navigation or footer */}
+      <Link 
+        to="/experimental/ai-dress" 
+        className="text-xs text-gray-500 hover:text-purple-600 transition-colors"
+      >
+        🧪 AI Dress (Experimental)
+      </Link>
     </div>
   );
 };
