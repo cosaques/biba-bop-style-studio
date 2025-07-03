@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useMessages } from '@/hooks/useMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -23,6 +24,7 @@ interface ContactOption {
 
 export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const { createConversation } = useMessages();
   const navigate = useNavigate();
   const [contacts, setContacts] = useState<ContactOption[]>([]);
@@ -30,22 +32,19 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && user) {
-      console.log('NewMessageModal: Fetching contacts for user:', JSON.stringify({ userId: user.id, userRole: user.role }));
+    if (open && user && profile) {
       fetchContacts();
     }
-  }, [open, user]);
+  }, [open, user, profile]);
 
   const fetchContacts = async () => {
-    if (!user) return;
+    if (!user || !profile) return;
 
     try {
-      console.log('NewMessageModal: Starting fetchContacts for role:', JSON.stringify({ role: user.role }));
       let query;
       
-      if (user.role === 'consultant') {
+      if (profile.role === 'consultant') {
         // Consultant should see their clients
-        console.log('NewMessageModal: Fetching clients for consultant:', JSON.stringify({ consultantId: user.id }));
         query = supabase
           .from('consultant_clients')
           .select(`
@@ -61,7 +60,6 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
           .eq('consultant_id', user.id);
       } else {
         // Client should see their consultants
-        console.log('NewMessageModal: Fetching consultants for client:', JSON.stringify({ clientId: user.id }));
         query = supabase
           .from('consultant_clients')
           .select(`
@@ -78,22 +76,19 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
       }
 
       const { data, error } = await query;
-      console.log('NewMessageModal: Contacts query result:', JSON.stringify({ data, error }));
       
       if (error) throw error;
 
       const contactOptions = (data || []).map(item => {
-        const profile = user.role === 'consultant' ? item.client : item.consultant;
-        console.log('NewMessageModal: Processing contact:', JSON.stringify(profile));
+        const contactProfile = profile.role === 'consultant' ? item.client : item.consultant;
         return {
-          id: profile.id,
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilisateur',
-          avatar: profile.profile_photo_url,
-          role: profile.role
+          id: contactProfile.id,
+          name: `${contactProfile.first_name || ''} ${contactProfile.last_name || ''}`.trim() || 'Utilisateur',
+          avatar: contactProfile.profile_photo_url,
+          role: contactProfile.role
         };
       });
 
-      console.log('NewMessageModal: Final contact options:', JSON.stringify(contactOptions));
       setContacts(contactOptions);
     } catch (error) {
       console.error('NewMessageModal: Error fetching contacts:', JSON.stringify({ error: error.message }));
@@ -101,16 +96,14 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
   };
 
   const handleStartConversation = async () => {
-    if (!selectedContact) return;
+    if (!selectedContact || !profile) return;
 
-    console.log('NewMessageModal: Starting conversation with:', JSON.stringify({ selectedContact }));
     setLoading(true);
     const conversationId = await createConversation(selectedContact);
     
     if (conversationId) {
-      const baseRoute = user?.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
+      const baseRoute = profile.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
       const targetRoute = `${baseRoute}/messages/${conversationId}`;
-      console.log('NewMessageModal: Navigating to:', JSON.stringify({ targetRoute }));
       navigate(targetRoute);
       onOpenChange(false);
       setSelectedContact('');
@@ -130,7 +123,7 @@ export function NewMessageModal({ open, onOpenChange }: NewMessageModalProps) {
         <div className="space-y-4">
           {contacts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {user?.role === 'consultant' 
+              {profile?.role === 'consultant' 
                 ? 'Aucun client trouvé. Invitez des clients pour commencer à échanger.'
                 : 'Aucun conseiller trouvé. Votre conseiller pourra vous contacter directement.'
               }

@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useMessages } from '@/hooks/useMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,13 @@ import { NewMessageModal } from '@/components/shared/NewMessageModal';
 
 export default function Messages() {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const { conversations, loading, getTotalUnreadCount } = useMessages();
   const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
 
   const getBaseRoute = () => {
-    if (!user) return '';
-    return user.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
+    if (!profile) return '';
+    return profile.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
   };
 
   console.log('Messages: Component rendering with:', JSON.stringify({

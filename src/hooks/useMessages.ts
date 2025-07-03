@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,15 +30,14 @@ export interface Conversation {
 
 export const useMessages = () => {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchConversations = useCallback(async () => {
-    if (!user) return;
-
-    console.log('useMessages: Fetching conversations for user:', JSON.stringify({ userId: user.id, userRole: user.role }));
+    if (!user || !profile) return;
 
     try {
       const { data, error } = await supabase
@@ -59,20 +59,10 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('useMessages: Raw conversations data:', JSON.stringify(data));
-
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
           const otherUser = conv.client_id === user.id ? conv.consultant : conv.client;
           const otherUserName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utilisateur';
-
-          console.log('useMessages: Processing conversation:', JSON.stringify({ 
-            conversationId: conv.id, 
-            otherUserName, 
-            userId: user.id,
-            clientId: conv.client_id,
-            consultantId: conv.consultant_id
-          }));
 
           // Get last message
           const { data: lastMessage } = await supabase
@@ -112,7 +102,6 @@ export const useMessages = () => {
         })
       );
 
-      console.log('useMessages: Processed conversations:', JSON.stringify(conversationsWithDetails));
       setConversations(conversationsWithDetails);
     } catch (error) {
       console.error('useMessages: Error fetching conversations:', JSON.stringify({ error: error.message }));
@@ -124,12 +113,10 @@ export const useMessages = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, profile, toast]);
 
   const fetchMessages = useCallback(async (conversationId: string) => {
     if (!user) return;
-
-    console.log('useMessages: Fetching messages for conversation:', JSON.stringify({ conversationId, userId: user.id }));
 
     try {
       const { data, error } = await supabase
@@ -147,15 +134,12 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('useMessages: Fetched messages:', JSON.stringify(data));
-
       const messagesWithSender = (data || []).map(message => ({
         ...message,
         sender_name: `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || 'Utilisateur',
         sender_avatar: message.sender.profile_photo_url
       }));
 
-      console.log('useMessages: Processed messages:', JSON.stringify(messagesWithSender));
       setMessages(messagesWithSender);
 
       // Mark messages as read
@@ -182,8 +166,6 @@ export const useMessages = () => {
 
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
-
-    console.log('useMessages: Sending message:', JSON.stringify({ conversationId, content, senderId: user.id }));
 
     try {
       const { error } = await supabase
@@ -217,23 +199,19 @@ export const useMessages = () => {
   };
 
   const createConversation = async (otherUserId: string) => {
-    if (!user) return null;
-
-    console.log('useMessages: Creating conversation between:', JSON.stringify({ userId: user.id, otherUserId, userRole: user.role }));
+    if (!user || !profile) return null;
 
     try {
       // Determine client and consultant IDs
       let clientId, consultantId;
       
-      if (user.role === 'consultant') {
+      if (profile.role === 'consultant') {
         consultantId = user.id;
         clientId = otherUserId;
       } else {
         clientId = user.id;
         consultantId = otherUserId;
       }
-
-      console.log('useMessages: Conversation IDs:', JSON.stringify({ clientId, consultantId }));
 
       // Check if conversation already exists
       const { data: existingConv } = await supabase
@@ -244,7 +222,6 @@ export const useMessages = () => {
         .single();
 
       if (existingConv) {
-        console.log('useMessages: Conversation already exists:', JSON.stringify({ conversationId: existingConv.id }));
         return existingConv.id;
       }
 
@@ -260,7 +237,6 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('useMessages: Created new conversation:', JSON.stringify({ conversationId: data.id }));
       await fetchConversations();
       return data.id;
 
@@ -280,16 +256,14 @@ export const useMessages = () => {
   }, [conversations]);
 
   useEffect(() => {
-    if (user) {
+    if (user && profile) {
       fetchConversations();
     }
-  }, [fetchConversations, user]);
+  }, [fetchConversations, user, profile]);
 
   // Set up real-time subscription for messages
   useEffect(() => {
     if (!user) return;
-
-    console.log('useMessages: Setting up real-time subscription for user:', JSON.stringify({ userId: user.id }));
     
     const channel = supabase
       .channel('messages-changes')
@@ -301,7 +275,6 @@ export const useMessages = () => {
           table: 'messages'
         },
         (payload) => {
-          console.log('useMessages: Real-time message received:', JSON.stringify(payload));
           fetchConversations();
         }
       )
