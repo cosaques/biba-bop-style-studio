@@ -152,6 +152,9 @@ export const useMessages = () => {
 
       if (updateError) {
         console.error('useMessages: Error marking messages as read:', JSON.stringify({ error: updateError.message }));
+      } else {
+        // Refresh conversations to update unread counts
+        await fetchConversations();
       }
 
     } catch (error) {
@@ -162,7 +165,7 @@ export const useMessages = () => {
         variant: "destructive",
       });
     }
-  }, [user, toast]);
+  }, [user, toast, fetchConversations]);
 
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
@@ -184,9 +187,7 @@ export const useMessages = () => {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
 
-      // Refresh messages
-      await fetchMessages(conversationId);
-      await fetchConversations();
+      // Don't manually refresh - let real-time handle it
 
     } catch (error) {
       console.error('useMessages: Error sending message:', JSON.stringify({ error: error.message }));
@@ -274,8 +275,26 @@ export const useMessages = () => {
           schema: 'public',
           table: 'messages'
         },
-        (payload) => {
-          fetchConversations();
+        async (payload) => {
+          // Refresh conversations to update unread counts and last message
+          await fetchConversations();
+          
+          // If we're currently viewing this conversation, refresh messages
+          if (messages.length > 0 && payload.new.conversation_id === messages[0]?.conversation_id) {
+            await fetchMessages(payload.new.conversation_id);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        async () => {
+          // Refresh conversations when messages are marked as read
+          await fetchConversations();
         }
       )
       .subscribe();
@@ -283,7 +302,7 @@ export const useMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchConversations]);
+  }, [user, fetchConversations, fetchMessages, messages]);
 
   return {
     conversations,

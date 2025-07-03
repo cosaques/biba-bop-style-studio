@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Send } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function Conversation() {
@@ -51,6 +52,34 @@ export default function Conversation() {
     navigate(targetRoute);
   };
 
+  const formatMessageDate = (date: Date) => {
+    if (isToday(date)) {
+      return 'Aujourd\'hui';
+    } else if (isYesterday(date)) {
+      return 'Hier';
+    } else {
+      return format(date, 'dd MMMM yyyy', { locale: fr });
+    }
+  };
+
+  const groupMessagesByDate = (messages: typeof messages) => {
+    const groups: { date: string; messages: typeof messages }[] = [];
+    let currentGroup: { date: string; messages: typeof messages } | null = null;
+
+    messages.forEach(message => {
+      const messageDate = new Date(message.created_at);
+      const dateString = formatMessageDate(messageDate);
+
+      if (!currentGroup || currentGroup.date !== dateString) {
+        currentGroup = { date: dateString, messages: [] };
+        groups.push(currentGroup);
+      }
+      currentGroup.messages.push(message);
+    });
+
+    return groups;
+  };
+
   // Show loading initially
   if (loading) {
     return (
@@ -78,10 +107,12 @@ export default function Conversation() {
     );
   }
 
+  const messageGroups = groupMessagesByDate(messages);
+
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[800px] p-6">
       <Card className="flex-1 flex flex-col">
-        <CardHeader className="border-b">
+        <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
@@ -105,44 +136,57 @@ export default function Conversation() {
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col p-0">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
+        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+          <ScrollArea className="flex-1 p-4">
+            {messageGroups.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 Aucun message dans cette conversation
               </div>
             ) : (
-              messages.map((message) => {
-                const isOwn = message.sender_id === user?.id;
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        isOwn
-                          ? 'bg-bibabop-pink text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          isOwn ? 'text-white/70' : 'text-gray-500'
-                        }`}
-                      >
-                        {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
-                      </p>
+              <div className="space-y-6">
+                {messageGroups.map((group, groupIndex) => (
+                  <div key={groupIndex}>
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600">
+                        {group.date}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {group.messages.map((message) => {
+                        const isOwn = message.sender_id === user?.id;
+                        return (
+                          <div
+                            key={message.id}
+                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[70%] rounded-lg p-3 ${
+                                isOwn
+                                  ? 'bg-bibabop-pink text-white'
+                                  : 'bg-gray-100 text-gray-900'
+                              }`}
+                            >
+                              <p className="text-sm">{message.content}</p>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  isOwn ? 'text-white/70' : 'text-gray-500'
+                                }`}
+                              >
+                                {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                );
-              })
+                ))}
+              </div>
             )}
             <div ref={messagesEndRef} />
-          </div>
+          </ScrollArea>
 
-          <div className="border-t p-4">
+          <div className="border-t p-4 flex-shrink-0">
             <form onSubmit={handleSendMessage} className="flex space-x-2">
               <Input
                 value={newMessage}
