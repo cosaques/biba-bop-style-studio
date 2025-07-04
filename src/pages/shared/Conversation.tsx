@@ -55,11 +55,14 @@ export default function Conversation() {
   }, [conversationId, fetchMessages]);
 
   useEffect(() => {
-    console.log('📜 Auto-scroll useEffect triggered, messages count:', messages.length);
+    console.log('📜 Auto-scroll useEffect triggered', {
+      conversationId,
+      messagesCount: messages.length
+    });
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length]);
+  }, [conversationId, messages.length]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +149,7 @@ export default function Conversation() {
   console.log('🎨 Rendering conversation with', messageGroups.length, 'message groups');
 
   return (
-    <div className="h-screen flex flex-col p-6">
+    <div className="h-screen box-border flex flex-col p-6">
       <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center space-x-4">

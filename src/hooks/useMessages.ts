@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +28,28 @@ export interface Conversation {
   unread_count: number;
 }
 
+interface MessagesContextType {
+  conversations: Conversation[];
+  messages: Message[];
+  loading: boolean;
+  fetchConversations: () => Promise<void>;
+  fetchMessages: (conversationId: string) => Promise<void>;
+  sendMessage: (conversationId: string, content: string) => Promise<void>;
+  createConversation: (otherUserId: string) => Promise<string | null>;
+  getTotalUnreadCount: () => number;
+}
+
+const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
+
 export const useMessages = () => {
+  const context = useContext(MessagesContext);
+  if (!context) {
+    throw new Error('useMessages must be used within a MessagesProvider');
+  }
+  return context;
+};
+
+const useProvideMessages = () => {
   const { user } = useAuth();
   const { profile } = useUserProfile();
   const { toast } = useToast();
@@ -351,4 +372,11 @@ export const useMessages = () => {
     createConversation,
     getTotalUnreadCount
   };
+};
+
+export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const value = useProvideMessages();
+  return (
+    <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>
+  );
 };
