@@ -192,6 +192,12 @@ const useProvideMessages = () => {
 
       if (!updateError) {
         console.log('✅ Messages marked as read');
+        // Update local state immediately
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === conversationId ? { ...conv, unread_count: 0 } : conv
+          )
+        );
         // Force refresh conversations to get updated unread counts
         await fetchConversations();
       }
@@ -234,6 +240,9 @@ const useProvideMessages = () => {
       if (currentConversationId === conversationId) {
         await fetchMessages(conversationId);
       }
+
+      // Refresh conversations to update last message and unread counts
+      await fetchConversations();
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
