@@ -41,25 +41,15 @@ export const useMessages = () => {
     profileRole: profile?.role,
     conversationsCount: conversations.length,
     messagesCount: messages.length,
-    loading,
-    timestamp: new Date().toISOString()
+    loading
   }));
 
   const fetchConversations = useCallback(async () => {
-    console.log('📋 fetchConversations called:', JSON.stringify({
-      hasUser: !!user,
-      hasProfile: !!profile,
-      userId: user?.id,
-      profileRole: profile?.role
-    }));
+    if (!user || !profile) return;
 
-    if (!user || !profile) {
-      console.log('⚠️ fetchConversations aborted: missing user or profile');
-      return;
-    }
+    console.log('📋 fetchConversations called');
 
     try {
-      console.log('🔍 Fetching conversations from database...');
       const { data, error } = await supabase
         .from('conversations')
         .select(`
@@ -80,13 +70,7 @@ export const useMessages = () => {
       if (error) throw error;
 
       console.log('📋 Raw conversations data:', JSON.stringify({
-        count: data?.length || 0,
-        conversations: data?.map(c => ({
-          id: c.id,
-          client_id: c.client_id,
-          consultant_id: c.consultant_id,
-          updated_at: c.updated_at
-        }))
+        count: data?.length || 0
       }));
 
       const conversationsWithDetails = await Promise.all(
@@ -94,21 +78,8 @@ export const useMessages = () => {
           const otherUser = conv.client_id === user.id ? conv.consultant : conv.client;
           const otherUserName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utilisateur';
 
-          console.log('👤 Processing conversation:', JSON.stringify({
-            conversationId: conv.id,
-            currentUserId: user.id,
-            clientId: conv.client_id,
-            consultantId: conv.consultant_id,
-            otherUser: {
-              firstName: otherUser.first_name,
-              lastName: otherUser.last_name,
-              fullName: otherUserName
-            }
-          }));
-
           // Get last message
-          console.log('💬 Fetching last message for conversation:', conv.id);
-          const { data: lastMessage, error: lastMessageError } = await supabase
+          const { data: lastMessage } = await supabase
             .from('messages')
             .select(`
               *,
@@ -123,41 +94,15 @@ export const useMessages = () => {
             .limit(1)
             .single();
 
-          if (lastMessageError && lastMessageError.code !== 'PGRST116') {
-            console.error('❌ Error fetching last message:', JSON.stringify(lastMessageError));
-          }
-
-          console.log('💬 Last message result:', JSON.stringify({
-            conversationId: conv.id,
-            hasLastMessage: !!lastMessage,
-            lastMessage: lastMessage ? {
-              id: lastMessage.id,
-              content: lastMessage.content.substring(0, 50) + '...',
-              created_at: lastMessage.created_at,
-              sender_id: lastMessage.sender_id
-            } : null
-          }));
-
           // Get unread count
-          console.log('🔢 Fetching unread count for conversation:', conv.id);
-          const { count: unreadCount, error: unreadError } = await supabase
+          const { count: unreadCount } = await supabase
             .from('messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', conv.id)
             .neq('sender_id', user.id)
             .is('read_at', null);
 
-          if (unreadError) {
-            console.error('❌ Error fetching unread count:', JSON.stringify(unreadError));
-          }
-
-          console.log('🔢 Unread count result:', JSON.stringify({
-            conversationId: conv.id,
-            unreadCount: unreadCount || 0,
-            currentUserId: user.id
-          }));
-
-          const processedConversation = {
+          return {
             ...conv,
             other_user_name: otherUserName,
             other_user_avatar: otherUser.profile_photo_url,
@@ -168,56 +113,29 @@ export const useMessages = () => {
             } : undefined,
             unread_count: unreadCount || 0
           };
-
-          console.log('✅ Processed conversation:', JSON.stringify({
-            id: processedConversation.id,
-            otherUserName: processedConversation.other_user_name,
-            unreadCount: processedConversation.unread_count,
-            hasLastMessage: !!processedConversation.last_message
-          }));
-
-          return processedConversation;
         })
       );
 
-      console.log('📋 Setting conversations state:', JSON.stringify({
-        totalConversations: conversationsWithDetails.length,
-        conversationSummary: conversationsWithDetails.map(c => ({
-          id: c.id,
-          otherUserName: c.other_user_name,
-          unreadCount: c.unread_count
-        }))
-      }));
-
+      console.log('✅ Conversations fetched:', conversationsWithDetails.length);
       setConversations(conversationsWithDetails);
-      console.log('✅ Conversations state updated successfully');
     } catch (error) {
-      console.error('❌ useMessages: Error fetching conversations:', JSON.stringify(error));
+      console.error('❌ Error fetching conversations:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les conversations",
         variant: "destructive",
       });
     } finally {
-      console.log('🏁 fetchConversations completed, setting loading to false');
       setLoading(false);
     }
-  }, [user, profile, toast]);
+  }, [user?.id, profile?.role, toast]);
 
   const fetchMessages = useCallback(async (conversationId: string) => {
-    console.log('💬 fetchMessages called:', JSON.stringify({
-      conversationId,
-      hasUser: !!user,
-      userId: user?.id
-    }));
+    if (!user) return;
 
-    if (!user) {
-      console.log('⚠️ fetchMessages aborted: no user');
-      return;
-    }
+    console.log('💬 fetchMessages called for:', conversationId);
 
     try {
-      console.log('🔍 Fetching messages from database...');
       const { data, error } = await supabase
         .from('messages')
         .select(`
@@ -233,33 +151,16 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('💬 Raw messages data:', JSON.stringify({
-        conversationId,
-        messageCount: data?.length || 0,
-        messages: data?.map(m => ({
-          id: m.id,
-          content: m.content.substring(0, 30) + '...',
-          sender_id: m.sender_id,
-          created_at: m.created_at
-        }))
-      }));
-
       const messagesWithSender = (data || []).map(message => ({
         ...message,
         sender_name: `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || 'Utilisateur',
         sender_avatar: message.sender.profile_photo_url
       }));
 
-      console.log('💬 Setting messages state:', JSON.stringify({
-        conversationId,
-        processedMessageCount: messagesWithSender.length
-      }));
-
+      console.log('✅ Messages fetched:', messagesWithSender.length);
       setMessages(messagesWithSender);
-      console.log('✅ Messages state updated successfully');
 
       // Mark messages as read
-      console.log('📖 Marking messages as read...');
       const { error: updateError } = await supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
@@ -267,40 +168,28 @@ export const useMessages = () => {
         .neq('sender_id', user.id)
         .is('read_at', null);
 
-      if (updateError) {
-        console.error('❌ Error marking messages as read:', JSON.stringify(updateError));
-      } else {
-        console.log('✅ Messages marked as read successfully');
+      if (!updateError) {
+        console.log('✅ Messages marked as read');
         // Refresh conversations to update unread counts
-        console.log('🔄 Refreshing conversations after marking as read...');
-        await fetchConversations();
+        fetchConversations();
       }
 
     } catch (error) {
-      console.error('❌ useMessages: Error fetching messages:', JSON.stringify(error));
+      console.error('❌ Error fetching messages:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les messages",
         variant: "destructive",
       });
     }
-  }, [user, toast, fetchConversations]);
+  }, [user?.id, fetchConversations, toast]);
 
   const sendMessage = async (conversationId: string, content: string) => {
-    console.log('📤 sendMessage called:', JSON.stringify({
-      conversationId,
-      contentLength: content.length,
-      hasUser: !!user,
-      userId: user?.id
-    }));
+    if (!user || !content.trim()) return;
 
-    if (!user || !content.trim()) {
-      console.log('⚠️ sendMessage aborted: no user or empty content');
-      return;
-    }
+    console.log('📤 Sending message...');
 
     try {
-      console.log('💾 Inserting message into database...');
       const { error } = await supabase
         .from('messages')
         .insert({
@@ -310,20 +199,17 @@ export const useMessages = () => {
         });
 
       if (error) throw error;
-      console.log('✅ Message inserted successfully');
 
-      // Update conversation's updated_at
-      console.log('🔄 Updating conversation timestamp...');
+      // Update conversation timestamp
       await supabase
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
 
-      console.log('✅ Conversation timestamp updated');
-      console.log('🔄 Real-time should handle message updates automatically');
+      console.log('✅ Message sent successfully');
 
     } catch (error) {
-      console.error('❌ useMessages: Error sending message:', JSON.stringify(error));
+      console.error('❌ Error sending message:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'envoyer le message",
@@ -333,20 +219,9 @@ export const useMessages = () => {
   };
 
   const createConversation = async (otherUserId: string) => {
-    console.log('💼 createConversation called:', JSON.stringify({
-      otherUserId,
-      hasUser: !!user,
-      hasProfile: !!profile,
-      profileRole: profile?.role
-    }));
-
-    if (!user || !profile) {
-      console.log('⚠️ createConversation aborted: no user or profile');
-      return null;
-    }
+    if (!user || !profile) return null;
 
     try {
-      // Determine client and consultant IDs
       let clientId, consultantId;
       
       if (profile.role === 'consultant') {
@@ -357,14 +232,7 @@ export const useMessages = () => {
         consultantId = otherUserId;
       }
 
-      console.log('👥 Conversation roles determined:', JSON.stringify({
-        clientId,
-        consultantId,
-        currentUserRole: profile.role
-      }));
-
       // Check if conversation already exists
-      console.log('🔍 Checking for existing conversation...');
       const { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
@@ -373,12 +241,10 @@ export const useMessages = () => {
         .single();
 
       if (existingConv) {
-        console.log('✅ Existing conversation found:', existingConv.id);
         return existingConv.id;
       }
 
       // Create new conversation
-      console.log('🆕 Creating new conversation...');
       const { data, error } = await supabase
         .from('conversations')
         .insert({
@@ -390,12 +256,11 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('✅ New conversation created:', data.id);
-      await fetchConversations();
+      fetchConversations();
       return data.id;
 
     } catch (error) {
-      console.error('❌ useMessages: Error creating conversation:', JSON.stringify(error));
+      console.error('❌ Error creating conversation:', error);
       toast({
         title: "Erreur",
         description: "Impossible de créer la conversation",
@@ -407,38 +272,23 @@ export const useMessages = () => {
 
   const getTotalUnreadCount = useCallback(() => {
     const total = conversations.reduce((total, conv) => total + conv.unread_count, 0);
-    console.log('🔢 Total unread count calculated:', JSON.stringify({
-      total,
-      conversationBreakdown: conversations.map(c => ({
-        id: c.id,
-        otherUserName: c.other_user_name,
-        unreadCount: c.unread_count
-      }))
-    }));
+    console.log('🔢 Total unread count:', total);
     return total;
   }, [conversations]);
 
+  // Initial fetch
   useEffect(() => {
-    console.log('🎬 Initial fetchConversations useEffect triggered:', JSON.stringify({
-      hasUser: !!user,
-      hasProfile: !!profile,
-      userId: user?.id,
-      profileRole: profile?.role
-    }));
-
+    console.log('🎬 Initial fetchConversations useEffect triggered');
     if (user && profile) {
       fetchConversations();
     }
-  }, [fetchConversations, user, profile]);
+  }, [user?.id, profile?.role]); // Remove fetchConversations from deps to prevent infinite loop
 
-  // Set up real-time subscription for messages
+  // Set up real-time subscription
   useEffect(() => {
-    console.log('📡 Setting up real-time subscriptions:', JSON.stringify({
-      hasUser: !!user,
-      userId: user?.id
-    }));
-
     if (!user) return;
+    
+    console.log('📡 Setting up real-time subscriptions');
     
     const channel = supabase
       .channel('messages-changes')
@@ -450,22 +300,13 @@ export const useMessages = () => {
           table: 'messages'
         },
         async (payload) => {
-          console.log('📡 Real-time message INSERT received:', JSON.stringify({
-            messageId: payload.new.id,
-            conversationId: payload.new.conversation_id,
-            senderId: payload.new.sender_id,
-            content: payload.new.content.substring(0, 30) + '...',
-            currentUserId: user.id,
-            isOwnMessage: payload.new.sender_id === user.id
-          }));
+          console.log('📡 Real-time message INSERT received:', payload.new.id);
           
           // Refresh conversations to update unread counts and last message
-          console.log('🔄 Refreshing conversations due to new message...');
           await fetchConversations();
           
           // If we're currently viewing this conversation, refresh messages
           if (messages.length > 0 && payload.new.conversation_id === messages[0]?.conversation_id) {
-            console.log('🔄 Refreshing current conversation messages...');
             await fetchMessages(payload.new.conversation_id);
           }
         }
@@ -477,35 +318,21 @@ export const useMessages = () => {
           schema: 'public',
           table: 'messages'
         },
-        async (payload) => {
-          console.log('📡 Real-time message UPDATE received:', JSON.stringify({
-            messageId: payload.new.id,
-            conversationId: payload.new.conversation_id,
-            readAt: payload.new.read_at,
-            wasRead: !!payload.new.read_at
-          }));
-          
+        async () => {
+          console.log('📡 Real-time message UPDATE received');
           // Refresh conversations when messages are marked as read
-          console.log('🔄 Refreshing conversations due to message update...');
           await fetchConversations();
         }
       )
       .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', JSON.stringify(status));
+        console.log('📡 Real-time subscription status:', status);
       });
 
     return () => {
       console.log('📡 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, fetchConversations, fetchMessages, messages]);
-
-  console.log('🎯 useMessages hook returning:', JSON.stringify({
-    conversationsCount: conversations.length,
-    messagesCount: messages.length,
-    loading,
-    totalUnreadCount: getTotalUnreadCount()
-  }));
+  }, [user?.id]); // Remove fetchConversations and fetchMessages from deps
 
   return {
     conversations,

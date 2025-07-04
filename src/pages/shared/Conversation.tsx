@@ -40,85 +40,48 @@ export default function Conversation() {
   console.log('🎬 Conversation component render:', JSON.stringify({
     conversationId,
     userId: user?.id,
-    profileRole: profile?.role,
     messagesCount: messages.length,
-    conversationsCount: conversations.length,
-    loading,
-    timestamp: new Date().toISOString()
+    loading
   }));
 
   // Find conversation
   const conversation = conversations.find(c => c.id === conversationId);
-  console.log('🔍 Conversation lookup:', JSON.stringify({
-    conversationId,
-    found: !!conversation,
-    conversationData: conversation ? {
-      id: conversation.id,
-      otherUserName: conversation.other_user_name,
-      unreadCount: conversation.unread_count
-    } : null
-  }));
 
   useEffect(() => {
-    console.log('📥 fetchMessages useEffect triggered:', JSON.stringify({
-      conversationId,
-      hasConversationId: !!conversationId,
-      fetchMessagesFunction: typeof fetchMessages
-    }));
-    
+    console.log('📥 fetchMessages useEffect triggered for:', conversationId);
     if (conversationId) {
-      console.log('🚀 Calling fetchMessages for conversation:', conversationId);
       fetchMessages(conversationId);
     }
-  }, [conversationId, fetchMessages]);
+  }, [conversationId]); // Remove fetchMessages from deps to prevent infinite loop
 
   useEffect(() => {
-    console.log('📜 Auto-scroll useEffect triggered:', JSON.stringify({
-      messagesCount: messages.length,
-      hasMessagesEndRef: !!messagesEndRef.current,
-      timestamp: new Date().toISOString()
-    }));
-    
+    console.log('📜 Auto-scroll useEffect triggered, messages count:', messages.length);
     if (messagesEndRef.current) {
-      console.log('🔽 Scrolling to bottom');
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages.length]); // Only depend on message count, not the entire messages array
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📤 Send message initiated:', JSON.stringify({
-      messageContent: newMessage,
-      conversationId,
-      canSend: !(!newMessage.trim() || !conversationId || sending),
-      sending
-    }));
-    
+    console.log('📤 Send message initiated');
     if (!newMessage.trim() || !conversationId || sending) return;
 
     setSending(true);
-    console.log('🔄 Sending message...');
-    
     try {
       await sendMessage(conversationId, newMessage);
       console.log('✅ Message sent successfully');
       setNewMessage('');
     } catch (error) {
-      console.error('❌ Error sending message:', JSON.stringify(error));
+      console.error('❌ Error sending message:', error);
     } finally {
       setSending(false);
-      console.log('🔄 Send message completed, sending state reset');
     }
   };
 
   const handleBack = () => {
     const baseRoute = profile?.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
     const targetRoute = `${baseRoute}/messages`;
-    console.log('🔙 Navigating back:', JSON.stringify({
-      profileRole: profile?.role,
-      baseRoute,
-      targetRoute
-    }));
+    console.log('🔙 Navigating back to:', targetRoute);
     navigate(targetRoute);
   };
 
@@ -133,15 +96,6 @@ export default function Conversation() {
   };
 
   const groupMessagesByDate = (messageList: typeof messages): MessageGroup[] => {
-    console.log('📊 Grouping messages by date:', JSON.stringify({
-      totalMessages: messageList.length,
-      messages: messageList.map(m => ({
-        id: m.id,
-        content: m.content.substring(0, 50) + '...',
-        created_at: m.created_at
-      }))
-    }));
-
     const groups: MessageGroup[] = [];
     let currentGroup: MessageGroup | null = null;
 
@@ -152,18 +106,9 @@ export default function Conversation() {
       if (!currentGroup || currentGroup.date !== dateString) {
         currentGroup = { date: dateString, messages: [] };
         groups.push(currentGroup);
-        console.log('📅 Created new date group:', dateString);
       }
       currentGroup.messages.push(message);
     });
-
-    console.log('📊 Message groups created:', JSON.stringify({
-      totalGroups: groups.length,
-      groupSummary: groups.map(g => ({
-        date: g.date,
-        messageCount: g.messages.length
-      }))
-    }));
 
     return groups;
   };
@@ -182,7 +127,7 @@ export default function Conversation() {
 
   // Show conversation not found if no conversation exists
   if (!conversation) {
-    console.log('❌ Conversation not found, showing error state');
+    console.log('❌ Conversation not found');
     return (
       <div className="p-6">
         <Card>
@@ -198,12 +143,7 @@ export default function Conversation() {
   }
 
   const messageGroups = groupMessagesByDate(messages);
-  console.log('🎨 Rendering conversation with:', JSON.stringify({
-    conversationId: conversation.id,
-    otherUserName: conversation.other_user_name,
-    messageGroupsCount: messageGroups.length,
-    totalMessages: messages.length
-  }));
+  console.log('🎨 Rendering conversation with', messageGroups.length, 'message groups');
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[800px] p-6">
@@ -240,59 +180,43 @@ export default function Conversation() {
               </div>
             ) : (
               <div className="space-y-6">
-                {messageGroups.map((group, groupIndex) => {
-                  console.log('🎭 Rendering message group:', JSON.stringify({
-                    groupIndex,
-                    date: group.date,
-                    messageCount: group.messages.length
-                  }));
-                  
-                  return (
-                    <div key={groupIndex}>
-                      <div className="flex items-center justify-center mb-4">
-                        <div className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600">
-                          {group.date}
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        {group.messages.map((message) => {
-                          const isOwn = message.sender_id === user?.id;
-                          console.log('💬 Rendering message:', JSON.stringify({
-                            messageId: message.id,
-                            isOwn,
-                            senderId: message.sender_id,
-                            currentUserId: user?.id,
-                            content: message.content.substring(0, 30) + '...'
-                          }));
-                          
-                          return (
-                            <div
-                              key={message.id}
-                              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-[70%] rounded-lg p-3 ${
-                                  isOwn
-                                    ? 'bg-bibabop-pink text-white'
-                                    : 'bg-gray-100 text-gray-900'
-                                }`}
-                              >
-                                <p className="text-sm">{message.content}</p>
-                                <p
-                                  className={`text-xs mt-1 ${
-                                    isOwn ? 'text-white/70' : 'text-gray-500'
-                                  }`}
-                                >
-                                  {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                {messageGroups.map((group, groupIndex) => (
+                  <div key={groupIndex}>
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600">
+                        {group.date}
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="space-y-4">
+                      {group.messages.map((message) => {
+                        const isOwn = message.sender_id === user?.id;
+                        return (
+                          <div
+                            key={message.id}
+                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[70%] rounded-lg p-3 ${
+                                isOwn
+                                  ? 'bg-bibabop-pink text-white'
+                                  : 'bg-gray-100 text-gray-900'
+                              }`}
+                            >
+                              <p className="text-sm">{message.content}</p>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  isOwn ? 'text-white/70' : 'text-gray-500'
+                                }`}
+                              >
+                                {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -302,10 +226,7 @@ export default function Conversation() {
             <form onSubmit={handleSendMessage} className="flex space-x-2">
               <Input
                 value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  console.log('✏️ Message input changed:', e.target.value);
-                }}
+                onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Tapez votre message..."
                 disabled={sending}
                 className="flex-1"
