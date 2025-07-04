@@ -146,8 +146,8 @@ export default function Conversation() {
   console.log('🎨 Rendering conversation with', messageGroups.length, 'message groups');
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[800px] p-6">
-      <Card className="flex-1 flex flex-col">
+    <div className="h-screen flex flex-col p-6">
+      <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center space-x-4">
             <Button

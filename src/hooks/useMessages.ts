@@ -171,12 +171,8 @@ export const useMessages = () => {
 
       if (!updateError) {
         console.log('✅ Messages marked as read');
-        // Update conversations to reflect read status
-        setConversations(prev => prev.map(conv => 
-          conv.id === conversationId 
-            ? { ...conv, unread_count: 0 }
-            : conv
-        ));
+        // Force refresh conversations to get updated unread counts
+        await fetchConversations();
       }
 
     } catch (error) {
@@ -187,7 +183,7 @@ export const useMessages = () => {
         variant: "destructive",
       });
     }
-  }, [user?.id, toast]);
+  }, [user?.id, toast, fetchConversations]);
 
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
