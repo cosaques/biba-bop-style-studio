@@ -137,6 +137,13 @@ const useProvideMessages = () => {
         })
       );
 
+      // Sort by most recent message or conversation update
+      conversationsWithDetails.sort((a, b) => {
+        const aDate = a.last_message?.created_at ?? a.updated_at;
+        const bDate = b.last_message?.created_at ?? b.updated_at;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      });
+
       console.log('✅ Conversations fetched:', conversationsWithDetails.length);
       setConversations(conversationsWithDetails);
     } catch (error) {
