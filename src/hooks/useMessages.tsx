@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +28,28 @@ export interface Conversation {
   unread_count: number;
 }
 
+interface MessagesContextType {
+  conversations: Conversation[];
+  messages: Message[];
+  loading: boolean;
+  fetchConversations: () => Promise<void>;
+  fetchMessages: (conversationId: string) => Promise<void>;
+  sendMessage: (conversationId: string, content: string) => Promise<void>;
+  createConversation: (otherUserId: string) => Promise<string | null>;
+  getTotalUnreadCount: () => number;
+}
+
+const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
+
 export const useMessages = () => {
+  const context = useContext(MessagesContext);
+  if (!context) {
+    throw new Error('useMessages must be used within a MessagesProvider');
+  }
+  return context;
+};
+
+const useProvideMessages = () => {
   const { user } = useAuth();
   const { profile } = useUserProfile();
   const { toast } = useToast();
@@ -116,6 +137,13 @@ export const useMessages = () => {
         })
       );
 
+      // Sort by most recent message or conversation update
+      conversationsWithDetails.sort((a, b) => {
+        const aDate = a.last_message?.created_at ?? a.updated_at;
+        const bDate = b.last_message?.created_at ?? b.updated_at;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      });
+
       console.log('✅ Conversations fetched:', conversationsWithDetails.length);
       setConversations(conversationsWithDetails);
     } catch (error) {
@@ -171,6 +199,12 @@ export const useMessages = () => {
 
       if (!updateError) {
         console.log('✅ Messages marked as read');
+        // Update local state immediately
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === conversationId ? { ...conv, unread_count: 0 } : conv
+          )
+        );
         // Force refresh conversations to get updated unread counts
         await fetchConversations();
       }
@@ -213,6 +247,9 @@ export const useMessages = () => {
       if (currentConversationId === conversationId) {
         await fetchMessages(conversationId);
       }
+
+      // Refresh conversations to update last message and unread counts
+      await fetchConversations();
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
@@ -351,4 +388,11 @@ export const useMessages = () => {
     createConversation,
     getTotalUnreadCount
   };
+};
+
+export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const value = useProvideMessages();
+  return (
+    <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>
+  );
 };
