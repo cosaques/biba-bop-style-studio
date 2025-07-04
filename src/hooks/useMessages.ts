@@ -35,13 +35,15 @@ export const useMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   console.log('🎯 useMessages hook initialized:', JSON.stringify({
     userId: user?.id,
     profileRole: profile?.role,
     conversationsCount: conversations.length,
     messagesCount: messages.length,
-    loading
+    loading,
+    currentConversationId
   }));
 
   const fetchConversations = useCallback(async () => {
@@ -69,9 +71,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('📋 Raw conversations data:', JSON.stringify({
-        count: data?.length || 0
-      }));
+      console.log('📋 Raw conversations data:', JSON.stringify({ count: data?.length || 0 }));
 
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
@@ -134,6 +134,7 @@ export const useMessages = () => {
     if (!user) return;
 
     console.log('💬 fetchMessages called for:', conversationId);
+    setCurrentConversationId(conversationId);
 
     try {
       const { data, error } = await supabase
@@ -171,7 +172,7 @@ export const useMessages = () => {
       if (!updateError) {
         console.log('✅ Messages marked as read');
         // Refresh conversations to update unread counts
-        fetchConversations();
+        await fetchConversations();
       }
 
     } catch (error) {
@@ -207,6 +208,11 @@ export const useMessages = () => {
         .eq('id', conversationId);
 
       console.log('✅ Message sent successfully');
+
+      // Immediately refresh messages for current conversation
+      if (currentConversationId === conversationId) {
+        await fetchMessages(conversationId);
+      }
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
@@ -256,7 +262,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      fetchConversations();
+      await fetchConversations();
       return data.id;
 
     } catch (error) {
@@ -282,7 +288,7 @@ export const useMessages = () => {
     if (user && profile) {
       fetchConversations();
     }
-  }, [user?.id, profile?.role]); // Remove fetchConversations from deps to prevent infinite loop
+  }, [user?.id, profile?.role, fetchConversations]);
 
   // Set up real-time subscription
   useEffect(() => {
@@ -306,8 +312,9 @@ export const useMessages = () => {
           await fetchConversations();
           
           // If we're currently viewing this conversation, refresh messages
-          if (messages.length > 0 && payload.new.conversation_id === messages[0]?.conversation_id) {
-            await fetchMessages(payload.new.conversation_id);
+          if (currentConversationId && payload.new.conversation_id === currentConversationId) {
+            console.log('🔄 Refreshing messages for current conversation');
+            await fetchMessages(currentConversationId);
           }
         }
       )
@@ -332,7 +339,7 @@ export const useMessages = () => {
       console.log('📡 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [user?.id]); // Remove fetchConversations and fetchMessages from deps
+  }, [user?.id, fetchConversations, fetchMessages, currentConversationId]);
 
   return {
     conversations,

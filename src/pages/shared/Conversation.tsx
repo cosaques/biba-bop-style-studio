@@ -52,14 +52,14 @@ export default function Conversation() {
     if (conversationId) {
       fetchMessages(conversationId);
     }
-  }, [conversationId]); // Remove fetchMessages from deps to prevent infinite loop
+  }, [conversationId, fetchMessages]);
 
   useEffect(() => {
     console.log('📜 Auto-scroll useEffect triggered, messages count:', messages.length);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length]); // Only depend on message count, not the entire messages array
+  }, [messages.length]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
