@@ -37,7 +37,7 @@ export default function Conversation() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  console.log('🎬 Conversation component render:', {
+  console.log('🎬 Conversation component render:', JSON.stringify({
     conversationId,
     userId: user?.id,
     profileRole: profile?.role,
@@ -45,11 +45,11 @@ export default function Conversation() {
     conversationsCount: conversations.length,
     loading,
     timestamp: new Date().toISOString()
-  });
+  }));
 
   // Find conversation
   const conversation = conversations.find(c => c.id === conversationId);
-  console.log('🔍 Conversation lookup:', {
+  console.log('🔍 Conversation lookup:', JSON.stringify({
     conversationId,
     found: !!conversation,
     conversationData: conversation ? {
@@ -57,14 +57,14 @@ export default function Conversation() {
       otherUserName: conversation.other_user_name,
       unreadCount: conversation.unread_count
     } : null
-  });
+  }));
 
   useEffect(() => {
-    console.log('📥 fetchMessages useEffect triggered:', {
+    console.log('📥 fetchMessages useEffect triggered:', JSON.stringify({
       conversationId,
       hasConversationId: !!conversationId,
       fetchMessagesFunction: typeof fetchMessages
-    });
+    }));
     
     if (conversationId) {
       console.log('🚀 Calling fetchMessages for conversation:', conversationId);
@@ -73,11 +73,11 @@ export default function Conversation() {
   }, [conversationId, fetchMessages]);
 
   useEffect(() => {
-    console.log('📜 Auto-scroll useEffect triggered:', {
+    console.log('📜 Auto-scroll useEffect triggered:', JSON.stringify({
       messagesCount: messages.length,
       hasMessagesEndRef: !!messagesEndRef.current,
       timestamp: new Date().toISOString()
-    });
+    }));
     
     if (messagesEndRef.current) {
       console.log('🔽 Scrolling to bottom');
@@ -87,12 +87,12 @@ export default function Conversation() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📤 Send message initiated:', {
+    console.log('📤 Send message initiated:', JSON.stringify({
       messageContent: newMessage,
       conversationId,
       canSend: !(!newMessage.trim() || !conversationId || sending),
       sending
-    });
+    }));
     
     if (!newMessage.trim() || !conversationId || sending) return;
 
@@ -104,7 +104,7 @@ export default function Conversation() {
       console.log('✅ Message sent successfully');
       setNewMessage('');
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      console.error('❌ Error sending message:', JSON.stringify(error));
     } finally {
       setSending(false);
       console.log('🔄 Send message completed, sending state reset');
@@ -114,11 +114,11 @@ export default function Conversation() {
   const handleBack = () => {
     const baseRoute = profile?.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
     const targetRoute = `${baseRoute}/messages`;
-    console.log('🔙 Navigating back:', {
+    console.log('🔙 Navigating back:', JSON.stringify({
       profileRole: profile?.role,
       baseRoute,
       targetRoute
-    });
+    }));
     navigate(targetRoute);
   };
 
@@ -133,14 +133,14 @@ export default function Conversation() {
   };
 
   const groupMessagesByDate = (messageList: typeof messages): MessageGroup[] => {
-    console.log('📊 Grouping messages by date:', {
+    console.log('📊 Grouping messages by date:', JSON.stringify({
       totalMessages: messageList.length,
       messages: messageList.map(m => ({
         id: m.id,
         content: m.content.substring(0, 50) + '...',
         created_at: m.created_at
       }))
-    });
+    }));
 
     const groups: MessageGroup[] = [];
     let currentGroup: MessageGroup | null = null;
@@ -157,13 +157,13 @@ export default function Conversation() {
       currentGroup.messages.push(message);
     });
 
-    console.log('📊 Message groups created:', {
+    console.log('📊 Message groups created:', JSON.stringify({
       totalGroups: groups.length,
       groupSummary: groups.map(g => ({
         date: g.date,
         messageCount: g.messages.length
       }))
-    });
+    }));
 
     return groups;
   };
@@ -198,12 +198,12 @@ export default function Conversation() {
   }
 
   const messageGroups = groupMessagesByDate(messages);
-  console.log('🎨 Rendering conversation with:', {
+  console.log('🎨 Rendering conversation with:', JSON.stringify({
     conversationId: conversation.id,
     otherUserName: conversation.other_user_name,
     messageGroupsCount: messageGroups.length,
     totalMessages: messages.length
-  });
+  }));
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[800px] p-6">
@@ -241,11 +241,11 @@ export default function Conversation() {
             ) : (
               <div className="space-y-6">
                 {messageGroups.map((group, groupIndex) => {
-                  console.log('🎭 Rendering message group:', {
+                  console.log('🎭 Rendering message group:', JSON.stringify({
                     groupIndex,
                     date: group.date,
                     messageCount: group.messages.length
-                  });
+                  }));
                   
                   return (
                     <div key={groupIndex}>
@@ -257,13 +257,13 @@ export default function Conversation() {
                       <div className="space-y-4">
                         {group.messages.map((message) => {
                           const isOwn = message.sender_id === user?.id;
-                          console.log('💬 Rendering message:', {
+                          console.log('💬 Rendering message:', JSON.stringify({
                             messageId: message.id,
                             isOwn,
                             senderId: message.sender_id,
                             currentUserId: user?.id,
                             content: message.content.substring(0, 30) + '...'
-                          });
+                          }));
                           
                           return (
                             <div

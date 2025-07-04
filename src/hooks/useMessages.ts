@@ -36,22 +36,22 @@ export const useMessages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
-  console.log('🎯 useMessages hook initialized:', {
+  console.log('🎯 useMessages hook initialized:', JSON.stringify({
     userId: user?.id,
     profileRole: profile?.role,
     conversationsCount: conversations.length,
     messagesCount: messages.length,
     loading,
     timestamp: new Date().toISOString()
-  });
+  }));
 
   const fetchConversations = useCallback(async () => {
-    console.log('📋 fetchConversations called:', {
+    console.log('📋 fetchConversations called:', JSON.stringify({
       hasUser: !!user,
       hasProfile: !!profile,
       userId: user?.id,
       profileRole: profile?.role
-    });
+    }));
 
     if (!user || !profile) {
       console.log('⚠️ fetchConversations aborted: missing user or profile');
@@ -79,7 +79,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('📋 Raw conversations data:', {
+      console.log('📋 Raw conversations data:', JSON.stringify({
         count: data?.length || 0,
         conversations: data?.map(c => ({
           id: c.id,
@@ -87,14 +87,14 @@ export const useMessages = () => {
           consultant_id: c.consultant_id,
           updated_at: c.updated_at
         }))
-      });
+      }));
 
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
           const otherUser = conv.client_id === user.id ? conv.consultant : conv.client;
           const otherUserName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utilisateur';
 
-          console.log('👤 Processing conversation:', {
+          console.log('👤 Processing conversation:', JSON.stringify({
             conversationId: conv.id,
             currentUserId: user.id,
             clientId: conv.client_id,
@@ -104,7 +104,7 @@ export const useMessages = () => {
               lastName: otherUser.last_name,
               fullName: otherUserName
             }
-          });
+          }));
 
           // Get last message
           console.log('💬 Fetching last message for conversation:', conv.id);
@@ -124,10 +124,10 @@ export const useMessages = () => {
             .single();
 
           if (lastMessageError && lastMessageError.code !== 'PGRST116') {
-            console.error('❌ Error fetching last message:', lastMessageError);
+            console.error('❌ Error fetching last message:', JSON.stringify(lastMessageError));
           }
 
-          console.log('💬 Last message result:', {
+          console.log('💬 Last message result:', JSON.stringify({
             conversationId: conv.id,
             hasLastMessage: !!lastMessage,
             lastMessage: lastMessage ? {
@@ -136,7 +136,7 @@ export const useMessages = () => {
               created_at: lastMessage.created_at,
               sender_id: lastMessage.sender_id
             } : null
-          });
+          }));
 
           // Get unread count
           console.log('🔢 Fetching unread count for conversation:', conv.id);
@@ -148,14 +148,14 @@ export const useMessages = () => {
             .is('read_at', null);
 
           if (unreadError) {
-            console.error('❌ Error fetching unread count:', unreadError);
+            console.error('❌ Error fetching unread count:', JSON.stringify(unreadError));
           }
 
-          console.log('🔢 Unread count result:', {
+          console.log('🔢 Unread count result:', JSON.stringify({
             conversationId: conv.id,
             unreadCount: unreadCount || 0,
             currentUserId: user.id
-          });
+          }));
 
           const processedConversation = {
             ...conv,
@@ -169,30 +169,30 @@ export const useMessages = () => {
             unread_count: unreadCount || 0
           };
 
-          console.log('✅ Processed conversation:', {
+          console.log('✅ Processed conversation:', JSON.stringify({
             id: processedConversation.id,
             otherUserName: processedConversation.other_user_name,
             unreadCount: processedConversation.unread_count,
             hasLastMessage: !!processedConversation.last_message
-          });
+          }));
 
           return processedConversation;
         })
       );
 
-      console.log('📋 Setting conversations state:', {
+      console.log('📋 Setting conversations state:', JSON.stringify({
         totalConversations: conversationsWithDetails.length,
         conversationSummary: conversationsWithDetails.map(c => ({
           id: c.id,
           otherUserName: c.other_user_name,
           unreadCount: c.unread_count
         }))
-      });
+      }));
 
       setConversations(conversationsWithDetails);
       console.log('✅ Conversations state updated successfully');
     } catch (error) {
-      console.error('❌ useMessages: Error fetching conversations:', error);
+      console.error('❌ useMessages: Error fetching conversations:', JSON.stringify(error));
       toast({
         title: "Erreur",
         description: "Impossible de charger les conversations",
@@ -205,11 +205,11 @@ export const useMessages = () => {
   }, [user, profile, toast]);
 
   const fetchMessages = useCallback(async (conversationId: string) => {
-    console.log('💬 fetchMessages called:', {
+    console.log('💬 fetchMessages called:', JSON.stringify({
       conversationId,
       hasUser: !!user,
       userId: user?.id
-    });
+    }));
 
     if (!user) {
       console.log('⚠️ fetchMessages aborted: no user');
@@ -233,7 +233,7 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      console.log('💬 Raw messages data:', {
+      console.log('💬 Raw messages data:', JSON.stringify({
         conversationId,
         messageCount: data?.length || 0,
         messages: data?.map(m => ({
@@ -242,7 +242,7 @@ export const useMessages = () => {
           sender_id: m.sender_id,
           created_at: m.created_at
         }))
-      });
+      }));
 
       const messagesWithSender = (data || []).map(message => ({
         ...message,
@@ -250,10 +250,10 @@ export const useMessages = () => {
         sender_avatar: message.sender.profile_photo_url
       }));
 
-      console.log('💬 Setting messages state:', {
+      console.log('💬 Setting messages state:', JSON.stringify({
         conversationId,
         processedMessageCount: messagesWithSender.length
-      });
+      }));
 
       setMessages(messagesWithSender);
       console.log('✅ Messages state updated successfully');
@@ -268,7 +268,7 @@ export const useMessages = () => {
         .is('read_at', null);
 
       if (updateError) {
-        console.error('❌ Error marking messages as read:', updateError);
+        console.error('❌ Error marking messages as read:', JSON.stringify(updateError));
       } else {
         console.log('✅ Messages marked as read successfully');
         // Refresh conversations to update unread counts
@@ -277,7 +277,7 @@ export const useMessages = () => {
       }
 
     } catch (error) {
-      console.error('❌ useMessages: Error fetching messages:', error);
+      console.error('❌ useMessages: Error fetching messages:', JSON.stringify(error));
       toast({
         title: "Erreur",
         description: "Impossible de charger les messages",
@@ -287,12 +287,12 @@ export const useMessages = () => {
   }, [user, toast, fetchConversations]);
 
   const sendMessage = async (conversationId: string, content: string) => {
-    console.log('📤 sendMessage called:', {
+    console.log('📤 sendMessage called:', JSON.stringify({
       conversationId,
       contentLength: content.length,
       hasUser: !!user,
       userId: user?.id
-    });
+    }));
 
     if (!user || !content.trim()) {
       console.log('⚠️ sendMessage aborted: no user or empty content');
@@ -323,7 +323,7 @@ export const useMessages = () => {
       console.log('🔄 Real-time should handle message updates automatically');
 
     } catch (error) {
-      console.error('❌ useMessages: Error sending message:', error);
+      console.error('❌ useMessages: Error sending message:', JSON.stringify(error));
       toast({
         title: "Erreur",
         description: "Impossible d'envoyer le message",
@@ -333,12 +333,12 @@ export const useMessages = () => {
   };
 
   const createConversation = async (otherUserId: string) => {
-    console.log('💼 createConversation called:', {
+    console.log('💼 createConversation called:', JSON.stringify({
       otherUserId,
       hasUser: !!user,
       hasProfile: !!profile,
       profileRole: profile?.role
-    });
+    }));
 
     if (!user || !profile) {
       console.log('⚠️ createConversation aborted: no user or profile');
@@ -357,11 +357,11 @@ export const useMessages = () => {
         consultantId = otherUserId;
       }
 
-      console.log('👥 Conversation roles determined:', {
+      console.log('👥 Conversation roles determined:', JSON.stringify({
         clientId,
         consultantId,
         currentUserRole: profile.role
-      });
+      }));
 
       // Check if conversation already exists
       console.log('🔍 Checking for existing conversation...');
@@ -395,7 +395,7 @@ export const useMessages = () => {
       return data.id;
 
     } catch (error) {
-      console.error('❌ useMessages: Error creating conversation:', error);
+      console.error('❌ useMessages: Error creating conversation:', JSON.stringify(error));
       toast({
         title: "Erreur",
         description: "Impossible de créer la conversation",
@@ -407,24 +407,24 @@ export const useMessages = () => {
 
   const getTotalUnreadCount = useCallback(() => {
     const total = conversations.reduce((total, conv) => total + conv.unread_count, 0);
-    console.log('🔢 Total unread count calculated:', {
+    console.log('🔢 Total unread count calculated:', JSON.stringify({
       total,
       conversationBreakdown: conversations.map(c => ({
         id: c.id,
         otherUserName: c.other_user_name,
         unreadCount: c.unread_count
       }))
-    });
+    }));
     return total;
   }, [conversations]);
 
   useEffect(() => {
-    console.log('🎬 Initial fetchConversations useEffect triggered:', {
+    console.log('🎬 Initial fetchConversations useEffect triggered:', JSON.stringify({
       hasUser: !!user,
       hasProfile: !!profile,
       userId: user?.id,
       profileRole: profile?.role
-    });
+    }));
 
     if (user && profile) {
       fetchConversations();
@@ -433,10 +433,10 @@ export const useMessages = () => {
 
   // Set up real-time subscription for messages
   useEffect(() => {
-    console.log('📡 Setting up real-time subscriptions:', {
+    console.log('📡 Setting up real-time subscriptions:', JSON.stringify({
       hasUser: !!user,
       userId: user?.id
-    });
+    }));
 
     if (!user) return;
     
@@ -450,14 +450,14 @@ export const useMessages = () => {
           table: 'messages'
         },
         async (payload) => {
-          console.log('📡 Real-time message INSERT received:', {
+          console.log('📡 Real-time message INSERT received:', JSON.stringify({
             messageId: payload.new.id,
             conversationId: payload.new.conversation_id,
             senderId: payload.new.sender_id,
             content: payload.new.content.substring(0, 30) + '...',
             currentUserId: user.id,
             isOwnMessage: payload.new.sender_id === user.id
-          });
+          }));
           
           // Refresh conversations to update unread counts and last message
           console.log('🔄 Refreshing conversations due to new message...');
@@ -478,12 +478,12 @@ export const useMessages = () => {
           table: 'messages'
         },
         async (payload) => {
-          console.log('📡 Real-time message UPDATE received:', {
+          console.log('📡 Real-time message UPDATE received:', JSON.stringify({
             messageId: payload.new.id,
             conversationId: payload.new.conversation_id,
             readAt: payload.new.read_at,
             wasRead: !!payload.new.read_at
-          });
+          }));
           
           // Refresh conversations when messages are marked as read
           console.log('🔄 Refreshing conversations due to message update...');
@@ -491,7 +491,7 @@ export const useMessages = () => {
         }
       )
       .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
+        console.log('📡 Real-time subscription status:', JSON.stringify(status));
       });
 
     return () => {
@@ -500,12 +500,12 @@ export const useMessages = () => {
     };
   }, [user, fetchConversations, fetchMessages, messages]);
 
-  console.log('🎯 useMessages hook returning:', {
+  console.log('🎯 useMessages hook returning:', JSON.stringify({
     conversationsCount: conversations.length,
     messagesCount: messages.length,
     loading,
     totalUnreadCount: getTotalUnreadCount()
-  });
+  }));
 
   return {
     conversations,
