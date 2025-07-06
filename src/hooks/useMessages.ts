@@ -150,6 +150,14 @@ export const useMessages = () => {
       console.log('✅ Messages fetched:', messagesWithSender.length);
       setMessages(messagesWithSender);
 
+      // Mark messages as read
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+
       return messagesWithSender;
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
@@ -162,34 +170,16 @@ export const useMessages = () => {
     }
   }, [user?.id, toast]);
 
-  const markConversationMessagesAsRead = useCallback(async (conversationId: string) => {
+  const markMessageAsRead = useCallback(async (messageId: string) => {
     if (!user) return 0;
 
     try {
-      // Get count of unread messages before marking as read
-      const { count: unreadCount } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id)
-        .is('read_at', null);
-
-      if (unreadCount && unreadCount > 0) {
-        // Mark messages as read
-        const { error } = await supabase
+      await supabase
           .from('messages')
           .update({ read_at: new Date().toISOString() })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user.id)
-          .is('read_at', null);
+          .eq('id', messageId);
 
-        if (error) throw error;
-
-        console.log('✅ Marked', unreadCount, 'messages as read');
-        return unreadCount;
-      }
-
-      return 0;
+      return 1;
     } catch (error) {
       console.error('❌ Error marking messages as read:', error);
       return 0;
@@ -239,7 +229,7 @@ export const useMessages = () => {
 
     try {
       let clientId, consultantId;
-      
+
       if (profile.role === 'consultant') {
         consultantId = user.id;
         clientId = otherUserId;
@@ -302,7 +292,7 @@ export const useMessages = () => {
     fetchMessages,
     sendMessage,
     createConversation,
-    markConversationMessagesAsRead,
+    markMessageAsRead,
     addMessage
   };
 };

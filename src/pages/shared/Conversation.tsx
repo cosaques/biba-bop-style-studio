@@ -35,7 +35,7 @@ export default function Conversation() {
   const { profile } = useUserProfile();
   const { decreaseUnreadCount } = useUnreadCount();
   const navigate = useNavigate();
-  const { conversations, messages, loading, fetchMessages, sendMessage, markConversationMessagesAsRead, addMessage } = useMessages();
+  const { conversations, messages, loading, fetchMessages, sendMessage, markMessageAsRead, addMessage } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,7 +63,7 @@ export default function Conversation() {
         },
         async (payload) => {
           console.log('📡 New message received:', payload.new.id);
-          
+
           // If it's not our own message, add it to the messages
           if (payload.new.sender_id !== user.id) {
             // Fetch sender details
@@ -82,10 +82,7 @@ export default function Conversation() {
             addMessage(messageWithSender);
 
             // Mark this message as read immediately
-            await supabase
-              .from('messages')
-              .update({ read_at: new Date().toISOString() })
-              .eq('id', payload.new.id);
+            await markMessageAsRead(payload.new.id)
 
             // Decrease unread count by 1
             decreaseUnreadCount(1);
@@ -109,7 +106,7 @@ export default function Conversation() {
       console.log('📡 Cleaning up conversation subscription');
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user?.id, addMessage, decreaseUnreadCount]);
+  }, [conversationId, user?.id, addMessage, markMessageAsRead, decreaseUnreadCount]);
 
   // Fetch messages and mark as read when conversation opens
   useEffect(() => {
@@ -118,10 +115,11 @@ export default function Conversation() {
     const loadMessages = async () => {
       console.log('📥 Loading messages for conversation:', conversationId);
       const loadedMessages = await fetchMessages(conversationId);
-      
+
       if (loadedMessages && loadedMessages.length > 0) {
         // Count and mark unread messages as read
-        const unreadCount = await markConversationMessagesAsRead(conversationId);
+        // TODO: calculate correctly unread_count from calculating not read fetched messages
+        const unreadCount = 0
         if (unreadCount > 0) {
           decreaseUnreadCount(unreadCount);
           console.log('✅ Marked', unreadCount, 'messages as read on conversation open');
@@ -130,14 +128,14 @@ export default function Conversation() {
     };
 
     loadMessages();
-  }, [conversationId, fetchMessages, markConversationMessagesAsRead, decreaseUnreadCount]);
+  }, [conversationId, fetchMessages, decreaseUnreadCount]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length]);
+  }, [conversationId, messages.length]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,7 +221,7 @@ export default function Conversation() {
   console.log('🎨 Rendering conversation with', messageGroups.length, 'message groups');
 
   return (
-    <div className="h-screen flex flex-col p-6">
+    <div className="h-[calc(100vh-4rem)] box-border  flex flex-col p-6">
       <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center space-x-4">
