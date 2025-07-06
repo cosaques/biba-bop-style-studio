@@ -11,13 +11,16 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMessages } from "@/hooks/useMessages";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { useUnreadCountPolling } from "@/hooks/useUnreadCountPolling";
 
 export function ClientSidebar() {
   const { signOut } = useAuth();
-  const { getTotalUnreadCount } = useMessages();
+  const { unreadCount } = useUnreadCount();
   const location = useLocation();
-  const unreadCount = getTotalUnreadCount();
+
+  // Start polling for unread counts
+  useUnreadCountPolling();
 
   const handleLogout = async () => {
     await signOut();

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
 import { useMessages } from '@/hooks/useMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Send } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MessageGroup {
   date: string;
@@ -31,39 +33,114 @@ export default function Conversation() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const { profile } = useUserProfile();
+  const { decreaseUnreadCount } = useUnreadCount();
   const navigate = useNavigate();
-  const { conversations, messages, loading, fetchMessages, sendMessage } = useMessages();
+  const { conversations, messages, loading, fetchMessages, sendMessage, markConversationMessagesAsRead, addMessage } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  console.log('🎬 Conversation component render:', JSON.stringify({
-    conversationId,
-    userId: user?.id,
-    messagesCount: messages.length,
-    loading
-  }));
+  console.log('🎬 Conversation component render:', conversationId);
 
   // Find conversation
   const conversation = conversations.find(c => c.id === conversationId);
 
+  // Set up real-time listener for this specific conversation
   useEffect(() => {
-    console.log('📥 fetchMessages useEffect triggered for:', conversationId);
-    if (conversationId) {
-      fetchMessages(conversationId);
-    }
-  }, [conversationId, fetchMessages]);
+    if (!conversationId || !user) return;
 
+    console.log('📡 Setting up targeted real-time listener for:', conversationId);
+
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        async (payload) => {
+          console.log('📡 New message received:', payload.new.id);
+          
+          // If it's not our own message, add it to the messages
+          if (payload.new.sender_id !== user.id) {
+            // Fetch sender details
+            const { data: senderData } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, profile_photo_url')
+              .eq('id', payload.new.sender_id)
+              .single();
+
+            const messageWithSender = {
+              ...payload.new,
+              sender_name: senderData ? `${senderData.first_name || ''} ${senderData.last_name || ''}`.trim() || 'Utilisateur' : 'Utilisateur',
+              sender_avatar: senderData?.profile_photo_url
+            };
+
+            addMessage(messageWithSender);
+
+            // Mark this message as read immediately
+            await supabase
+              .from('messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', payload.new.id);
+
+            // Decrease unread count by 1
+            decreaseUnreadCount(1);
+            console.log('✅ New message marked as read, unread count decreased');
+          } else {
+            // It's our own message, just add it
+            const messageWithSender = {
+              ...payload.new,
+              sender_name: `${user.raw_user_meta_data?.first_name || ''} ${user.raw_user_meta_data?.last_name || ''}`.trim() || 'Utilisateur',
+              sender_avatar: user.raw_user_meta_data?.avatar_url
+            };
+            addMessage(messageWithSender);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Conversation subscription status:', status);
+      });
+
+    return () => {
+      console.log('📡 Cleaning up conversation subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user?.id, addMessage, decreaseUnreadCount]);
+
+  // Fetch messages and mark as read when conversation opens
   useEffect(() => {
-    console.log('📜 Auto-scroll useEffect triggered, messages count:', messages.length);
+    if (!conversationId) return;
+
+    const loadMessages = async () => {
+      console.log('📥 Loading messages for conversation:', conversationId);
+      const loadedMessages = await fetchMessages(conversationId);
+      
+      if (loadedMessages && loadedMessages.length > 0) {
+        // Count and mark unread messages as read
+        const unreadCount = await markConversationMessagesAsRead(conversationId);
+        if (unreadCount > 0) {
+          decreaseUnreadCount(unreadCount);
+          console.log('✅ Marked', unreadCount, 'messages as read on conversation open');
+        }
+      }
+    };
+
+    loadMessages();
+  }, [conversationId, fetchMessages, markConversationMessagesAsRead, decreaseUnreadCount]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [conversationId, messages.length]);
+  }, [messages.length]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📤 Send message initiated');
     if (!newMessage.trim() || !conversationId || sending) return;
 
     setSending(true);
@@ -146,7 +223,7 @@ export default function Conversation() {
   console.log('🎨 Rendering conversation with', messageGroups.length, 'message groups');
 
   return (
-    <div className="h-[calc(100vh-4rem)] box-border flex flex-col p-6">
+    <div className="h-screen flex flex-col p-6">
       <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center space-x-4">

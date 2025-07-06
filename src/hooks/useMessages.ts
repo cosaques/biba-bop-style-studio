@@ -35,16 +35,8 @@ export const useMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
-  console.log('🎯 useMessages hook initialized:', JSON.stringify({
-    userId: user?.id,
-    profileRole: profile?.role,
-    conversationsCount: conversations.length,
-    messagesCount: messages.length,
-    loading,
-    currentConversationId
-  }));
+  console.log('🎯 useMessages hook initialized');
 
   const fetchConversations = useCallback(async () => {
     if (!user || !profile) return;
@@ -70,8 +62,6 @@ export const useMessages = () => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-
-      console.log('📋 Raw conversations data:', JSON.stringify({ count: data?.length || 0 }));
 
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (conv) => {
@@ -134,7 +124,6 @@ export const useMessages = () => {
     if (!user) return;
 
     console.log('💬 fetchMessages called for:', conversationId);
-    setCurrentConversationId(conversationId);
 
     try {
       const { data, error } = await supabase
@@ -161,20 +150,7 @@ export const useMessages = () => {
       console.log('✅ Messages fetched:', messagesWithSender.length);
       setMessages(messagesWithSender);
 
-      // Mark messages as read
-      const { error: updateError } = await supabase
-        .from('messages')
-        .update({ read_at: new Date().toISOString() })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id)
-        .is('read_at', null);
-
-      if (!updateError) {
-        console.log('✅ Messages marked as read');
-        // Force refresh conversations to get updated unread counts
-        await fetchConversations();
-      }
-
+      return messagesWithSender;
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
       toast({
@@ -182,13 +158,53 @@ export const useMessages = () => {
         description: "Impossible de charger les messages",
         variant: "destructive",
       });
+      return [];
     }
-  }, [user?.id, toast, fetchConversations]);
+  }, [user?.id, toast]);
+
+  const markConversationMessagesAsRead = useCallback(async (conversationId: string) => {
+    if (!user) return 0;
+
+    try {
+      // Get count of unread messages before marking as read
+      const { count: unreadCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+
+      if (unreadCount && unreadCount > 0) {
+        // Mark messages as read
+        const { error } = await supabase
+          .from('messages')
+          .update({ read_at: new Date().toISOString() })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user.id)
+          .is('read_at', null);
+
+        if (error) throw error;
+
+        console.log('✅ Marked', unreadCount, 'messages as read');
+        return unreadCount;
+      }
+
+      return 0;
+    } catch (error) {
+      console.error('❌ Error marking messages as read:', error);
+      return 0;
+    }
+  }, [user?.id]);
+
+  const addMessage = useCallback((newMessage: Message) => {
+    console.log('➕ Adding new message:', newMessage.id);
+    setMessages(prev => [...prev, newMessage]);
+  }, []);
 
   const sendMessage = async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
 
-    console.log('📤 Sending message...');
+    console.log('📤 Sending message');
 
     try {
       const { error } = await supabase
@@ -208,12 +224,6 @@ export const useMessages = () => {
         .eq('id', conversationId);
 
       console.log('✅ Message sent successfully');
-
-      // Immediately refresh messages for current conversation
-      if (currentConversationId === conversationId) {
-        await fetchMessages(conversationId);
-      }
-
     } catch (error) {
       console.error('❌ Error sending message:', error);
       toast({
@@ -276,12 +286,6 @@ export const useMessages = () => {
     }
   };
 
-  const getTotalUnreadCount = useCallback(() => {
-    const total = conversations.reduce((total, conv) => total + conv.unread_count, 0);
-    console.log('🔢 Total unread count:', total);
-    return total;
-  }, [conversations]);
-
   // Initial fetch
   useEffect(() => {
     console.log('🎬 Initial fetchConversations useEffect triggered');
@@ -289,57 +293,6 @@ export const useMessages = () => {
       fetchConversations();
     }
   }, [user?.id, profile?.role, fetchConversations]);
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!user) return;
-    
-    console.log('📡 Setting up real-time subscriptions');
-    
-    const channel = supabase
-      .channel('messages-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        async (payload) => {
-          console.log('📡 Real-time message INSERT received:', payload.new.id);
-          
-          // Refresh conversations to update unread counts and last message
-          await fetchConversations();
-          
-          // If we're currently viewing this conversation, refresh messages
-          if (currentConversationId && payload.new.conversation_id === currentConversationId) {
-            console.log('🔄 Refreshing messages for current conversation');
-            await fetchMessages(currentConversationId);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages'
-        },
-        async () => {
-          console.log('📡 Real-time message UPDATE received');
-          // Refresh conversations when messages are marked as read
-          await fetchConversations();
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
-      });
-
-    return () => {
-      console.log('📡 Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, fetchConversations, fetchMessages, currentConversationId]);
 
   return {
     conversations,
@@ -349,6 +302,7 @@ export const useMessages = () => {
     fetchMessages,
     sendMessage,
     createConversation,
-    getTotalUnreadCount
+    markConversationMessagesAsRead,
+    addMessage
   };
 };
