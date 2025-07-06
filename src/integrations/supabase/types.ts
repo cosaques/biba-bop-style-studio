@@ -441,6 +441,10 @@ export type Database = {
           profile_exists: boolean
         }[]
       }
+      get_user_unread_count: {
+        Args: { user_id: string }
+        Returns: number
+      }
       is_consultant_client_relationship: {
         Args: { consultant_id: string; client_id: string }
         Returns: boolean

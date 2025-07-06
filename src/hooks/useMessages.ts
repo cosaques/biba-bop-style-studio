@@ -174,14 +174,19 @@ export const useMessages = () => {
     if (!user) return 0;
 
     try {
-      await supabase
-          .from('messages')
-          .update({ read_at: new Date().toISOString() })
-          .eq('id', messageId);
+      const { error } = await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
 
+      if (error) throw error;
+
+      console.log('✅ Message marked as read:', messageId);
       return 1;
     } catch (error) {
-      console.error('❌ Error marking messages as read:', error);
+      console.error('❌ Error marking message as read:', error);
       return 0;
     }
   }, [user?.id]);
