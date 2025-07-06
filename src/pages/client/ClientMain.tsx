@@ -1,11 +1,8 @@
 
 import { ClientSilhouette } from "@/components/client/ClientSilhouette";
 import { ClientInformations } from "@/components/client/ClientInformations";
-import { useClientProfile } from "@/hooks/useClientProfile";
 
 export default function ClientMain() {
-  const { profile } = useClientProfile();
-
   return (
     <div className="min-h-screen bg-background">
       <div className="p-6">
