@@ -27,7 +27,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
       timestamp: new Date().toISOString()
     }));
 
-    if (!loading && !profileLoading) {
+    if (!loading && (!isImpersonating ? !profileLoading : true)) {
       if (!user) {
         console.log('🔍 NO USER - REDIRECTING TO LOGIN');
         navigate('/login');
@@ -35,6 +35,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
       }
       
       // Pour l'impersonation, utiliser le rôle des métadonnées utilisateur
+      // Pour les utilisateurs normaux, utiliser le rôle du profil
       const userRole = isImpersonating ? user.user_metadata?.role : profile?.role;
       
       console.log('🔍 USER ROLE DETERMINED:', JSON.stringify({
@@ -58,7 +59,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     }
   }, [user, profile, loading, profileLoading, navigate, requiredRole, isImpersonating]);
 
-  if (loading || profileLoading) {
+  if (loading || (!isImpersonating && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
