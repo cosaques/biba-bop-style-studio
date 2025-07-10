@@ -33,7 +33,7 @@ export const useUnreadCountPolling = () => {
     fetchUnreadCount();
 
     // Poll every minute
-    const interval = setInterval(fetchUnreadCount, 60000);
+    const interval = setInterval(fetchUnreadCount, 1000);
 
     return () => clearInterval(interval);
   }, [user?.id, setUnreadCount]);

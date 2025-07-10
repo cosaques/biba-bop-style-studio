@@ -12,8 +12,6 @@ export interface Message {
   content: string;
   created_at: string;
   read_at?: string;
-  sender_name: string;
-  sender_avatar?: string;
 }
 
 export interface Conversation {
@@ -96,11 +94,7 @@ export const useMessages = () => {
             ...conv,
             other_user_name: otherUserName,
             other_user_avatar: otherUser.profile_photo_url,
-            last_message: lastMessage ? {
-              ...lastMessage,
-              sender_name: `${lastMessage.sender.first_name || ''} ${lastMessage.sender.last_name || ''}`.trim() || 'Utilisateur',
-              sender_avatar: lastMessage.sender.profile_photo_url
-            } : undefined,
+            last_message: lastMessage ? lastMessage : undefined,
             unread_count: unreadCount || 0
           };
         })
@@ -141,14 +135,10 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      const messagesWithSender = (data || []).map(message => ({
-        ...message,
-        sender_name: `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || 'Utilisateur',
-        sender_avatar: message.sender.profile_photo_url
-      }));
+      const messages = (data || [])
 
-      console.log('✅ Messages fetched:', messagesWithSender.length);
-      setMessages(messagesWithSender);
+      console.log('✅ Messages fetched:', messages.length);
+      setMessages(messages);
 
       // Mark messages as read
       await supabase
@@ -158,7 +148,7 @@ export const useMessages = () => {
         .neq('sender_id', user.id)
         .is('read_at', null);
 
-      return messagesWithSender;
+      return messages;
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
       toast({

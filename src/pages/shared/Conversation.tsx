@@ -24,8 +24,6 @@ interface MessageGroup {
     content: string;
     created_at: string;
     read_at?: string;
-    sender_name: string;
-    sender_avatar?: string;
   }>;
 }
 
@@ -39,45 +37,11 @@ export default function Conversation() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [conversationProfiles, setConversationProfiles] = useState<Map<string, { name: string; avatar?: string }>>(new Map());
 
   console.log('🎬 Conversation component render:', conversationId);
 
   // Find conversation
   const conversation = conversations.find(c => c.id === conversationId);
-
-  // Preload sender profiles for this conversation
-  useEffect(() => {
-    if (!conversationId || !user) return;
-
-    const loadConversationProfiles = async () => {
-      console.log('👤 Loading conversation profiles');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, profile_photo_url')
-        .or(`id.eq.${conversation?.client_id},id.eq.${conversation?.consultant_id}`);
-
-      if (error) {
-        console.error('❌ Error loading conversation profiles:', error);
-        return;
-      }
-
-      const profileMap = new Map();
-      data?.forEach(profile => {
-        profileMap.set(profile.id, {
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilisateur',
-          avatar: profile.profile_photo_url
-        });
-      });
-      
-      setConversationProfiles(profileMap);
-      console.log('✅ Conversation profiles loaded:', profileMap.size);
-    };
-
-    if (conversation) {
-      loadConversationProfiles();
-    }
-  }, [conversation?.client_id, conversation?.consultant_id, conversationId, user]);
 
   // Set up real-time listener for this specific conversation
   useEffect(() => {
@@ -100,26 +64,19 @@ export default function Conversation() {
 
           // If it's not our own message, add it to the messages
           if (payload.new.sender_id !== user.id) {
-            const senderProfile = conversationProfiles.get(payload.new.sender_id);
-            
-            const messageWithSender = {
+            const message = {
               id: payload.new.id,
               conversation_id: payload.new.conversation_id,
               sender_id: payload.new.sender_id,
               content: payload.new.content,
               created_at: payload.new.created_at,
               read_at: payload.new.read_at,
-              sender_name: senderProfile?.name || 'Utilisateur',
-              sender_avatar: senderProfile?.avatar
             };
 
-            addMessage(messageWithSender);
+            addMessage(message);
 
             // Mark this message as read immediately
             await markMessageAsRead(payload.new.id);
-
-            // Decrease unread count by 1
-            decreaseUnreadCount(1);
             console.log('✅ New message marked as read, unread count decreased');
           } else {
             // It's our own message, just add it
@@ -130,8 +87,6 @@ export default function Conversation() {
               content: payload.new.content,
               created_at: payload.new.created_at,
               read_at: payload.new.read_at,
-              sender_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Utilisateur',
-              sender_avatar: profile?.profile_photo_url
             };
             addMessage(messageWithSender);
           }
@@ -145,7 +100,7 @@ export default function Conversation() {
       console.log('📡 Cleaning up conversation subscription');
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user?.id, profile, conversationProfiles, addMessage, markMessageAsRead, decreaseUnreadCount]);
+  }, [conversationId, user?.id, addMessage, markMessageAsRead]);
 
   // Fetch messages and mark as read when conversation opens
   useEffect(() => {
@@ -157,11 +112,11 @@ export default function Conversation() {
 
       if (loadedMessages && loadedMessages.length > 0) {
         // Calculate unread messages count for this conversation
-        const unreadMessages = loadedMessages.filter(msg => 
+        const unreadMessages = loadedMessages.filter(msg =>
           msg.sender_id !== user?.id && !msg.read_at
         );
         const unreadCount = unreadMessages.length;
-        
+
         if (unreadCount > 0) {
           decreaseUnreadCount(unreadCount);
           console.log('✅ Marked', unreadCount, 'messages as read on conversation open');
