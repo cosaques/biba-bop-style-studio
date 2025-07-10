@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 const AdminPage = () => {
   const { impersonateUser } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,21 +21,8 @@ const AdminPage = () => {
     setError('');
     setLoading(true);
 
-    console.log('🔍 ADMIN LOGIN ATTEMPT:', JSON.stringify({
-      email,
-      timestamp: new Date().toISOString()
-    }));
-
     try {
       const result = await impersonateUser(email, adminPassword);
-      
-      console.log('🔍 ADMIN LOGIN RESULT:', JSON.stringify({
-        success: !result.error,
-        error: result.error?.message,
-        userData: result.data,
-        timestamp: new Date().toISOString()
-      }));
-
       if (result.error) {
         setError(result.error.message);
       } else {
@@ -45,25 +30,8 @@ const AdminPage = () => {
           title: "Impersonation réussie",
           description: `Vous êtes maintenant connecté en tant que ${email}`,
         });
-
-        // Redirection basée sur le rôle
-        if (result.data?.role === 'client') {
-          console.log('🔍 REDIRECTING TO CLIENT DASHBOARD');
-          navigate('/client/dashboard');
-        } else if (result.data?.role === 'consultant') {
-          console.log('🔍 REDIRECTING TO CONSULTANT DASHBOARD');
-          navigate('/consultant/dashboard');
-        } else {
-          console.log('🔍 UNKNOWN ROLE:', result.data?.role);
-          setError('Rôle utilisateur non reconnu');
-        }
       }
     } catch (err) {
-      console.log('🔍 ADMIN LOGIN ERROR:', JSON.stringify({
-        error: err instanceof Error ? err.message : String(err),
-        timestamp: new Date().toISOString()
-      }));
-      
       setError('Erreur lors de l\'impersonation');
     } finally {
       setLoading(false);
