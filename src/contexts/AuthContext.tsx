@@ -11,6 +11,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata: any) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  impersonateUser: (email: string, adminPassword: string) => Promise<{ error: any; data?: any }>;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const lastSessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
@@ -54,6 +57,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(newSession);
           setUser(newSession?.user ?? null);
           setLoading(false);
+          
+          // Reset impersonation flag on logout
+          if (event === 'SIGNED_OUT') {
+            setIsImpersonating(false);
+          }
         } else {
           // Still need to set loading to false on initial load
           if (loading) {
@@ -97,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    setIsImpersonating(false);
     await supabase.auth.signOut();
   };
 
@@ -107,6 +116,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  const impersonateUser = async (email: string, adminPassword: string) => {
+    try {
+      const { data, error } = await supabase.rpc('admin_impersonate_user', {
+        user_email: email,
+        admin_password: adminPassword
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      if (data) {
+        // Créer un utilisateur fictif pour l'impersonation
+        const impersonatedUser: User = {
+          id: data.id,
+          email: data.email,
+          user_metadata: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            role: data.role,
+            profile_photo_url: data.profile_photo_url
+          },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          confirmed_at: new Date().toISOString(),
+          email_confirmed_at: new Date().toISOString(),
+          phone: '',
+          phone_confirmed_at: null,
+          last_sign_in_at: new Date().toISOString(),
+          role: 'authenticated',
+          recovery_sent_at: null,
+          email_change_sent_at: null,
+          new_email: null,
+          invited_at: null,
+          action_link: null,
+          email_change: null,
+          phone_change: null,
+          email_change_confirm_status: 0,
+          phone_change_confirm_status: 0,
+          banned_until: null,
+          new_phone: null,
+          is_anonymous: false,
+          identities: []
+        };
+
+        // Créer une session fictive pour l'impersonation
+        const impersonatedSession: Session = {
+          access_token: `impersonated_${data.id}`,
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          refresh_token: `refresh_impersonated_${data.id}`,
+          user: impersonatedUser
+        };
+
+        setUser(impersonatedUser);
+        setSession(impersonatedSession);
+        setIsImpersonating(true);
+
+        return { data };
+      }
+
+      return { error: new Error('Données utilisateur non trouvées') };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -115,6 +194,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     resetPassword,
+    impersonateUser,
+    isImpersonating,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
