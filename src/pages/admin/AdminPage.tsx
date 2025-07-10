@@ -42,33 +42,30 @@ const AdminPage = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Administration - Impersonation</CardTitle>
-          <CardDescription>
-            Fonctionnalité temporaire pour tester les comptes utilisateurs
-          </CardDescription>
+          <CardTitle>Administration</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleImpersonate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email de l'utilisateur</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="utilisateur@example.com"
+                placeholder="email@example.com"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="adminPassword">Mot de passe administrateur</Label>
+              <Label htmlFor="adminPassword">Mot de passe</Label>
               <Input
                 id="adminPassword"
                 type="password"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="super-admin-mdp"
+                placeholder="*****"
                 required
               />
             </div>
@@ -80,16 +77,9 @@ const AdminPage = () => {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Connexion...' : 'Se connecter en tant qu\'utilisateur'}
+              {loading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              ⚠️ <strong>Attention :</strong> Cette fonctionnalité est temporaire et uniquement pour les tests.
-              Toutes les impersonations sont loggées pour audit.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
