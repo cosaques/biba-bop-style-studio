@@ -24,7 +24,7 @@ export const useUserProfile = () => {
 };
 
 export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading: loadingUser } = useAuth();
+  const { user, loading: loadingUser, isImpersonating } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +38,25 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     try {
       setLoading(true);
+      
+      // For impersonated users, create profile from user metadata
+      if (isImpersonating) {
+        console.log('🔍 CREATING PROFILE FROM IMPERSONATED USER METADATA');
+        const fakeProfile: UserProfile = {
+          id: user.id,
+          email: user.email || '',
+          first_name: user.user_metadata?.first_name || '',
+          last_name: user.user_metadata?.last_name || '',
+          role: user.user_metadata?.role || 'client',
+          profile_photo_url: user.user_metadata?.profile_photo_url || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setProfile(fakeProfile);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -60,6 +79,14 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: 'User not authenticated' };
+
+    // For impersonated users, simulate the update
+    if (isImpersonating) {
+      console.log('🔍 SIMULATING PROFILE UPDATE FOR IMPERSONATED USER');
+      const updatedProfile = { ...profile, ...updates } as UserProfile;
+      setProfile(updatedProfile);
+      return { data: updatedProfile };
+    }
 
     try {
       const { data, error } = await supabase
@@ -84,7 +111,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     fetchProfile();
-  }, [user, loadingUser]);
+  }, [user, loadingUser, isImpersonating]);
 
   const value = {
     profile,

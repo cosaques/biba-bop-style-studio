@@ -3,6 +3,15 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+interface ImpersonatedUserData {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  profile_photo_url: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -11,7 +20,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata: any) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
-  impersonateUser: (email: string, adminPassword: string) => Promise<{ error: any; data?: any }>;
+  impersonateUser: (email: string, adminPassword: string) => Promise<{ error: any; data?: ImpersonatedUserData }>;
   isImpersonating: boolean;
 }
 
@@ -44,8 +53,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isImpersonating, setIsImpersonating] = useState(false);
   const lastSessionRef = useRef<Session | null>(null);
 
+  // Load impersonation state from localStorage on init
   useEffect(() => {
-    // Set up auth state listener first
+    const savedImpersonation = localStorage.getItem('impersonation_data');
+    if (savedImpersonation) {
+      try {
+        const impersonationData = JSON.parse(savedImpersonation);
+        console.log('🔍 RESTORING IMPERSONATION STATE:', JSON.stringify({
+          userId: impersonationData.user?.id,
+          userEmail: impersonationData.user?.email,
+          timestamp: new Date().toISOString()
+        }));
+        
+        setUser(impersonationData.user);
+        setSession(impersonationData.session);
+        setIsImpersonating(true);
+        lastSessionRef.current = impersonationData.session;
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.error('Error restoring impersonation state:', error);
+        localStorage.removeItem('impersonation_data');
+      }
+    }
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log('🔍 AUTH STATE CHANGE:', JSON.stringify({
@@ -61,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isLogoutEvent = event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED';
         const shouldUpdate = !isSameSession(lastSessionRef.current, newSession) || isLogoutEvent;
         
-        if (shouldUpdate) {
+        if (shouldUpdate && !isImpersonating) {
           lastSessionRef.current = newSession;
           setSession(newSession);
           setUser(newSession?.user ?? null);
@@ -71,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (event === 'SIGNED_OUT') {
             console.log('🔍 CLEANING UP IMPERSONATION STATE ON LOGOUT');
             setIsImpersonating(false);
+            localStorage.removeItem('impersonation_data');
           }
         } else {
           // Still need to set loading to false on initial load
@@ -81,25 +114,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('🔍 INITIAL SESSION:', JSON.stringify({
-        sessionExists: !!initialSession,
-        userId: initialSession?.user?.id,
-        userEmail: initialSession?.user?.email,
-        timestamp: new Date().toISOString()
-      }));
+    // Get initial session only if not impersonating
+    if (!isImpersonating) {
+      supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+        console.log('🔍 INITIAL SESSION:', JSON.stringify({
+          sessionExists: !!initialSession,
+          userId: initialSession?.user?.id,
+          userEmail: initialSession?.user?.email,
+          timestamp: new Date().toISOString()
+        }));
 
-      lastSessionRef.current = initialSession;
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      setLoading(false);
-    });
+        lastSessionRef.current = initialSession;
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        setLoading(false);
+      });
+    }
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [loading]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -134,6 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       lastSessionRef.current = null;
+      localStorage.removeItem('impersonation_data');
       return;
     }
     
@@ -171,16 +207,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      if (data) {
-        // Créer un utilisateur fictif pour l'impersonation
+      if (data && typeof data === 'object' && data !== null) {
+        const userData = data as ImpersonatedUserData;
+        
+        // Create a real user object based on the impersonated user data
         const impersonatedUser: User = {
-          id: data.id,
-          email: data.email,
+          id: userData.id,
+          email: userData.email,
           user_metadata: {
-            first_name: data.first_name,
-            last_name: data.last_name,
-            role: data.role,
-            profile_photo_url: data.profile_photo_url
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            role: userData.role,
+            profile_photo_url: userData.profile_photo_url
           },
           app_metadata: {},
           aud: 'authenticated',
@@ -207,29 +245,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           identities: []
         };
 
-        // Créer une session fictive pour l'impersonation
-        const impersonatedSession: Session = {
-          access_token: `impersonated_${data.id}`,
-          token_type: 'bearer',
-          expires_in: 3600,
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          refresh_token: `refresh_impersonated_${data.id}`,
-          user: impersonatedUser
-        };
+        // Create a real session for the impersonated user using Supabase's admin functionality
+        // This will allow proper API access
+        const { data: { session: realSession }, error: sessionError } = await supabase.auth.admin.generateLink({
+          type: 'magiclink',
+          email: userData.email,
+          options: {
+            redirectTo: window.location.origin,
+          }
+        });
+
+        if (sessionError || !realSession) {
+          console.log('🔍 FAILED TO CREATE REAL SESSION, USING FAKE SESSION');
+          // Fallback to fake session if admin session creation fails
+          const impersonatedSession: Session = {
+            access_token: `impersonated_${userData.id}`,
+            token_type: 'bearer',
+            expires_in: 3600,
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            refresh_token: `refresh_impersonated_${userData.id}`,
+            user: impersonatedUser
+          };
+          
+          setUser(impersonatedUser);
+          setSession(impersonatedSession);
+          setIsImpersonating(true);
+          lastSessionRef.current = impersonatedSession;
+          
+          // Save to localStorage for persistence
+          localStorage.setItem('impersonation_data', JSON.stringify({
+            user: impersonatedUser,
+            session: impersonatedSession
+          }));
+        } else {
+          console.log('🔍 USING REAL SESSION FOR IMPERSONATION');
+          setUser(realSession.user);
+          setSession(realSession);
+          setIsImpersonating(true);
+          lastSessionRef.current = realSession;
+          
+          // Save to localStorage for persistence
+          localStorage.setItem('impersonation_data', JSON.stringify({
+            user: realSession.user,
+            session: realSession
+          }));
+        }
 
         console.log('🔍 IMPERSONATION SUCCESS:', JSON.stringify({
-          userId: data.id,
-          userEmail: data.email,
-          userRole: data.role,
+          userId: userData.id,
+          userEmail: userData.email,
+          userRole: userData.role,
           timestamp: new Date().toISOString()
         }));
 
-        setUser(impersonatedUser);
-        setSession(impersonatedSession);
-        setIsImpersonating(true);
-        lastSessionRef.current = impersonatedSession;
-
-        return { data };
+        return { data: userData };
       }
 
       return { error: new Error('Données utilisateur non trouvées') };

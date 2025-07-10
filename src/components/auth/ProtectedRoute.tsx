@@ -23,34 +23,22 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
       isLoading: loading,
       isProfileLoading: profileLoading,
       isImpersonating,
-      userMetadataRole: user?.user_metadata?.role,
       timestamp: new Date().toISOString()
     }));
 
-    if (!loading && (!isImpersonating ? !profileLoading : true)) {
+    if (!loading && !profileLoading) {
       if (!user) {
         console.log('🔍 NO USER - REDIRECTING TO LOGIN');
         navigate('/login');
         return;
       }
       
-      // Pour l'impersonation, utiliser le rôle des métadonnées utilisateur
-      // Pour les utilisateurs normaux, utiliser le rôle du profil
-      const userRole = isImpersonating ? user.user_metadata?.role : profile?.role;
-      
-      console.log('🔍 USER ROLE DETERMINED:', JSON.stringify({
-        userRole,
-        isImpersonating,
-        profileRole: profile?.role,
-        metadataRole: user.user_metadata?.role
-      }));
-      
-      if (requiredRole && userRole !== requiredRole) {
+      if (requiredRole && profile?.role !== requiredRole) {
         console.log('🔍 ROLE MISMATCH - REDIRECTING');
         // Redirect to appropriate dashboard based on user role
-        if (userRole === 'client') {
+        if (profile?.role === 'client') {
           navigate('/client/dashboard');
-        } else if (userRole === 'consultant') {
+        } else if (profile?.role === 'consultant') {
           navigate('/consultant/dashboard');
         } else {
           navigate('/login');
@@ -59,7 +47,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     }
   }, [user, profile, loading, profileLoading, navigate, requiredRole, isImpersonating]);
 
-  if (loading || (!isImpersonating && profileLoading)) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -74,8 +62,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     return null;
   }
 
-  const userRole = isImpersonating ? user.user_metadata?.role : profile?.role;
-  if (requiredRole && userRole !== requiredRole) {
+  if (requiredRole && profile?.role !== requiredRole) {
     return null;
   }
 
