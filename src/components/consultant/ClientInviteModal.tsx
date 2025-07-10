@@ -20,7 +20,7 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
   const [inviteLink, setInviteLink] = useState("");
   const [showLink, setShowLink] = useState(false);
   const { toast } = useToast();
-  const { user, isImpersonating } = useAuth();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,21 +37,9 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
     setIsLoading(true);
 
     try {
-      // For impersonated users, we need to get the current user differently
-      let currentUserId;
-      if (isImpersonating) {
-        console.log('🔍 CREATING INVITE AS IMPERSONATED USER:', user?.id);
-        currentUserId = user?.id;
-      } else {
-        const currentUser = await supabase.auth.getUser();
-        if (!currentUser.data.user) {
-          throw new Error('Not authenticated');
-        }
-        currentUserId = currentUser.data.user.id;
-      }
-
-      if (!currentUserId) {
-        throw new Error('Unable to determine current user');
+      const currentUser = await supabase.auth.getUser();
+      if (!currentUser.data.user) {
+        throw new Error('Not authenticated');
       }
 
       // Check if invitation already exists for this email and consultant
@@ -59,7 +47,7 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
         .from('client_invites')
         .select('token, expires_at')
         .eq('email', email)
-        .eq('consultant_id', currentUserId)
+        .eq('consultant_id', currentUser.data.user.id)
         .is('used_at', null)
         .single();
 
@@ -91,7 +79,7 @@ export function ClientInviteModal({ open, onOpenChange }: ClientInviteModalProps
           .from('client_invites')
           .insert({
             email,
-            consultant_id: currentUserId
+            consultant_id: currentUser.data.user.id
           })
           .select('token')
           .single();
