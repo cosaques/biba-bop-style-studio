@@ -48,6 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log('🔍 AUTH STATE CHANGE:', JSON.stringify({
+          event,
+          sessionExists: !!newSession,
+          userId: newSession?.user?.id,
+          userEmail: newSession?.user?.email,
+          isImpersonating,
+          timestamp: new Date().toISOString()
+        }));
+
         // Always update state for logout events, even if session comparison says they're the same
         const isLogoutEvent = event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED';
         const shouldUpdate = !isSameSession(lastSessionRef.current, newSession) || isLogoutEvent;
@@ -73,6 +82,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('🔍 INITIAL SESSION:', JSON.stringify({
+        sessionExists: !!initialSession,
+        userId: initialSession?.user?.id,
+        userEmail: initialSession?.user?.email,
+        timestamp: new Date().toISOString()
+      }));
+
       lastSessionRef.current = initialSession;
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
@@ -105,6 +121,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🔍 SIGN OUT:', JSON.stringify({
+      wasImpersonating: isImpersonating,
+      timestamp: new Date().toISOString()
+    }));
+    
     setIsImpersonating(false);
     await supabase.auth.signOut();
   };
@@ -117,11 +138,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const impersonateUser = async (email: string, adminPassword: string) => {
+    console.log('🔍 IMPERSONATION ATTEMPT:', JSON.stringify({
+      targetEmail: email,
+      timestamp: new Date().toISOString()
+    }));
+
     try {
       const { data, error } = await supabase.rpc('admin_impersonate_user', {
         user_email: email,
         admin_password: adminPassword
       });
+
+      console.log('🔍 IMPERSONATION RPC RESULT:', JSON.stringify({
+        success: !error,
+        error: error?.message,
+        userData: data,
+        timestamp: new Date().toISOString()
+      }));
 
       if (error) {
         return { error };
@@ -173,6 +206,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user: impersonatedUser
         };
 
+        console.log('🔍 IMPERSONATION SUCCESS:', JSON.stringify({
+          userId: data.id,
+          userEmail: data.email,
+          userRole: data.role,
+          timestamp: new Date().toISOString()
+        }));
+
         setUser(impersonatedUser);
         setSession(impersonatedSession);
         setIsImpersonating(true);
@@ -182,6 +222,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: new Error('Données utilisateur non trouvées') };
     } catch (error) {
+      console.log('🔍 IMPERSONATION ERROR:', JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      }));
+      
       return { error };
     }
   };
