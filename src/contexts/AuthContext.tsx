@@ -69,7 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Reset impersonation flag on logout
           if (event === 'SIGNED_OUT') {
-            console.log('🔍 CLEANING UP IMPERSONATION STATE ON LOGOUT');
             setIsImpersonating(false);
           }
         } else {
@@ -127,17 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: new Date().toISOString()
     }));
     
-    // If we're impersonating, clear everything immediately without calling supabase signOut
-    if (isImpersonating) {
-      console.log('🔍 CLEARING IMPERSONATION STATE IMMEDIATELY');
-      setIsImpersonating(false);
-      setUser(null);
-      setSession(null);
-      lastSessionRef.current = null;
-      return;
-    }
-    
-    // Normal signOut for real sessions
+    setIsImpersonating(false);
     await supabase.auth.signOut();
   };
 
@@ -227,7 +216,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(impersonatedUser);
         setSession(impersonatedSession);
         setIsImpersonating(true);
-        lastSessionRef.current = impersonatedSession;
 
         return { data };
       }
