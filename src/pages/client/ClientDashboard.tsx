@@ -6,12 +6,12 @@ import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 
 const ClientDashboard = () => {
   return (
-    <div className="flex min-h-screen bg-background">
-      <ClientSidebar />
+    <div className="min-h-screen bg-background">
+      <ClientHeader />
       <ImpersonationBanner />
-      <div className="flex-1">
-        <ClientHeader />
-        <main className="relative">
+      <div className="flex">
+        <ClientSidebar />
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>
