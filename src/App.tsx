@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,7 +30,6 @@ import Messages from "./pages/shared/Messages";
 import Conversation from "./pages/shared/Conversation";
 import NotFound from "./pages/NotFound";
 import AIDress from "./pages/experimental/AIDress";
-import AdminPage from "./pages/admin/AdminPage";
 import { UnreadCountProvider } from "./contexts/UnreadCountContext";
 
 // Create a stable query client instance outside the component
@@ -61,9 +59,6 @@ const App = () => {
                   <Route path="/register/:role" element={<Register />} />
                   <Route path="/password-reset" element={<PasswordReset />} />
                   <Route path="/invite/:token" element={<InviteAccept />} />
-
-                  {/* Admin Route */}
-                  <Route path="/admin" element={<AdminPage />} />
 
                   {/* Experimental Routes */}
                   <Route path="/experimental/ai-dress" element={
