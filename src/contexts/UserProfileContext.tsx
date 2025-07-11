@@ -28,15 +28,21 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("UserProfileProvider - user:", user?.id, "loadingUser:", loadingUser);
+
   const fetchProfile = async () => {
+    console.log("fetchProfile called - user:", user?.id, "loadingUser:", loadingUser);
+    
     if (!user) {
       if (!loadingUser) {
+        console.log("No user and not loading, setting loading to false");
         setLoading(false);
       }
       return;
     }
     
     try {
+      console.log("Fetching profile for user:", user.id);
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
@@ -48,12 +54,14 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         console.error('Error fetching user profile:', error);
         setProfile(null);
       } else {
+        console.log('Profile fetched successfully:', data);
         setProfile(data);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setProfile(null);
     } finally {
+      console.log("Profile fetch completed, setting loading to false");
       setLoading(false);
     }
   };
@@ -83,6 +91,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   useEffect(() => {
+    console.log("UserProfileProvider useEffect - user changed:", user?.id, "loadingUser:", loadingUser);
     fetchProfile();
   }, [user, loadingUser]);
 

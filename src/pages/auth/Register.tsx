@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,10 @@ const Register = () => {
   const isClient = role === "client";
   const isConsultant = role === "consultant";
 
+  console.log("Register component loaded with role:", role);
+
   if (!isClient && !isConsultant) {
+    console.log("Invalid role, redirecting to home");
     navigate("/");
     return null;
   }
@@ -170,11 +172,15 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log("Form submission started for role:", role);
+
     if (!validateForm()) {
+      console.log("Form validation failed");
       return;
     }
 
     setIsLoading(true);
+    console.log("Starting signup process...");
 
     try {
       const { error } = await signUp(formData.email, formData.password, {
@@ -183,7 +189,10 @@ const Register = () => {
         role: role
       });
 
+      console.log("SignUp result - error:", error);
+
       if (error) {
+        console.error("Signup error:", error);
         if (error.message.includes('User already registered')) {
           toast({
             title: "Compte existant",
@@ -198,6 +207,7 @@ const Register = () => {
           });
         }
       } else {
+        console.log("Signup successful! Processing post-signup actions...");
         toast({
           title: "Inscription réussie",
           description: "Votre compte a été créé avec succès. Vérifiez votre email pour confirmer votre compte.",
@@ -205,16 +215,22 @@ const Register = () => {
 
         // Accept invitation if token is present for client
         if (inviteToken && isClient) {
+          console.log("Processing client invitation...");
           await acceptInvitation();
         }
 
+        console.log("About to redirect...");
         if (isClient) {
+          console.log("Redirecting client to onboarding");
           navigate("/client/onboarding");
         } else if (isConsultant) {
+          console.log("Redirecting consultant to dashboard");
           navigate("/consultant/dashboard");
         }
+        console.log("Redirect command executed");
       }
     } catch (error) {
+      console.error("Unexpected error during signup:", error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
@@ -222,6 +238,7 @@ const Register = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log("Signup process completed");
     }
   };
 
