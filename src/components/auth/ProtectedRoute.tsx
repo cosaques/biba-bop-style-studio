@@ -22,6 +22,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     console.log("Auth loading:", loading, "Profile loading:", profileLoading);
     console.log("User:", user?.id, "Profile role:", profile?.role, "Required role:", requiredRole);
 
+    // Wait for both auth and profile to finish loading
     if (!loading && !profileLoading) {
       console.log("Both loading states are false, processing redirection logic");
       
@@ -31,6 +32,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
         return;
       }
       
+      // If a specific role is required, check if user has that role
       if (requiredRole && profile?.role !== requiredRole) {
         console.log(`Role mismatch: expected ${requiredRole}, got ${profile?.role}`);
         // Redirect to appropriate dashboard based on user role
@@ -52,6 +54,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     }
   }, [user, profile, loading, profileLoading, navigate, requiredRole]);
 
+  // Show loading while either auth or profile is loading
   if (loading || profileLoading) {
     console.log("Showing loading screen");
     return (

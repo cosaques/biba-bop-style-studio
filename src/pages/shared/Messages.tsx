@@ -1,44 +1,29 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useUserProfile } from '@/contexts/UserProfileContext';
-import { useMessages } from '@/hooks/useMessages';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Plus } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
-import { NewMessageModal } from '@/components/shared/NewMessageModal';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, MessageCircle } from "lucide-react";
+import { useMessages } from "@/hooks/useMessages";
+import { useUserProfile } from "@/contexts/UserProfileContext";
+import { useUnreadCountPolling } from "@/hooks/useUnreadCountPolling";
+import { NewMessageModal } from "@/components/shared/NewMessageModal";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
-export default function Messages() {
-  const { user } = useAuth();
+const Messages = () => {
+  const navigate = useNavigate();
   const { profile } = useUserProfile();
-  const { conversations, loading, getTotalUnreadCount } = useMessages();
+  const { conversations, loading } = useMessages();
   const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
-
-  const getBaseRoute = () => {
-    if (!profile) return '';
-    return profile.role === 'consultant' ? '/consultant/dashboard' : '/client/dashboard';
-  };
-
-  console.log('Messages: Component rendering with:', JSON.stringify({
-    userId: user?.id,
-    userRole: user?.role,
-    conversationsCount: conversations.length,
-    baseRoute: getBaseRoute()
-  }));
+  const { totalUnreadCount } = useUnreadCountPolling();
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-bibabop-navy">Messages</h1>
-          <p className="subtitle">Vos conversations</p>
-        </div>
-        <div className="flex items-center justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bibabop-navy"></div>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bibabop-navy mx-auto mb-4"></div>
+          <p>Chargement des conversations...</p>
         </div>
       </div>
     );
@@ -46,12 +31,19 @@ export default function Messages() {
 
   return (
     <div className="p-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-bibabop-navy">Messages</h1>
-          <p className="subtitle">Vos conversations</p>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Messages</h1>
+          {totalUnreadCount > 0 && (
+            <Badge variant="destructive" className="text-xs">
+              {totalUnreadCount}
+            </Badge>
+          )}
         </div>
-        <Button onClick={() => setIsNewMessageModalOpen(true)} className="btn-primary">
+        <Button 
+          onClick={() => setIsNewMessageModalOpen(true)}
+          className="btn-primary"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nouveau message
         </Button>
@@ -59,77 +51,84 @@ export default function Messages() {
 
       {conversations.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-12">
+          <CardContent className="p-8 text-center">
             <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">Aucune conversation pour le moment</p>
-            <Button onClick={() => setIsNewMessageModalOpen(true)} className="btn-primary">
+            <h3 className="text-lg font-medium mb-2">Aucune conversation</h3>
+            <p className="text-muted-foreground mb-4">
+              Commencez une nouvelle conversation pour échanger avec vos {profile?.role === 'consultant' ? 'clients' : 'conseillers'}.
+            </p>
+            <Button 
+              onClick={() => setIsNewMessageModalOpen(true)}
+              className="btn-primary"
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Commencer une conversation
+              Démarrer une conversation
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {conversations.map((conversation) => {
-            const conversationLink = `${getBaseRoute()}/messages/${conversation.id}`;
-            console.log('Messages: Creating link for conversation:', JSON.stringify({
-              conversationId: conversation.id,
-              link: conversationLink
-            }));
+            const otherUser = profile?.role === 'consultant' 
+              ? conversation.client 
+              : conversation.consultant;
             
+            const unreadCount = conversation.messages?.filter(
+              msg => !msg.read_at && msg.sender_id !== profile?.id
+            ).length || 0;
+
             return (
-              <Link
+              <Card 
                 key={conversation.id}
-                to={conversationLink}
-                className="block"
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate(`messages/${conversation.id}`)}
               >
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
-                      <Avatar>
-                        <AvatarImage src={conversation.other_user_avatar} />
-                        <AvatarFallback>
-                          {conversation.other_user_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-bibabop-navy truncate">
-                            {conversation.other_user_name}
-                          </h3>
-                          {conversation.unread_count > 0 && (
-                            <Badge variant="destructive" className="ml-2">
-                              {conversation.unread_count}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {conversation.last_message && (
-                          <div className="mt-1">
-                            <p className="text-sm text-muted-foreground truncate">
-                              {conversation.last_message.sender_id === user?.id ? 'Vous: ' : ''}
-                              {conversation.last_message.content}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {format(new Date(conversation.last_message.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
-                            </p>
-                          </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-bibabop-navy rounded-full flex items-center justify-center text-white font-medium">
+                        {otherUser?.first_name?.[0] || '?'}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">
+                          {otherUser?.first_name} {otherUser?.last_name}
+                        </h3>
+                        {conversation.messages && conversation.messages[0] && (
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
+                            {conversation.messages[0].content}
+                          </p>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    <div className="flex items-center space-x-2">
+                      {unreadCount > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                      {conversation.messages && conversation.messages[0] && (
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(conversation.messages[0].created_at), {
+                            addSuffix: true,
+                            locale: fr
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
       )}
 
-      <NewMessageModal
-        open={isNewMessageModalOpen}
-        onOpenChange={setIsNewMessageModalOpen}
+      <NewMessageModal 
+        isOpen={isNewMessageModalOpen}
+        onClose={() => setIsNewMessageModalOpen(false)}
       />
     </div>
   );
-}
+};
+
+export default Messages;
